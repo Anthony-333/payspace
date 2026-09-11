@@ -14,12 +14,12 @@ Everything needed to start building with Claude Code.
 ## How to start
 
 1. Create an empty project folder and unzip this kit into it, so `CLAUDE.md` sits at the root.
-2. Have accounts ready at clerk.com and convex.dev (both have free tiers), plus Node.js 20 or newer.
+2. Have an account ready at convex.dev (free tier), plus Node.js 20 or newer. Auth is Better Auth, which runs inside Convex, so no separate auth account is needed.
 3. Open the folder in Claude Code and paste the first prompt below.
 
 ## Prompt 1: kickoff (Week 1)
 
-> Read CLAUDE.md, docs/mvp-plan.md and docs/progress.md. We're starting Week 1: Foundation and tenancy. First, check the current docs for Next.js, Clerk and Convex, and tell me anything in the plan that's out of date. Then give me a short plan for Week 1 and a step-by-step checklist of what I need to set up by hand in the Clerk and Convex dashboards. Wait for my OK before writing code. When you build, include the convex-test tenant isolation suite, and update docs/progress.md at the end.
+> Read CLAUDE.md, docs/mvp-plan.md and docs/progress.md. We're starting Week 1: Foundation and tenancy. First, check the current docs for Next.js, Better Auth and Convex, and tell me anything in the plan that's out of date. Then give me a short plan for Week 1 and a step-by-step checklist of what I need to set up by hand in the Convex dashboard. Wait for my OK before writing code. When you build, include the convex-test tenant isolation suite, and update docs/progress.md at the end.
 
 ## Prompt for each following week
 

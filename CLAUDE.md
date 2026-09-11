@@ -11,34 +11,43 @@ A web point of sale for small businesses: coffee shops, groceries, bakeries and 
 ## Read these first
 
 - `docs/mvp-plan.md` is the full plan: scope, architecture, Convex schema, feature rules, roles, the 8-week roadmap, risks. Treat it as the spec.
-- `docs/progress.md` tracks what's done. Update it at the end of every session.
+- `docs/progress.md` tracks what's done, plus the decisions log. Update it at the end of every session.
 - `docs/prototypes/pos-checkout.html` is a working prototype of the checkout screen (open it in a browser). Use it as the reference for the POS layout, the payment flow, and the pricing, change and split-payment logic.
-- `docs/prototypes/mvp-plan.html` is the same plan as a formatted page, for humans.
+- `docs/prototypes/mvp-plan.html` is an older formatted copy of the plan for humans. It still describes Clerk, so the markdown file wins.
+- `docs/setup/` holds setup notes for components we add later (for example `convex-agent.md`).
+- `.claude/agents/` holds the project's specialist agents: `orchestrator`, `stack-expert`, `security-reviewer`, `ui-ux-designer` and `legal-compliance`.
 
-## Current state
+## Project notes
 
-The repo is still the create-next-app scaffold (Next.js 16, React 19, Tailwind v4, ESLint 9 flat config); only `next`, `react` and Tailwind are installed. Convex, Clerk, shadcn/ui, Vitest and the rest of the stack below get added in Week 1, so `convex/`, `proxy.ts` and the `test` script don't exist yet. Check `docs/progress.md` for how far things have got.
-
+- Next.js 16 and React 19 ship with ESLint 9 using the flat config.
 - The path alias `@/*` maps to the repo root (there is no `src/`).
 - Tailwind v4 is configured in CSS (`app/globals.css`, `@import "tailwindcss"` and `@theme`); there is no `tailwind.config.*`.
-- Next.js 16 ships its own docs in `node_modules/next/dist/docs/`. Read the relevant guide there before writing Next.js code (see `AGENTS.md`).
+- Next.js 16 ships its own docs in `node_modules/next/dist/docs/`. Read the relevant guide there before writing Next.js code (see `AGENTS.md`). `params` and `searchParams` are async, and the middleware file is `proxy.ts`.
 
 ## Stack
 
 - Next.js (App Router, TypeScript, strict mode)
-- Clerk with **Organizations** (one organization = one business), plus custom roles `org:manager` and `org:cashier`; `org:admin` maps to owner
 - Convex for the database, server functions, file storage, scheduler and crons
+- Better Auth through the `@convex-dev/better-auth` Convex component, used **for sign-in only** (email and password). Shops, staff and roles live in our own Convex tables (`tenants`, `members`), not in an auth provider.
 - Tailwind CSS and shadcn/ui; charts built on Recharts
-- Zustand for cart state, React Hook Form and Zod for forms
-- convex-helpers (custom functions), Vitest and convex-test for tests
+- Zustand for cart state, React Hook Form and Zod (with `@hookform/resolvers`) for forms
+- convex-helpers (custom functions), Vitest and convex-test (with `@edge-runtime/vm`) for tests
 - fflate for ZIP backups, Resend for email
+- `@convex-dev/agent`, `ai` and `@ai-sdk/anthropic` for the Version 1.1 "Ask your shop" assistant (see `docs/setup/convex-agent.md`)
 
-Library APIs change. Before using an API from the plan, check the current docs, and tell me if the plan is out of date. Examples: Next.js 16 renamed `middleware.ts` to `proxy.ts`, and the Convex + Clerk setup is done through Clerk's Convex integration.
+Library APIs change. Before using an API from the plan, check the current docs, and tell me if the plan is out of date. Known pins:
+- `better-auth` stays on `~1.6.x`, because `@convex-dev/better-auth` 0.12 requires `<1.7`.
+- Vitest stays on 4.x, because `better-auth`'s peer range stops at 4.
 
 ## Architecture
 
 - **Shared database.** All tenants share the same Convex tables. Every tenant-owned document has a `tenantId`, and `tenantId` leads every index. Isolation lives in code, in one wrapper.
-- **How a request finds its tenant.** Clerk org and membership webhooks go to `convex/http.ts` (Svix-verified), which upserts `tenants` and `members`. The shop slug is in the URL (`app/[shop]/...`), and Clerk's `organizationSyncOptions` in `proxy.ts` keeps the active org matched to it. The client passes `tenantId` to every Convex call. `tenantQuery`/`tenantMutation` look up an active `members` row for `(tenantId, identity.subject)` and add `ctx.tenantId`, `ctx.tenant` and `ctx.member`. Membership is checked in our table, not taken from the token, so disabling a staff member revokes access immediately.
+- **How a request finds its tenant.**
+  - Better Auth issues a Convex JWT whose `identity.subject` is the Better Auth user id. The token lasts 15 minutes and is not re-validated on each call.
+  - Onboarding calls `tenants.create`, which inserts the tenant and its owner `members` row in one transaction.
+  - The shop slug is in the URL (`app/[shop]/...`). The layout resolves it to a `tenantId`, and the client passes that `tenantId` to every Convex call.
+  - `tenantQuery`/`tenantMutation` look up an active `members` row for `(tenantId, identity.subject)` and add `ctx.tenantId`, `ctx.tenant` and `ctx.member`. Because membership is checked in our table on every call, disabling a staff member revokes access immediately, even while their token is still valid.
+  - Calls that need a signed-in user but no shop (list my shops, create a shop) use `userQuery`/`userMutation`.
 - **Products vs stock items.** A product is what the POS sells; a stock item is what sits on the shelf. A product's `kind` is one of:
   - `stocked`: one-to-one with a stock item, the grocery case.
   - `recipe`: `recipeLines` consume several stock items in base units (g, ml, pc).
@@ -46,13 +55,13 @@ Library APIs change. Before using an API from the plan, check the current docs, 
 
   Modifier options carry both a `priceDelta` and a `recipeDelta`.
 - **Checkout is one transaction** (`sales.checkout`). It returns early on a repeated `clientRef`, then prices on the server and writes the sale with its snapshots. It also deducts stock through `stockMovements`, updates the `dailyStats`/`productDailyStats` rollups, and takes the next sale number from `counters`. Dashboards read the rollups, not raw sales, and update live through Convex subscriptions.
-- **Costing** uses weighted average cost on `stockItems.avgCost`. When a receipt changes a stock item's cost, a scheduled job recomputes the cached `products.unitCost` via the `by_stock_item` indexes and flags any product below the target margin.
+- **Costing** uses weighted average cost on `stockItems.avgCost`. When a receipt changes a stock item's cost, a scheduled job recomputes the cached `products.unitCost` and flags any product below the target margin.
 - **Exports** follow one pipeline. `exports.request` checks the role and inserts a job, and `exportsRun.run` (a `"use node"` internal action) reads the data 500 rows at a time. It then writes the CSV or ZIP to file storage and marks the job ready. A daily cron removes expired files and fails jobs that got stuck.
-- The planned `app/` and `convex/` layout, including `convex/lib/{tenant,money,costing,stock,dates,csv}.ts`, is in the "App structure and tooling" section of `docs/mvp-plan.md`. Reserved slugs: `app`, `api`, `r`. The public receipt lives at `/r/[token]`.
+- The planned `app/` and `convex/` layout is in the "App structure and tooling" section of `docs/mvp-plan.md`. Reserved slugs are defined in `convex/lib/slugs.ts`. The public receipt lives at `/r/[token]`.
 
 ## Non-negotiable rules
 
-1. **Tenant isolation.** Every tenant-scoped Convex function uses `tenantQuery` or `tenantMutation` from `convex/lib/tenant.ts`. These check for an active `members` row for the caller and the `tenantId`. Never import the raw `query` or `mutation` for tenant data. The exceptions are Clerk webhooks, internal functions, and the public receipt page.
+1. **Tenant isolation.** Every tenant-scoped Convex function uses `tenantQuery` or `tenantMutation` from `convex/lib/tenant.ts`. These check for an active `members` row for the caller and the `tenantId`. Never import the raw `query` or `mutation` for tenant data (ESLint enforces this). The exceptions are the auth wiring (`convex/auth.ts`, `convex/http.ts`), internal functions, the public receipt page, and the user-scoped wrappers in `convex/lib/`.
 2. **Re-check every ID from the client** with `getOwned()`, so a document from another tenant is never read or changed.
 3. **Every tenant query uses an index that starts with `tenantId`.** No `.filter()` scans across tenants.
 4. **Roles are enforced on the server** with `requireRole()`. Hiding buttons in the UI is not protection.
@@ -75,17 +84,24 @@ Library APIs change. Before using an API from the plan, check the current docs, 
 ## Commands
 
 - `npm run dev` runs Next.js
-- `npx convex dev` runs the Convex dev deployment, syncs functions and generates types (`convex/_generated/`)
-- `npm test` runs Vitest (including convex-test suites). Add the `test` script in Week 1 when Vitest is installed.
-- Single test: `npx vitest run path/to/file.test.ts -t "test name"`
+- `npx convex dev` runs the Convex dev deployment, syncs functions and generates types (`convex/_generated/`). In a non-interactive shell, with no deployment configured, it provisions an anonymous local deployment. Use `npx convex dev --once` for a single sync and codegen pass.
+- `npx convex env set NAME value` sets Convex environment variables
+- `npm test` runs Vitest (including convex-test suites)
+- Single test: `npx vitest run convex/tenancy.test.ts -t "test name"`
 - `npm run build` builds for production
 - `npm run lint` and `npx tsc --noEmit` must pass before finishing a task
 
 ## Environment
 
-- `.env.local` (Next.js): `NEXT_PUBLIC_CONVEX_URL` (written by `npx convex dev`), `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`
-- Convex dashboard environment variables: the Clerk Frontend API URL used by `convex/auth.config.ts` (use the variable name from the current Convex + Clerk guide), and `CLERK_WEBHOOK_SECRET` for webhook verification
-- In the Clerk dashboard: enable Organizations, create the `manager` and `cashier` roles, activate the Convex integration, and add a webhook endpoint pointing to the Convex HTTP action (`/clerk-webhook`) for `organization.*`, `organizationMembership.*` and `user.*` events
+- **`.env.local` (Next.js):**
+  - `CONVEX_DEPLOYMENT` and `NEXT_PUBLIC_CONVEX_URL` (both written by `npx convex dev`)
+  - `NEXT_PUBLIC_CONVEX_SITE_URL`: the same deployment, ending in `.convex.site` (the Better Auth HTTP routes live there)
+  - `NEXT_PUBLIC_SITE_URL`: `http://localhost:3000` in development
+- **Convex environment variables:**
+  - `BETTER_AUTH_SECRET` (`openssl rand -base64 32`)
+  - `SITE_URL` (the Next.js origin)
+  - Later: `RESEND_API_KEY` and `ANTHROPIC_API_KEY`
+- There is no third-party auth dashboard to configure.
 
 ## Market defaults
 

@@ -1,6 +1,6 @@
 # Multi-tenant POS — MVP plan
 
-Stack: Next.js (App Router), Clerk (Organizations), Convex. Target: coffee shops, groceries, bakeries and small retail.
+Stack: Next.js (App Router), Better Auth (through the Convex component), Convex. Target: coffee shops, groceries, bakeries and small retail.
 
 ## Goals and scope
 
@@ -20,7 +20,7 @@ Most starter POS tools tell an owner how much they sold. Very few tell them how 
 
 | Area            | In the MVP                                                                                                       | Later                                                                          |
 |-----------------|------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------|
-| **Tenancy**     | Sign-up, one business per Clerk organization, staff invites, three roles, business templates                     | Multiple branches per business, franchise roll-ups                             |
+| **Tenancy**     | Sign-up, businesses and staff in Convex, staff invites, three roles, business templates                          | Multiple branches per business, franchise roll-ups                             |
 | **Products**    | Categories, modifiers (size, milk, add-ons), images, barcodes, CSV import, archive                               | Combos and bundles, scheduled prices, happy hour                               |
 | **Inventory**   | Stock items, receiving, adjustments, waste, stock counts, low-stock alerts, stock ledger                         | Purchase orders, batch and expiry tracking, branch transfers                   |
 | **Costing**     | Weighted average cost, recipe costing, margin per item, margin alerts, cost snapshot on each sale                | FIFO costing, landed costs, price-change simulator                             |
@@ -32,7 +32,7 @@ Design the schema for multiple locations now (it's cheap), but ship a single-loc
 
 ## Architecture and tenancy
 
-This stack fits a POS unusually well. Convex queries are live subscriptions, so a sale rung up on the counter tablet updates the stock screen and the owner's dashboard on their phone with no polling code. Convex mutations run as transactions, so a checkout either writes the sale, the stock deductions and the stats together, or writes nothing. Clerk Organizations give you business sign-up, staff invitations, an organization switcher and roles without building them.
+This stack fits a POS unusually well. Convex queries are live subscriptions, so a sale rung up on the counter tablet updates the stock screen and the owner's dashboard on their phone with no polling code. Convex mutations run as transactions, so a checkout either writes the sale, the stock deductions and the stats together, or writes nothing. Better Auth runs inside Convex as a component, so sign-in, sessions and user records live next to the business data, with no webhooks to sync. Businesses, staff and roles are ordinary Convex tables that we own.
 
 ```mermaid
 flowchart LR
@@ -41,20 +41,19 @@ flowchart LR
     BO["Back office (laptop, phone)"]
     BOARD["Order board (second screen)"]
   end
-  CLERK["Clerk: sign-in, organizations, roles"]
+  NEXT["Next.js: /api/auth proxy"]
   subgraph CVX["Convex"]
     FN["Queries and mutations via tenant wrapper"]
-    HTTP["HTTP action: Clerk webhooks"]
+    AUTH["Better Auth component: users, sessions"]
     DB[("Tables, all keyed by tenantId")]
     FILES["File storage: product images"]
     JOBS["Scheduler and crons"]
   end
-  POS -->|"session token"| FN
-  BO -->|"session token"| FN
+  POS -->|"Convex JWT"| FN
+  BO -->|"Convex JWT"| FN
   BOARD -->|"live query"| FN
-  POS -.->|"sign in"| CLERK
-  CLERK -->|"org and membership events"| HTTP
-  HTTP --> DB
+  POS -.->|"sign in"| NEXT
+  NEXT --> AUTH
   FN --> DB
   FN --> FILES
   JOBS --> DB
@@ -66,13 +65,13 @@ All businesses share the same Convex tables, and every tenant-owned document has
 
 ### How a request finds its tenant
 
-1.  A user signs in with Clerk, then creates a business (a Clerk Organization) during onboarding or accepts an invite to one.
-2.  Clerk sends `organization.*` and `organizationMembership.*` webhooks to a Convex HTTP action, which verifies the signature (Svix) and upserts rows in `tenants` and `members`.
-3.  The shop's slug lives in the URL (`/brewlab/pos`). Clerk's middleware option `organizationSyncOptions` keeps the active organization matched to the URL, so switching shops is just navigation.
-4.  The client passes `tenantId` to every Convex call. The tenant wrapper looks up an active `members` row for that tenant and the caller's Clerk user ID (`identity.subject`), and refuses the call if there isn't one.
+1.  A user signs in with Better Auth (email and password). The Convex component issues a short-lived JWT whose subject is the Better Auth user ID.
+2.  During onboarding, the `tenants.create` mutation inserts the business and the owner's `members` row in one transaction. Staff join later by accepting an invite, which inserts their `members` row with the invited role.
+3.  The shop's slug lives in the URL (`/brewlab/pos`). The shop layout resolves the slug to a tenant the caller belongs to, so switching shops is just navigation.
+4.  The client passes `tenantId` to every Convex call. The tenant wrapper looks up an active `members` row for that tenant and the caller's user ID (`identity.subject`), and refuses the call if there isn't one.
 5.  Handlers only query through indexes that start with `tenantId`, and any document ID the client sends is re-checked to belong to the same tenant before it's read or changed.
 
-Checking membership in your own table, rather than trusting an organization claim in the token, means access is revoked the moment a manager disables a staff member, and it still works if someone opens a stale tab for a different shop.
+Checking membership in your own table on every call, rather than trusting a claim in the token, means access is revoked the moment a manager disables a staff member, even though their token is valid for up to 15 minutes. It still works if someone opens a stale tab for a different shop.
 
 **convex/lib/tenant.ts**
 
@@ -91,7 +90,7 @@ async function loadMembership(ctx: QueryCtx, tenantId: Id<"tenants">) {
   const member = await ctx.db
     .query("members")
     .withIndex("by_tenant_user", (q) =>
-      q.eq("tenantId", tenantId).eq("clerkUserId", identity.subject))
+      q.eq("tenantId", tenantId).eq("userId", identity.subject))
     .unique();
   if (!member || member.status !== "active") {
     throw new ConvexError("You don't have access to this business.");
@@ -160,7 +159,7 @@ export const updatePrice = tenantMutation({
 });
 ```
 
-Make it a team rule (and a lint check if you like) that files in `convex/` never import the plain `query` or `mutation` for tenant data. Only the webhook handler and truly public endpoints, such as the digital receipt page, use them.
+Make it a team rule (and a lint check if you like) that files in `convex/` never import the plain `query` or `mutation` for tenant data. Only the auth wiring, the user-scoped wrappers (`userQuery`, `userMutation`) and truly public endpoints, such as the digital receipt page, use them.
 
 ## Data model
 
@@ -189,7 +188,6 @@ const payMethod = v.union(v.literal("cash"), v.literal("ewallet"), v.literal("ca
 
 export default defineSchema({
   tenants: defineTable({
-    clerkOrgId: v.string(),
     name: v.string(),
     slug: v.string(),
     businessType: v.union(v.literal("cafe"), v.literal("grocery"),
@@ -202,19 +200,18 @@ export default defineSchema({
     discountLimitBps: v.number(),    // max cashier discount without a manager PIN
     receiptFooter: v.optional(v.string()),
   })
-    .index("by_clerk_org", ["clerkOrgId"])
     .index("by_slug", ["slug"]),
 
   members: defineTable({
     tenantId,
-    clerkUserId: v.string(),
+    userId: v.string(),              // Better Auth user ID (identity.subject)
     name: v.string(),
     role,
     status: v.union(v.literal("active"), v.literal("disabled")),
     pinHash: v.optional(v.string()), // manager overrides at the counter
   })
-    .index("by_tenant_user", ["tenantId", "clerkUserId"])
-    .index("by_user", ["clerkUserId"]),
+    .index("by_tenant_user", ["tenantId", "userId"])
+    .index("by_user", ["userId"]),
 
   categories: defineTable({ tenantId, name: v.string(), sortOrder: v.number() })
     .index("by_tenant", ["tenantId", "sortOrder"]),
@@ -235,7 +232,7 @@ export default defineSchema({
   })
     .index("by_tenant_active", ["tenantId", "isActive"])
     .index("by_tenant_barcode", ["tenantId", "barcode"])
-    .index("by_stock_item", ["stockItemId"])
+    .index("by_tenant_stock_item", ["tenantId", "stockItemId"])
     .searchIndex("search_name", { searchField: "name", filterFields: ["tenantId", "isActive"] }),
 
   modifierGroups: defineTable({
@@ -268,8 +265,8 @@ export default defineSchema({
     stockItemId: v.id("stockItems"),
     qty: v.number(),                 // base units per 1 product sold
   })
-    .index("by_product", ["productId"])
-    .index("by_stock_item", ["stockItemId"]),
+    .index("by_tenant_product", ["tenantId", "productId"])
+    .index("by_tenant_stock_item", ["tenantId", "stockItemId"]),
 
   stockMovements: defineTable({
     tenantId,
@@ -413,7 +410,7 @@ A worked example for a 16 oz iced latte:
 | Gross margin                     |        |            | 60.9%       |
 
 - Each sale line stores `unitCost` at checkout, so cost of goods sold and profit for past days never shift when prices change.
-- When a receipt changes a stock item's average cost, schedule a background job (`ctx.scheduler.runAfter`) that finds affected products through the `by_stock_item` indexes, updates their cached `unitCost` and flags any that fall below the target margin.
+- When a receipt changes a stock item's average cost, schedule a background job (`ctx.scheduler.runAfter`) that finds affected products through the `by_tenant_stock_item` indexes, updates their cached `unitCost` and flags any that fall below the target margin.
 - Show cost and margin only to owners and managers.
 
 **Done when** receiving milk at a higher price immediately updates the latte's cost and margin on screen, and yesterday's profit report is unchanged.
@@ -610,7 +607,7 @@ export function money(minor: number) {                          // 14000 → "14
 
 ## Roles and permissions
 
-Three roles cover almost every small shop. Create `manager` and `cashier` as custom roles in the Clerk dashboard alongside the default admin (mapped to owner), sync them into `members`, and enforce them in Convex with `requireRole`. Hiding a button in the UI is a convenience, never the protection.
+Three roles cover almost every small shop. Roles live on the `members` row (`owner`, `manager`, `cashier`), are set when a business is created or an invite is accepted, and are enforced in Convex with `requireRole`. Hiding a button in the UI is a convenience, never the protection.
 
 | Action                                           | Owner | Manager | Cashier     |
 |--------------------------------------------------|-------|---------|-------------|
@@ -627,7 +624,7 @@ Three roles cover almost every small shop. Create `manager` and `cashier` as cus
 | Invite staff, change roles                       | ✓     | —       | —           |
 | Business, tax and receipt settings, billing      | ✓     | —       | —           |
 
-Counter tablets are usually shared. For the MVP, staff sign in with their own Clerk account when they open a shift. Fast PIN switching between cashiers on one signed-in device is a good post-MVP feature once you've watched real shops work.
+Counter tablets are usually shared. For the MVP, staff sign in with their own account when they open a shift. Fast PIN switching between cashiers on one signed-in device is a good post-MVP feature once you've watched real shops work.
 
 ## App structure and tooling
 
@@ -636,8 +633,8 @@ Counter tablets are usually shared. For the MVP, staff sign in with their own Cl
 ```text
 app/
   (marketing)/page.tsx          landing page and pricing
-  sign-in/[[...sign-in]]/       Clerk
-  sign-up/[[...sign-up]]/
+  api/auth/[...all]/route.ts    Better Auth handler (proxies to Convex)
+  sign-in/  sign-up/            email and password forms
   onboarding/                   create business, pick template, set tax and currency
   [shop]/                       shop slug; reserve words like "app", "api", "r"
     layout.tsx                  resolves tenant, sidebar, org switcher
@@ -651,15 +648,18 @@ app/
     settings/                   business, tax, receipt, staff, billing, data and exports
   r/[token]/page.tsx            public digital receipt
 convex/
+  convex.config.ts              registers components (Better Auth, later the AI agent)
+  auth.ts  auth.config.ts       Better Auth setup
   schema.ts
-  lib/        tenant.ts  money.ts  costing.ts  stock.ts  dates.ts  csv.ts
+  lib/        tenant.ts  money.ts  costing.ts  stock.ts  dates.ts  csv.ts  slugs.ts
   tenants.ts  members.ts  products.ts  categories.ts  modifiers.ts
   inventory.ts  sales.ts  shifts.ts  analytics.ts  templates.ts
   exports.ts                    request, list, internal job queries
   exportsRun.ts                 "use node" action that builds CSV and ZIP files
-  http.ts                       Clerk webhooks, verified with Svix
+  http.ts                       Better Auth routes
   crons.ts                      low-stock digest, stats checks, expired export cleanup
-proxy.ts                        clerkMiddleware (middleware.ts on Next.js 15)
+lib/        auth-client.ts  auth-server.ts
+proxy.ts                        optimistic sign-in redirect (session cookie check only)
 ```
 
 ### Supporting libraries
@@ -675,7 +675,7 @@ proxy.ts                        clerkMiddleware (middleware.ts on Next.js 15)
 | ZIP backups      | fflate                                               | Small, fast, pure JavaScript zip for the full backup inside the export action               |
 | Email            | Resend, called from a Convex action                  | Digital receipts and the daily digest                                                       |
 | Monitoring       | Sentry and PostHog                                   | Errors at the counter, and where onboarding loses people                                    |
-| Hosting          | Vercel, Convex cloud, Clerk production instance      | No servers to run while you find product-market fit                                         |
+| Hosting          | Vercel, Convex cloud (auth runs inside Convex)       | No servers to run while you find product-market fit                                         |
 
 Make the app an installable PWA from week one (a manifest, icons and full-screen display). Shops can then pin the POS to a tablet's home screen, and it looks and feels like a native app.
 
@@ -745,8 +745,8 @@ Paced for one full-time developer, or two part-time. Each week ends with somethi
 
     ### Foundation and tenancy
 
-    - Next.js app, Tailwind, shadcn/ui, PWA manifest; Clerk with Organizations and custom roles; Convex project and schema.
-    - Clerk webhooks to Convex; `tenantQuery`, `tenantMutation`, `requireRole`, `getOwned`.
+    - Next.js app, Tailwind, shadcn/ui, PWA manifest; Better Auth through the Convex component; Convex project and schema.
+    - `tenantQuery`, `tenantMutation`, `userQuery`, `userMutation`, `requireRole`, `getOwned`.
     - Onboarding: create business, choose type, currency, tax; app shell with shop slug routing.
 
     **Done when** a convex-test suite proves shop A can't list, read, or edit shop B's data through any function.
@@ -812,7 +812,7 @@ Paced for one full-time developer, or two part-time. Each week ends with somethi
 
     ### Pilot and launch
 
-    - Production Convex and Clerk instances on Vercel, Sentry and PostHog wired up, backups via Convex export.
+    - Production Convex deployment and Vercel, Sentry and PostHog wired up, backups via Convex export.
     - Onboard 3 to 5 pilot shops in person, watch a full shift at each, fix what hurts.
 
     **Done when** every pilot shop trades a full week on the app and wants to keep using it.
@@ -837,7 +837,7 @@ Many countries regulate POS systems that issue official receipts or invoices. If
 ### Launch checklist
 
 - Tenant isolation tests pass, and every mutation has a role check.
-- Clerk and Convex production instances configured, with webhook secrets set in the Convex dashboard.
+- Convex production deployment configured, with `BETTER_AUTH_SECRET`, `SITE_URL` and email keys set, and email verification turned on.
 - Error tracking live, with alerts for failed checkouts and failed exports.
 - Every export opened in Excel (Windows and Mac) and Google Sheets, with ₱, ñ and long barcodes displayed correctly.
 - Scheduled Convex data exports for backups.
