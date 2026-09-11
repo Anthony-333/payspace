@@ -5,6 +5,21 @@ import nextTs from "eslint-config-next/typescript";
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
+  // CLAUDE.md rule 1: tenant data only goes through the wrappers in convex/lib/tenant.ts.
+  {
+    files: ["convex/**/*.ts"],
+    ignores: ["convex/lib/tenant.ts"],
+    rules: {
+      "no-restricted-imports": ["error", {
+        patterns: [{
+          group: ["**/_generated/server"],
+          importNames: ["query", "mutation", "action"],
+          message:
+            "Use tenantQuery/tenantMutation (or userQuery/userMutation) from convex/lib/tenant.ts. Internal functions are fine.",
+        }],
+      }],
+    },
+  },
   // Override default ignores of eslint-config-next.
   globalIgnores([
     // Default ignores of eslint-config-next:
@@ -12,6 +27,7 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    "convex/_generated/**",
   ]),
 ]);
 
