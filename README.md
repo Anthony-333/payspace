@@ -1,36 +1,30 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# POS MVP starter kit
 
-## Getting Started
+Everything needed to start building with Claude Code.
 
-First, run the development server:
+## Contents
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+- `CLAUDE.md`: project context and rules. Claude Code reads it automatically.
+- `docs/mvp-plan.md`: the full spec.
+- `docs/progress.md`: roadmap checklist and backlog.
+- `docs/prototypes/pos-checkout.html`: working checkout screen prototype (open in a browser).
+- `docs/prototypes/mvp-plan.html`: the plan as a formatted page.
+- `docs/naming-ideas.md`: name and domain shortlist.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## How to start
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1. Create an empty project folder and unzip this kit into it, so `CLAUDE.md` sits at the root.
+2. Have accounts ready at clerk.com and convex.dev (both have free tiers), plus Node.js 20 or newer.
+3. Open the folder in Claude Code and paste the first prompt below.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Prompt 1: kickoff (Week 1)
 
-## Learn More
+> Read CLAUDE.md, docs/mvp-plan.md and docs/progress.md. We're starting Week 1: Foundation and tenancy. First, check the current docs for Next.js, Clerk and Convex, and tell me anything in the plan that's out of date. Then give me a short plan for Week 1 and a step-by-step checklist of what I need to set up by hand in the Clerk and Convex dashboards. Wait for my OK before writing code. When you build, include the convex-test tenant isolation suite, and update docs/progress.md at the end.
 
-To learn more about Next.js, take a look at the following resources:
+## Prompt for each following week
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+> Read docs/progress.md and continue with the next unfinished week from docs/mvp-plan.md. Propose the plan and any manual setup first, and wait for my OK. Finish with passing tests, lint and type checks, then update docs/progress.md.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Prompt for the checkout screen (Week 4)
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+> Build app/[shop]/pos using docs/prototypes/pos-checkout.html as the reference for layout, flow and pricing logic. Use React components with shadcn/ui, and Zustand for the cart (persisted so it survives a refresh). Wire "Complete sale" to the sales.checkout mutation with a clientRef, and keep all money in integer centavos. Match the prototype's behaviour for modifiers, parked orders, the manager PIN on large discounts, split payments, quick cash buttons and change due.

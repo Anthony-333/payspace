@@ -1,0 +1,1101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>POS checkout screen</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Schibsted+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#E9EEEB; --surface:#FFFFFF; --surface-2:#F3F6F4; --ink:#16201C; --muted:#5A6862; --rule:#D0D9D4;
+  --accent:#1D6B4C; --on-accent:#FFFFFF; --accent-soft:#DCEDE4;
+  --warn:#9A5B00; --warn-soft:#FBEFD9;
+  --paper:#FFFFFF; --paper-ink:#1B2420;
+  --cat-coffee:#8A5A3B; --cat-noncoffee:#2F7F8C; --cat-pastry:#C48A1E; --cat-retail:#6A5FA8;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#121A17; --surface:#1A2420; --surface-2:#212D28; --ink:#E3EAE6; --muted:#9AAAA3; --rule:#2F3D37;
+    --accent:#5FC896; --on-accent:#0D1A13; --accent-soft:#1D3A2D;
+    --warn:#E3A948; --warn-soft:#3A2E17;
+    --paper:#EEF2EF; --paper-ink:#1B2420;
+    --cat-coffee:#C08A64; --cat-noncoffee:#5DB3C0; --cat-pastry:#E0B04F; --cat-retail:#A69BE0;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#121A17; --surface:#1A2420; --surface-2:#212D28; --ink:#E3EAE6; --muted:#9AAAA3; --rule:#2F3D37;
+  --accent:#5FC896; --on-accent:#0D1A13; --accent-soft:#1D3A2D;
+  --warn:#E3A948; --warn-soft:#3A2E17;
+  --paper:#EEF2EF; --paper-ink:#1B2420;
+  --cat-coffee:#C08A64; --cat-noncoffee:#5DB3C0; --cat-pastry:#E0B04F; --cat-retail:#A69BE0;
+}
+
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{
+  margin:0;background:var(--bg);color:var(--ink);overflow:hidden;
+  font-family:"Schibsted Grotesk",system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  font-size:16px;line-height:1.45;-webkit-tap-highlight-color:transparent;
+}
+button{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.muted{color:var(--muted)}
+.num{font-variant-numeric:tabular-nums}
+h2{margin:0}
+
+/* ---------- layout ---------- */
+.app{height:100vh;height:100dvh;display:grid;grid-template-columns:minmax(0,1fr) 400px;grid-template-rows:auto minmax(0,1fr)}
+.topbar{grid-column:1/-1;display:flex;align-items:center;gap:20px;padding:10px 18px;background:var(--surface);border-bottom:1px solid var(--rule);min-height:62px}
+.brand{display:flex;align-items:center;gap:10px}
+.logo{width:38px;height:38px;border-radius:10px;background:var(--accent);color:var(--on-accent);display:grid;place-items:center;font-weight:800;font-size:1.1rem}
+.brand strong{display:block;line-height:1.15}
+.brand .sub{font-size:.82rem;color:var(--muted)}
+.top-meta{display:flex;align-items:center;gap:18px;color:var(--muted);font-size:.9rem;margin-left:10px}
+.status{display:inline-flex;align-items:center;gap:7px;color:var(--ink);font-weight:500}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.top-actions{margin-left:auto;display:flex;align-items:center;gap:8px}
+.count{display:inline-grid;place-items:center;min-width:22px;height:22px;padding:0 6px;border-radius:11px;background:var(--surface-2);border:1px solid var(--rule);font-size:.78rem;margin-left:8px}
+.cashier{display:inline-flex;align-items:center;gap:8px;padding-left:14px;margin-left:4px;border-left:1px solid var(--rule);font-weight:600}
+.avatar{width:34px;height:34px;border-radius:50%;background:var(--surface-2);border:1px solid var(--rule);display:grid;place-items:center;font-size:.88rem}
+
+.btn{min-height:44px;padding:0 16px;border-radius:10px;border:1.5px solid var(--rule);background:var(--surface);font-weight:600;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+.btn:hover:not(:disabled){border-color:var(--muted)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.btn.primary:hover:not(:disabled){filter:brightness(1.08);border-color:var(--accent)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.wide{width:100%;min-height:56px;font-size:1.06rem}
+.icon-btn{width:40px;height:40px;border-radius:10px;border:1.5px solid var(--rule);background:var(--surface);cursor:pointer;display:inline-grid;place-items:center;font-size:.95rem;flex:none}
+.icon-btn.sm{width:32px;height:32px;font-size:.78rem}
+.linkbtn{border:0;background:none;padding:6px 0;color:var(--accent);font-weight:600;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+.linkbtn:disabled{color:var(--muted);text-decoration:none;cursor:not-allowed;opacity:.6}
+.field{width:100%;min-height:46px;border:1.5px solid var(--rule);border-radius:10px;padding:0 12px;font:inherit;background:var(--surface);color:var(--ink)}
+.field:focus{outline:none;border-color:var(--accent)}
+.note{font-size:.86rem;color:var(--muted);margin:0}
+.note.warn{color:var(--warn);font-weight:600}
+
+/* ---------- catalog ---------- */
+.catalog{display:flex;flex-direction:column;min-height:0;min-width:0}
+.catalog-tools{padding:16px 18px 10px;display:flex;flex-direction:column;gap:12px}
+.search{display:flex;align-items:center;gap:10px;background:var(--surface);border:1.5px solid var(--rule);border-radius:12px;padding:0 14px;min-height:52px}
+.search:focus-within{border-color:var(--accent)}
+.search svg{color:var(--muted);flex:none}
+.search input{flex:1;border:0;background:transparent;font:inherit;font-size:1.02rem;color:var(--ink);outline:none;min-width:0;height:48px}
+.kbd{font-size:.75rem;color:var(--muted);border:1px solid var(--rule);border-radius:5px;padding:1px 7px}
+@media (pointer: coarse){.kbd{display:none}}
+.cats{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding:2px}
+.cats::-webkit-scrollbar{display:none}
+.cat{flex:none;min-height:42px;padding:0 16px;border-radius:999px;border:1.5px solid var(--rule);background:var(--surface);font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:8px}
+.cat .sw{width:10px;height:10px;border-radius:3px;background:var(--cat)}
+.cat[aria-selected="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.grid{flex:1;min-height:0;overflow-y:auto;padding:6px 18px 24px;display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;align-content:start}
+.tile{position:relative;text-align:left;min-height:106px;padding:14px 14px 12px 20px;border:1.5px solid var(--rule);border-radius:12px;background:var(--surface);display:flex;flex-direction:column;justify-content:space-between;gap:10px;cursor:pointer;transition:transform .08s}
+.tile::before{content:"";position:absolute;left:0;top:12px;bottom:12px;width:5px;border-radius:0 4px 4px 0;background:var(--cat)}
+.tile:hover{border-color:var(--muted)}
+.tile:active{transform:scale(.97)}
+.tile-name{font-weight:600;line-height:1.25;padding-right:20px}
+.tile-foot{display:flex;align-items:center;justify-content:space-between;gap:6px;flex-wrap:wrap}
+.tile-price{font-variant-numeric:tabular-nums;color:var(--muted);font-weight:500}
+.tile-qty{position:absolute;top:8px;right:8px;min-width:26px;height:26px;padding:0 7px;border-radius:13px;background:var(--accent);color:var(--on-accent);font-size:.8rem;font-weight:700;display:grid;place-items:center}
+.badge-low{font-size:.74rem;font-weight:700;color:var(--warn);background:var(--warn-soft);border-radius:6px;padding:2px 7px}
+.grid-empty{grid-column:1/-1;color:var(--muted);padding:48px 12px;text-align:center}
+
+/* ---------- cart ---------- */
+.cart{background:var(--surface);border-left:1px solid var(--rule);display:flex;flex-direction:column;min-height:0}
+.cart-head{padding:16px 18px 14px;border-bottom:1px solid var(--rule);display:flex;flex-direction:column;gap:10px}
+.order-title{display:flex;align-items:baseline;gap:10px}
+.order-title h2{font-size:1.25rem;font-weight:800;letter-spacing:-.01em}
+.order-title .next{color:var(--muted);font-size:.88rem}
+.cart-close{margin-left:auto;display:none;align-self:center}
+.seg{display:grid;grid-template-columns:1fr 1fr;background:var(--surface-2);border:1px solid var(--rule);border-radius:10px;padding:3px}
+.seg button{min-height:38px;border:0;border-radius:8px;background:transparent;font-weight:600;cursor:pointer;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.14)}
+.lines-wrap{flex:1;min-height:0;overflow-y:auto}
+.lines{list-style:none;margin:0;padding:0}
+.line{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;padding:12px 18px;border-bottom:1px solid var(--rule)}
+.line-name{font-weight:600}
+.line-opts{font-size:.86rem;color:var(--muted);margin-top:2px}
+.line-unit{font-size:.82rem;color:var(--muted);margin-top:4px;display:flex;gap:12px;align-items:center}
+.line-side{display:flex;flex-direction:column;align-items:flex-end;gap:8px}
+.line-total{font-weight:700;font-variant-numeric:tabular-nums}
+.stepper{display:inline-flex;align-items:center;border:1.5px solid var(--rule);border-radius:10px;overflow:hidden}
+.stepper button{width:40px;height:38px;border:0;background:var(--surface-2);font-size:1.2rem;cursor:pointer}
+.stepper output,.stepper span{min-width:34px;text-align:center;font-weight:700;font-variant-numeric:tabular-nums}
+.stepper.big button{width:50px;height:48px}
+.rm{border:0;background:none;color:var(--muted);font-size:.82rem;cursor:pointer;padding:0;text-decoration:underline;text-underline-offset:2px}
+.empty{padding:44px 26px;text-align:center;color:var(--muted)}
+.empty strong{display:block;color:var(--ink);font-size:1.05rem;margin-bottom:6px}
+.empty code{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace;font-size:.85em;color:var(--ink)}
+.cart-foot{padding:14px 18px 18px;border-top:1px solid var(--rule)}
+.sum{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:2px 0;font-variant-numeric:tabular-nums}
+.sum.small{font-size:.9rem;color:var(--muted)}
+.sum.total{font-size:1.4rem;font-weight:800;padding-top:10px;margin-top:6px;border-top:1px dashed var(--rule)}
+.sum.disc span:last-child{color:var(--accent);font-weight:700}
+.foot-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.charge{width:100%;min-height:64px;font-size:1.22rem;margin-top:10px;border-radius:12px}
+.cart-fab{display:none;position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));z-index:20;min-height:62px;border-radius:14px;border:0;background:var(--accent);color:var(--on-accent);font-weight:700;font-size:1.05rem;padding:0 20px;align-items:center;justify-content:space-between;box-shadow:0 10px 26px rgba(0,0,0,.25);cursor:pointer}
+.cart-fab.bump{animation:bump .28s}
+@keyframes bump{50%{transform:scale(1.03)}}
+
+/* ---------- dialogs ---------- */
+dialog{border:0;padding:0;border-radius:16px;background:var(--surface);color:var(--ink);max-width:calc(100vw - 20px);max-height:calc(100dvh - 20px);box-shadow:0 24px 60px rgba(0,0,0,.35);overflow:hidden}
+dialog::backdrop{background:rgba(8,16,12,.55)}
+.sheet{display:flex;flex-direction:column;width:min(560px,calc(100vw - 20px));max-height:calc(100dvh - 20px)}
+.sheet-head{display:flex;align-items:flex-start;gap:12px;padding:20px 22px 14px;border-bottom:1px solid var(--rule)}
+.sheet-head h2{font-size:1.35rem;font-weight:800;letter-spacing:-.01em}
+.sheet-head p{margin:4px 0 0}
+.sheet-head .icon-btn{margin-left:auto}
+.sheet-body{padding:18px 22px;overflow-y:auto}
+.sheet-foot{padding:14px 22px 20px;border-top:1px solid var(--rule)}
+fieldset{border:0;margin:0 0 20px;padding:0;min-width:0}
+legend,.legend{font-weight:700;margin-bottom:8px;padding:0;display:block}
+legend small{font-weight:500;color:var(--muted);margin-left:6px;font-size:.84rem}
+.opts{display:flex;flex-wrap:wrap;gap:8px}
+.opt{position:relative;display:inline-flex;align-items:center;gap:8px;min-height:46px;padding:0 14px;border:1.5px solid var(--rule);border-radius:10px;cursor:pointer;background:var(--surface);user-select:none}
+.opt input{position:absolute;opacity:0;pointer-events:none}
+.opt:has(input:checked){border-color:var(--accent);background:var(--accent-soft)}
+.opt:has(input:focus-visible){outline:3px solid var(--accent);outline-offset:2px}
+.delta{color:var(--muted);font-size:.86rem;font-variant-numeric:tabular-nums}
+.qty-row{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{min-height:44px;padding:0 16px;border-radius:999px;border:1.5px solid var(--rule);background:var(--surface);font-weight:600;cursor:pointer}
+.chip[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft)}
+.chip small{color:var(--warn);font-weight:700;margin-left:4px}
+.inline{display:flex;gap:8px}
+
+/* payment */
+.pay{width:min(960px,calc(100vw - 20px));display:flex;flex-direction:column;max-height:calc(100dvh - 20px)}
+.pay-body{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);min-height:0;overflow-y:auto}
+.pay-summary{padding:22px;border-right:1px solid var(--rule);background:var(--surface-2);display:flex;flex-direction:column;gap:16px}
+.due-label{color:var(--muted);font-weight:600}
+.due{font-size:clamp(2.3rem,5vw,3.3rem);font-weight:800;letter-spacing:-.03em;line-height:1.05}
+.paid-list{list-style:none;margin:0;padding:0;border-top:1px solid var(--rule)}
+.paid-list li{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--rule)}
+.paid-list li.pending{opacity:.75}
+.paid-list .m{flex:1;min-width:0}
+.paid-list small{display:block;color:var(--muted);overflow-wrap:anywhere}
+.balance{margin-top:auto;border-radius:12px;padding:16px 18px;background:var(--surface);border:1.5px solid var(--rule)}
+.balance span{display:block;font-weight:600;color:var(--muted)}
+.balance strong{display:block;font-size:2.2rem;font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums;line-height:1.15}
+.balance.owe{border-color:var(--warn);background:var(--warn-soft)}
+.balance.owe strong{color:var(--warn)}
+.balance.ok{background:var(--accent-soft);border-color:var(--accent)}
+.balance.ok strong{color:var(--accent)}
+.pay-entry{padding:18px 22px;display:flex;flex-direction:column;gap:12px}
+.tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;background:var(--surface-2);border:1px solid var(--rule);border-radius:12px;padding:4px}
+.tabs button{min-height:46px;border:0;border-radius:9px;background:transparent;font-weight:700;cursor:pointer;color:var(--muted)}
+.tabs button[aria-selected="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.14)}
+.amount-box{border:2px solid var(--accent);border-radius:12px;padding:8px 14px 10px;display:flex;align-items:flex-end;justify-content:space-between;gap:12px}
+.amount-box .label{font-size:.85rem;color:var(--muted);font-weight:600}
+.amount-box .amt{font-size:2.1rem;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.02em;line-height:1.1}
+.quick{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.quick button{min-height:50px;border-radius:10px;border:1.5px solid var(--rule);background:var(--surface);font-weight:700;cursor:pointer;font-variant-numeric:tabular-nums}
+.quick button:hover{border-color:var(--accent)}
+.keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.keypad button{min-height:54px;border-radius:10px;border:1px solid var(--rule);background:var(--surface-2);font-size:1.35rem;font-weight:600;cursor:pointer;font-variant-numeric:tabular-nums}
+.keypad button:active{background:var(--accent-soft)}
+.covered{padding:18px;border-radius:12px;background:var(--accent-soft);font-weight:600}
+.pay-foot{display:flex;align-items:center;gap:16px;padding:14px 22px 18px;border-top:1px solid var(--rule)}
+.pay-foot .hint{flex:1;font-weight:600}
+.pay-foot .btn{min-height:60px;min-width:230px;font-size:1.12rem}
+
+/* sale complete */
+.done{width:min(780px,calc(100vw - 20px));display:grid;grid-template-columns:minmax(0,1fr) 310px;max-height:calc(100dvh - 20px)}
+.done-main{padding:30px 28px 24px;display:flex;flex-direction:column}
+.done-kicker{font-weight:700;color:var(--accent);margin:0 0 22px;display:flex;align-items:center;gap:10px}
+.check{width:28px;height:28px;border-radius:50%;background:var(--accent);color:var(--on-accent);display:grid;place-items:center;font-size:.9rem}
+.change-label{font-weight:600;color:var(--muted)}
+.change-amt{font-size:clamp(3rem,9vw,5.2rem);font-weight:800;letter-spacing:-.045em;line-height:1;font-variant-numeric:tabular-nums;margin:4px 0 14px}
+.done-actions{margin-top:auto;display:grid;grid-template-columns:1fr 1.3fr;gap:10px;padding-top:26px}
+.done-actions .btn{min-height:58px}
+.receipt-pane{background:var(--surface-2);border-left:1px solid var(--rule);padding:18px;overflow-y:auto}
+.rcpt{background:var(--paper);color:var(--paper-ink);font-family:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;font-size:.74rem;line-height:1.55;padding:18px 16px;box-shadow:0 6px 16px rgba(0,0,0,.14)}
+.rcpt .c{text-align:center}
+.rcpt .b{font-weight:600;font-size:.9rem;letter-spacing:.04em}
+.rcpt hr{border:0;border-top:1px dashed currentColor;opacity:.5;margin:8px 0}
+.rcpt .row{display:flex;justify-content:space-between;gap:10px}
+.rcpt .row span:first-child{overflow-wrap:anywhere}
+.rcpt .row span:last-child{white-space:nowrap}
+.rcpt .sub{padding-left:14px;opacity:.75}
+.rcpt .tot{font-weight:600;font-size:.86rem}
+.rcpt .small{font-size:.66rem;opacity:.7;margin-top:2px}
+
+/* pin + parked */
+.pin{width:min(360px,calc(100vw - 20px));padding:20px 22px 22px}
+.pin .sheet-head{padding:0 0 10px;border:0}
+.pin-dots{display:flex;justify-content:center;gap:16px;margin:14px 0 10px}
+.pin-dots span{width:16px;height:16px;border-radius:50%;border:2px solid var(--ink)}
+.pin-dots span.on{background:var(--ink)}
+.pin .note{text-align:center;margin-bottom:14px}
+.shake{animation:shake .32s}
+@keyframes shake{25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+.parked-list{list-style:none;margin:0;padding:0}
+.parked-list li{display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--rule)}
+.parked-list .m{flex:1;min-width:0}
+.parked-list small{display:block;color:var(--muted)}
+
+#toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,16px);opacity:0;background:var(--ink);color:var(--bg);padding:12px 18px;border-radius:12px;font-weight:600;z-index:100;pointer-events:none;transition:opacity .2s,transform .2s;max-width:calc(100vw - 32px)}
+#toast.show{opacity:1;transform:translate(-50%,0)}
+#print-area{display:none}
+
+@media (max-width: 1100px){.app{grid-template-columns:minmax(0,1fr) 360px}}
+@media (max-width: 820px){
+  .app{grid-template-columns:minmax(0,1fr)}
+  .cart{position:fixed;inset:0;z-index:40;transform:translateY(105%);transition:transform .25s ease;border-left:0}
+  body.show-cart .cart{transform:none}
+  .cart-close{display:inline-grid}
+  .cart-fab{display:flex}
+  .grid{padding-bottom:104px;grid-template-columns:repeat(auto-fill,minmax(138px,1fr));gap:10px}
+  .top-meta{display:none}
+  .pay-body{grid-template-columns:minmax(0,1fr)}
+  .pay-summary{border-right:0;border-bottom:1px solid var(--rule)}
+  .done{grid-template-columns:minmax(0,1fr);overflow-y:auto}
+  .receipt-pane{border-left:0;border-top:1px solid var(--rule)}
+  #toast{bottom:96px}
+}
+@media (max-width: 560px){
+  .hide-sm,.cashier .name{display:none}
+  .topbar{gap:10px;padding:8px 12px}
+  .pay-foot{flex-direction:column;align-items:stretch}
+  .pay-foot .btn{min-width:0;width:100%}
+  .quick{grid-template-columns:repeat(2,1fr)}
+  .done-actions{grid-template-columns:1fr}
+}
+@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+@media print{
+  @page{size:80mm auto;margin:3mm}
+  html,body{height:auto;overflow:visible;background:#fff}
+  body > *:not(#print-area){display:none!important}
+  #print-area{display:block}
+  #print-area .rcpt{box-shadow:none;width:74mm;padding:0;font-size:11px;color:#000;background:#fff}
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo" aria-hidden="true">B</span>
+      <div><strong>Brewlab Café</strong><span class="sub">Counter 1</span></div>
+    </div>
+    <div class="top-meta">
+      <span class="status"><span class="dot" aria-hidden="true"></span>Online</span>
+      <span id="clock"></span>
+      <span id="shiftInfo"></span>
+    </div>
+    <div class="top-actions">
+      <button type="button" class="btn" data-act="parked">Parked<span class="count" id="parkedCount">0</span></button>
+      <button type="button" class="btn hide-sm" data-act="last" id="btnLast" disabled>Last receipt</button>
+      <span class="cashier"><span class="avatar" aria-hidden="true">M</span><span class="name">Mika</span></span>
+    </div>
+  </header>
+
+  <main class="catalog">
+    <div class="catalog-tools">
+      <label class="search">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <input id="search" type="search" placeholder="Search items or scan a barcode" autocomplete="off" aria-label="Search items or scan a barcode">
+        <span class="kbd" aria-hidden="true">/</span>
+      </label>
+      <div class="cats" id="cats" role="tablist" aria-label="Categories"></div>
+    </div>
+    <div class="grid" id="grid"></div>
+  </main>
+
+  <aside class="cart" id="cart" aria-label="Current order">
+    <div class="cart-head">
+      <div class="order-title">
+        <h2>Current order</h2>
+        <span class="next" id="orderNext"></span>
+        <button type="button" class="icon-btn cart-close" data-act="cartclose" aria-label="Back to items">✕</button>
+      </div>
+      <div class="seg" role="group" aria-label="Order type">
+        <button type="button" data-type="dine" aria-pressed="true">Dine in</button>
+        <button type="button" data-type="take" aria-pressed="false">Take out</button>
+      </div>
+      <input id="customer" class="field" placeholder="Customer name (optional)" autocomplete="off" maxlength="40" aria-label="Customer name">
+    </div>
+    <div class="lines-wrap">
+      <ul class="lines" id="lines" aria-label="Items in this order"></ul>
+      <div class="empty" id="empty">
+        <strong>No items yet</strong>
+        Tap an item to start this order, or scan a barcode. To try scanning, type <code>4800000000017</code> in the search box and press Enter.
+      </div>
+    </div>
+    <div class="cart-foot" id="cartFoot"></div>
+  </aside>
+
+  <button type="button" class="cart-fab" id="cartFab" data-act="cartopen"></button>
+</div>
+
+<dialog id="dlgMod" aria-label="Choose options"></dialog>
+<dialog id="dlgPay" aria-label="Take payment"></dialog>
+<dialog id="dlgDone" aria-label="Sale complete"></dialog>
+<dialog id="dlgDisc" aria-label="Discount"></dialog>
+<dialog id="dlgPin" aria-label="Manager approval"></dialog>
+<dialog id="dlgParked" aria-label="Parked orders"></dialog>
+<div id="toast" role="status" aria-live="polite"></div>
+<div id="print-area"></div>
+
+<script>
+(() => {
+  'use strict';
+
+  /* ---------- money helpers: everything is integer centavos ---------- */
+  const peso = new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' });
+  const fmt = (c) => peso.format(c / 100);
+  const fmtBill = (c) => '₱' + (c / 100).toLocaleString('en-PH', { maximumFractionDigits: 2 });
+  const parseAmt = (s) => {
+    if (!s) return 0;
+    const [a = '', b = ''] = String(s).split('.');
+    return (parseInt(a || '0', 10) || 0) * 100 + (parseInt((b + '00').slice(0, 2), 10) || 0);
+  };
+  const toInput = (c) => (c % 100 === 0 ? String(c / 100) : (c / 100).toFixed(2));
+  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+  const $ = (s, r = document) => r.querySelector(s);
+  const sum = (a) => a.reduce((x, y) => x + y, 0);
+  const pad = (n) => String(n).padStart(4, '0');
+
+  /* ---------- shop settings (from the tenants table in the real app) ---------- */
+  const VAT_BPS = 1200;          // 12%, prices include VAT
+  const CASHIER_LIMIT_PCT = 10;  // discounts above this need a manager PIN
+  const MANAGER_PIN = '1234';
+  const CASHIER = 'Mika';
+
+  /* ---------- catalog ---------- */
+  const CATS = [
+    { id: 'all', name: 'All items' },
+    { id: 'coffee', name: 'Coffee' },
+    { id: 'noncoffee', name: 'Non-coffee' },
+    { id: 'pastry', name: 'Pastries' },
+    { id: 'retail', name: 'Retail' },
+  ];
+  // [key, label, price delta in centavos]; the first option of a "pick one" group is the default
+  const GROUPS = {
+    size:   { name: 'Size', type: 'single', always: true, options: [['reg', 'Regular 12 oz', 0], ['lg', 'Large 16 oz', 2000]] },
+    temp:   { name: 'Temperature', type: 'single', always: true, options: [['hot', 'Hot', 0], ['iced', 'Iced', 1000]] },
+    milk:   { name: 'Milk', type: 'single', options: [['fresh', 'Fresh milk', 0], ['oat', 'Oat milk', 3000], ['soy', 'Soy milk', 2000]] },
+    sweet:  { name: 'Sweetness', type: 'single', options: [['s100', '100% sweet', 0], ['s75', '75% sweet', 0], ['s50', '50% sweet', 0], ['s25', '25% sweet', 0], ['s0', 'No sugar', 0]] },
+    addons: { name: 'Add-ons', type: 'multi', max: 3, options: [['shot', 'Extra shot', 3500], ['vanilla', 'Vanilla syrup', 2000], ['caramel', 'Caramel drizzle', 2000], ['cream', 'Whipped cream', 2500]] },
+  };
+  const DRINK = ['size', 'temp', 'sweet', 'addons'];
+  const MILKY = ['size', 'temp', 'milk', 'sweet', 'addons'];
+  const P = (id, name, cat, pesos, groups = [], extra = {}) => ({ id, name, cat, price: pesos * 100, groups, ...extra });
+  const PRODUCTS = [
+    P('americano', 'Americano', 'coffee', 110, DRINK),
+    P('latte', 'Café Latte', 'coffee', 140, MILKY),
+    P('cappuccino', 'Cappuccino', 'coffee', 140, MILKY),
+    P('flatwhite', 'Flat White', 'coffee', 150, MILKY),
+    P('spanish', 'Spanish Latte', 'coffee', 160, MILKY),
+    P('mocha', 'Mocha', 'coffee', 165, MILKY),
+    P('caramel', 'Caramel Macchiato', 'coffee', 170, MILKY),
+    P('matcha', 'Matcha Latte', 'noncoffee', 170, MILKY),
+    P('choco', 'Dark Chocolate', 'noncoffee', 140, MILKY),
+    P('strawberry', 'Strawberry Milk', 'noncoffee', 150, ['size', 'milk', 'sweet']),
+    P('calamansi', 'Calamansi Soda', 'noncoffee', 120, ['size', 'sweet']),
+    P('croissant', 'Butter Croissant', 'pastry', 95),
+    P('ensaymada', 'Ensaymada', 'pastry', 75, [], { stock: 4 }),
+    P('bananabread', 'Banana Bread', 'pastry', 85),
+    P('muffin', 'Blueberry Muffin', 'pastry', 90),
+    P('pandesal', 'Cheese Pandesal (6 pcs)', 'pastry', 60),
+    P('water', 'Bottled Water 500 ml', 'retail', 30, [], { barcode: '4800000000017' }),
+    P('beans', 'House Blend Beans 250 g', 'retail', 450, [], { barcode: '4800000000024', stock: 3 }),
+    P('oatmilk', 'Oat Milk 1 L', 'retail', 220, [], { barcode: '4800000000031' }),
+    P('cookies', 'Choco Chip Cookies', 'retail', 65, [], { barcode: '4800000000048' }),
+  ];
+  const byId = (id) => PRODUCTS.find((p) => p.id === id);
+
+  /* ---------- state ---------- */
+  let uid = 0;
+  const newCart = () => ({ lines: [], type: 'dine', customer: '', discount: null });
+  const state = {
+    cat: 'all', q: '', cart: newCart(), parked: [], parkSeq: 0,
+    nextSaleNo: 42, shift: { count: 41, total: 986000 },
+    lastSale: null, doneSale: null, pay: null, mod: null,
+    pinAction: null, pinVal: '', clearArmed: false, clearTimer: null,
+  };
+
+  const dlgMod = $('#dlgMod'), dlgPay = $('#dlgPay'), dlgDone = $('#dlgDone'),
+        dlgDisc = $('#dlgDisc'), dlgPin = $('#dlgPin'), dlgParked = $('#dlgParked');
+  const search = $('#search');
+
+  /* ---------- pricing ---------- */
+  function defaultSel(p) {
+    const sel = {};
+    p.groups.forEach((g) => { sel[g] = GROUPS[g].type === 'single' ? GROUPS[g].options[0][0] : []; });
+    return sel;
+  }
+  function unitPrice(p, sel) {
+    let price = p.price;
+    p.groups.forEach((g) => {
+      const keys = [].concat(sel[g] || []);
+      GROUPS[g].options.forEach(([k, , d]) => { if (keys.includes(k)) price += d; });
+    });
+    return price;
+  }
+  function optionSummary(p, sel) {
+    const parts = [];
+    p.groups.forEach((g) => {
+      const G = GROUPS[g];
+      if (G.type === 'single') {
+        const i = G.options.findIndex((o) => o[0] === sel[g]);
+        if (i >= 0 && (G.always || i > 0)) parts.push(G.options[i][1]);
+      } else {
+        G.options.forEach(([k, n]) => { if ((sel[g] || []).includes(k)) parts.push(n); });
+      }
+    });
+    return parts.join(', ');
+  }
+  const lineKey = (p, sel) => p.id + '|' + p.groups.map((g) => [].concat(sel[g] || []).slice().sort().join('+')).join('|');
+
+  function totals(cart = state.cart) {
+    const subtotal = sum(cart.lines.map((l) => l.unit * l.qty));
+    const items = sum(cart.lines.map((l) => l.qty));
+    const d = cart.discount;
+    let discount = 0;
+    if (d) discount = d.kind === 'pct' ? Math.round(subtotal * d.value / 100) : Math.min(d.value, subtotal);
+    const total = subtotal - discount;
+    const vat = Math.round(total * VAT_BPS / (10000 + VAT_BPS));
+    return { subtotal, items, discount, total, vat, vatable: total - vat };
+  }
+  const discLabel = (d) => (d.kind === 'pct' ? `${d.value}%` : fmt(d.value));
+
+  /* ---------- cart ops ---------- */
+  function addLine(p, sel, qty) {
+    const key = lineKey(p, sel);
+    const found = state.cart.lines.find((l) => l.key === key);
+    if (found) found.qty += qty;
+    else state.cart.lines.push({ id: ++uid, key, pid: p.id, name: p.name, opts: optionSummary(p, sel), sel, unit: unitPrice(p, sel), qty });
+  }
+  function afterAdd() {
+    renderCart(); renderGrid();
+    const fab = $('#cartFab'); fab.classList.remove('bump'); void fab.offsetWidth; fab.classList.add('bump');
+  }
+  function pick(p) {
+    if (!p) return;
+    if (p.groups.length) openMod(p);
+    else { addLine(p, {}, 1); afterAdd(); }
+  }
+  function lineAction(act, id) {
+    const lines = state.cart.lines;
+    const i = lines.findIndex((l) => l.id === id);
+    if (i < 0) return;
+    if (act === 'inc') lines[i].qty = Math.min(99, lines[i].qty + 1);
+    else if (act === 'dec') { lines[i].qty -= 1; if (lines[i].qty <= 0) lines.splice(i, 1); }
+    else if (act === 'rm') lines.splice(i, 1);
+    if (!lines.length) state.cart.discount = null;
+    renderCart(); renderGrid();
+  }
+  function clearOrder() {
+    if (!state.clearArmed) {
+      state.clearArmed = true; renderFoot();
+      clearTimeout(state.clearTimer);
+      state.clearTimer = setTimeout(() => { state.clearArmed = false; renderFoot(); }, 3000);
+      return;
+    }
+    state.clearArmed = false; clearTimeout(state.clearTimer);
+    state.cart = newCart(); renderAll(); toast('Order cleared');
+  }
+  function park() {
+    const c = state.cart;
+    if (!c.lines.length) return;
+    const label = c.customer.trim() || `Parked order ${++state.parkSeq}`;
+    state.parked.push({ ...c, label, at: new Date() });
+    state.cart = newCart();
+    document.body.classList.remove('show-cart');
+    renderAll(); toast(`${label} parked`);
+  }
+  function resume(i) {
+    const o = state.parked.splice(i, 1)[0];
+    if (!o) return;
+    const c = state.cart;
+    if (c.lines.length) state.parked.push({ ...c, label: c.customer.trim() || `Parked order ${++state.parkSeq}`, at: new Date() });
+    state.cart = { lines: o.lines, type: o.type, customer: o.customer, discount: o.discount };
+    dlgParked.close(); renderAll(); toast(`Resumed ${o.label}`);
+  }
+
+  /* ---------- render: catalog ---------- */
+  function renderCats() {
+    $('#cats').innerHTML = CATS.map((c) => {
+      const style = c.id !== 'all' ? ` style="--cat:var(--cat-${c.id})"` : '';
+      const sw = c.id !== 'all' ? '<span class="sw" aria-hidden="true"></span>' : '';
+      return `<button type="button" class="cat" role="tab" aria-selected="${state.cat === c.id}" data-cat="${c.id}"${style}>${sw}${esc(c.name)}</button>`;
+    }).join('');
+  }
+  function renderGrid() {
+    const q = state.q.trim().toLowerCase();
+    const list = PRODUCTS.filter((p) => (state.cat === 'all' || p.cat === state.cat) &&
+      (!q || p.name.toLowerCase().includes(q) || (p.barcode || '').includes(q)));
+    $('#grid').innerHTML = list.length ? list.map((p) => {
+      const inCart = sum(state.cart.lines.filter((l) => l.pid === p.id).map((l) => l.qty));
+      const low = p.stock !== undefined && p.stock <= 5 ? `<span class="badge-low">${p.stock} left</span>` : '';
+      const label = `${p.name}, ${fmtBill(p.price)}${inCart ? `, ${inCart} in order` : ''}`;
+      return `<button type="button" class="tile" data-pid="${p.id}" style="--cat:var(--cat-${p.cat})" aria-label="${esc(label)}">
+        <span class="tile-name">${esc(p.name)}</span>
+        <span class="tile-foot"><span class="tile-price">${fmtBill(p.price)}</span>${low}</span>
+        ${inCart ? `<span class="tile-qty" aria-hidden="true">${inCart}</span>` : ''}
+      </button>`;
+    }).join('') : `<p class="grid-empty">No items match “${esc(state.q)}”. Check the spelling, or scan the barcode again.</p>`;
+  }
+
+  /* ---------- render: cart ---------- */
+  function renderCart() {
+    const c = state.cart;
+    document.querySelectorAll('.seg [data-type]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.type === c.type)));
+    const cust = $('#customer');
+    if (document.activeElement !== cust) cust.value = c.customer;
+    $('#lines').innerHTML = c.lines.map((l) => `
+      <li class="line">
+        <div>
+          <div class="line-name">${esc(l.name)}</div>
+          ${l.opts ? `<div class="line-opts">${esc(l.opts)}</div>` : ''}
+          <div class="line-unit"><span>${fmt(l.unit)} each</span><button type="button" class="rm" data-line="${l.id}" data-act="rm">Remove</button></div>
+        </div>
+        <div class="line-side">
+          <div class="line-total">${fmt(l.unit * l.qty)}</div>
+          <div class="stepper">
+            <button type="button" data-line="${l.id}" data-act="dec" aria-label="One less ${esc(l.name)}">−</button>
+            <span aria-label="Quantity">${l.qty}</span>
+            <button type="button" data-line="${l.id}" data-act="inc" aria-label="One more ${esc(l.name)}">+</button>
+          </div>
+        </div>
+      </li>`).join('');
+    $('#empty').hidden = c.lines.length > 0;
+    renderFoot(); renderFab(); renderTop();
+  }
+  function renderFoot() {
+    const t = totals();
+    const d = state.cart.discount;
+    $('#cartFoot').innerHTML = `
+      <div class="sum"><span>Subtotal <span class="muted">(${t.items} item${t.items === 1 ? '' : 's'})</span></span><span>${fmt(t.subtotal)}</span></div>
+      ${d
+        ? `<div class="sum disc"><button type="button" class="linkbtn" data-act="discount">Discount ${esc(discLabel(d))}</button><span>−${fmt(t.discount)}</span></div>`
+        : `<div class="sum"><button type="button" class="linkbtn" data-act="discount" ${t.items ? '' : 'disabled'}>Add discount</button><span></span></div>`}
+      <div class="sum small"><span>VAT included (12%)</span><span>${fmt(t.vat)}</span></div>
+      <div class="sum total" aria-live="polite"><span>Total</span><span>${fmt(t.total)}</span></div>
+      <div class="foot-row">
+        <button type="button" class="btn" data-act="park" ${t.items ? '' : 'disabled'}>Park order</button>
+        <button type="button" class="btn" data-act="clear" ${t.items ? '' : 'disabled'}>${state.clearArmed ? 'Tap again to clear' : 'Clear order'}</button>
+      </div>
+      <button type="button" class="btn primary charge" data-act="charge" ${t.items ? '' : 'disabled'}>Charge ${fmt(t.total)}</button>`;
+  }
+  function renderFab() {
+    const t = totals();
+    $('#cartFab').innerHTML = `<span>View order${t.items ? ` (${t.items})` : ''}</span><span class="num">${fmt(t.total)}</span>`;
+  }
+  function renderTop() {
+    $('#shiftInfo').textContent = `${state.shift.count} sales, ${fmt(state.shift.total)} this shift`;
+    $('#parkedCount').textContent = state.parked.length;
+    $('#btnLast').disabled = !state.lastSale;
+    $('#orderNext').textContent = `Receipt #${pad(state.nextSaleNo)}`;
+  }
+  function renderAll() { renderCats(); renderGrid(); renderCart(); }
+
+  /* ---------- options sheet ---------- */
+  function openMod(p) {
+    state.mod = { p, qty: 1 };
+    const groups = p.groups.map((g) => {
+      const G = GROUPS[g];
+      const input = G.type === 'single' ? 'radio' : 'checkbox';
+      const hint = G.type === 'single' ? 'Pick one' : `Pick up to ${G.max}`;
+      return `<fieldset>
+        <legend>${esc(G.name)} <small>${hint}</small></legend>
+        <div class="opts">${G.options.map(([k, n, d], i) => `
+          <label class="opt"><input type="${input}" name="${g}" value="${k}" ${G.type === 'single' && i === 0 ? 'checked' : ''}>
+            <span>${esc(n)}</span>${d ? `<span class="delta">+${fmtBill(d)}</span>` : ''}</label>`).join('')}
+        </div>
+        ${G.type === 'multi' ? `<p class="note warn" data-msg="${g}" role="alert"></p>` : ''}
+      </fieldset>`;
+    }).join('');
+    dlgMod.innerHTML = `<form class="sheet" id="modForm">
+      <div class="sheet-head">
+        <div><h2>${esc(p.name)}</h2><p class="muted">${fmt(p.price)} base price</p></div>
+        <button type="button" class="icon-btn" data-close aria-label="Close without adding">✕</button>
+      </div>
+      <div class="sheet-body">${groups}
+        <div class="qty-row"><span class="legend" style="margin:0">Quantity</span>
+          <div class="stepper big">
+            <button type="button" data-mq="-1" aria-label="Decrease quantity">−</button>
+            <output id="modQty">1</output>
+            <button type="button" data-mq="1" aria-label="Increase quantity">+</button>
+          </div>
+        </div>
+      </div>
+      <div class="sheet-foot"><button type="submit" class="btn primary wide" id="modAdd"></button></div>
+    </form>`;
+    updateModPrice();
+    dlgMod.showModal();
+  }
+  function readSel(p) {
+    const f = $('#modForm');
+    const sel = {};
+    p.groups.forEach((g) => {
+      if (GROUPS[g].type === 'single') sel[g] = f.querySelector(`input[name="${g}"]:checked`).value;
+      else sel[g] = [...f.querySelectorAll(`input[name="${g}"]:checked`)].map((i) => i.value);
+    });
+    return sel;
+  }
+  function updateModPrice() {
+    const { p, qty } = state.mod;
+    const unit = unitPrice(p, readSel(p));
+    $('#modAdd').textContent = `${qty > 1 ? `Add ${qty} to order` : 'Add to order'}, ${fmt(unit * qty)}`;
+  }
+
+  /* ---------- discount ---------- */
+  function openDiscount() {
+    const t = totals();
+    const cur = state.cart.discount;
+    dlgDisc.innerHTML = `<div class="sheet">
+      <div class="sheet-head">
+        <div><h2>Discount</h2><p class="muted">Subtotal ${fmt(t.subtotal)}. Discounts over ${CASHIER_LIMIT_PCT}% need a manager PIN.</p></div>
+        <button type="button" class="icon-btn" data-close aria-label="Close">✕</button>
+      </div>
+      <div class="sheet-body">
+        <span class="legend">Percent off the order</span>
+        <div class="chips">${[5, 10, 15, 20].map((v) => `<button type="button" class="chip" data-dpct="${v}" aria-pressed="${!!cur && cur.kind === 'pct' && cur.value === v}">${v}%${v > CASHIER_LIMIT_PCT ? '<small>PIN</small>' : ''}</button>`).join('')}</div>
+        <label class="legend" for="discAmt" style="margin-top:20px">Or a fixed amount in pesos</label>
+        <div class="inline"><input id="discAmt" class="field" inputmode="decimal" placeholder="e.g. 50" autocomplete="off"><button type="button" class="btn" data-act="discamt">Apply</button></div>
+        <p class="note warn" id="discNote" role="alert" style="margin-top:8px"></p>
+      </div>
+      ${cur ? '<div class="sheet-foot"><button type="button" class="btn wide" data-act="discremove">Remove discount</button></div>' : ''}
+    </div>`;
+    dlgDisc.showModal();
+  }
+  function applyDiscount(d) {
+    const t = totals();
+    const note = $('#discNote');
+    if (d.kind === 'amt') {
+      if (d.value <= 0) { note.textContent = 'Enter an amount above ₱0.'; return; }
+      if (d.value > t.subtotal) { note.textContent = `The discount can't be more than the subtotal of ${fmt(t.subtotal)}.`; return; }
+    }
+    const pct = d.kind === 'pct' ? d.value : (d.value * 100) / t.subtotal;
+    const label = discLabel(d);
+    const apply = () => { state.cart.discount = d; renderCart(); toast(`${label} discount applied`); };
+    dlgDisc.close();
+    if (pct > CASHIER_LIMIT_PCT + 1e-9) requirePin(apply, `A ${label} discount is over the ${CASHIER_LIMIT_PCT}% cashier limit.`);
+    else apply();
+  }
+
+  /* ---------- manager PIN ---------- */
+  function requirePin(action, reason) {
+    state.pinAction = action; state.pinVal = '';
+    const keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '', '0', 'back'];
+    dlgPin.innerHTML = `<div class="pin" id="pinBox">
+      <div class="sheet-head">
+        <div><h2>Manager approval</h2><p class="muted">${esc(reason)}</p></div>
+        <button type="button" class="icon-btn" data-close aria-label="Cancel">✕</button>
+      </div>
+      <div class="pin-dots" id="pinDots" aria-hidden="true">${'<span></span>'.repeat(4)}</div>
+      <p class="note" id="pinMsg" role="alert">Demo PIN: 1234</p>
+      <div class="keypad">${keys.map((k) => (k === '' ? '<span></span>' :
+        `<button type="button" data-pin="${k}"${k === 'back' ? ' aria-label="Delete"' : ''}>${k === 'back' ? '⌫' : k}</button>`)).join('')}</div>
+    </div>`;
+    dlgPin.showModal();
+  }
+  function paintDots() {
+    document.querySelectorAll('#pinDots span').forEach((s, i) => s.classList.toggle('on', i < state.pinVal.length));
+  }
+  function pinKey(k) {
+    if (k === 'back') state.pinVal = state.pinVal.slice(0, -1);
+    else if (state.pinVal.length < 4) state.pinVal += k;
+    paintDots();
+    if (state.pinVal.length < 4) return;
+    if (state.pinVal === MANAGER_PIN) {
+      const action = state.pinAction;
+      state.pinAction = null; dlgPin.close();
+      if (action) action();
+    } else {
+      $('#pinMsg').textContent = "That PIN didn't match. Try again.";
+      const box = $('#pinBox'); box.classList.remove('shake'); void box.offsetWidth; box.classList.add('shake');
+      state.pinVal = ''; setTimeout(paintDots, 250);
+    }
+  }
+
+  /* ---------- payment ---------- */
+  function openPay() {
+    const t = totals();
+    if (!t.items) return;
+    state.pay = { total: t.total, items: t.items, nonCash: [], cash: '', tab: 'cash', nc: '', provider: 'GCash', ref: '', fresh: false };
+    renderPay();
+    dlgPay.showModal();
+  }
+  function payCalc() {
+    const p = state.pay;
+    const ncSum = sum(p.nonCash.map((x) => x.amount));
+    const beforeCash = Math.max(0, p.total - ncSum);           // most any new e-wallet/card payment may cover
+    const ncAmt = p.tab === 'cash' ? 0 : parseAmt(p.nc);
+    const pending = ncAmt > 0 && ncAmt <= beforeCash ? ncAmt : 0; // typed but not yet added
+    const cash = parseAmt(p.cash);
+    const paid = ncSum + pending + cash;
+    return { ncSum, beforeCash, ncAmt, pending, cash, paid, remaining: Math.max(0, p.total - paid), change: Math.max(0, paid - p.total) };
+  }
+  function quickAmounts(due) {
+    const out = [['Exact', due]];
+    const seen = new Set([due]);
+    const push = (v) => { if (out.length < 4 && v > due && !seen.has(v)) { seen.add(v); out.push([fmtBill(v), v]); } };
+    [50, 100, 200, 500, 1000].forEach((bill) => push(Math.ceil(due / (bill * 100)) * bill * 100));
+    [100000, 200000, 500000].forEach(push);
+    return out;
+  }
+  const keypadHTML = () => `<div class="keypad">${['1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '0', 'back']
+    .map((k) => `<button type="button" data-key="${k}"${k === 'back' ? ' aria-label="Delete"' : ''}>${k === 'back' ? '⌫' : k}</button>`).join('')}</div>`;
+
+  function renderPay() {
+    const p = state.pay;
+    const c = payCalc();
+    const isE = p.tab === 'ewallet';
+    let entry;
+    if (p.tab === 'cash') {
+      entry = `
+        <div class="amount-box"><div><div class="label">Cash received</div><div class="amt" id="amtValue"></div></div><button type="button" class="linkbtn" data-key="clear">Clear</button></div>
+        <div class="quick">${quickAmounts(c.beforeCash).map(([label, v]) => `<button type="button" data-quick="${v}">${label}</button>`).join('')}</div>
+        ${keypadHTML()}`;
+    } else if (c.beforeCash === 0) {
+      entry = '<div class="covered">This order is already fully covered. Tap Complete sale, or remove a payment on the left to change it.</div>';
+    } else {
+      entry = `
+        ${isE ? `<div class="chips" role="group" aria-label="E-wallet">${['GCash', 'Maya', 'Other'].map((n) => `<button type="button" class="chip" data-provider="${n}" aria-pressed="${p.provider === n}">${n}</button>`).join('')}</div>` : ''}
+        <div class="amount-box"><div><div class="label">${isE ? esc(p.provider) + ' amount' : 'Card amount'}</div><div class="amt" id="amtValue"></div></div><button type="button" class="linkbtn" data-key="clear">Clear</button></div>
+        <input id="payRef" class="field" value="${esc(p.ref)}" autocomplete="off" maxlength="30"
+          placeholder="${isE ? 'Reference number from the customer’s app' : 'Approval code (optional)'}" aria-label="${isE ? 'Reference number' : 'Approval code'}">
+        ${keypadHTML()}
+        <button type="button" class="btn wide" id="btnAddNc" data-act="addnc"></button>`;
+    }
+    dlgPay.innerHTML = `<div class="pay">
+      <div class="sheet-head">
+        <div><h2>Take payment</h2><p class="muted">Receipt #${pad(state.nextSaleNo)}, ${p.items} item${p.items === 1 ? '' : 's'}</p></div>
+        <button type="button" class="icon-btn" data-close aria-label="Back to order">✕</button>
+      </div>
+      <div class="pay-body">
+        <section class="pay-summary" aria-label="Payment summary">
+          <div><div class="due-label">Amount due</div><div class="due num">${fmt(p.total)}</div></div>
+          <ul class="paid-list" id="paidList"></ul>
+          <div class="balance" id="payBalance" aria-live="polite"></div>
+        </section>
+        <section class="pay-entry">
+          <div class="tabs" role="tablist" aria-label="Payment method">
+            ${[['cash', 'Cash'], ['ewallet', 'E-wallet'], ['card', 'Card']].map(([k, n]) => `<button type="button" role="tab" aria-selected="${p.tab === k}" data-paytab="${k}">${n}</button>`).join('')}
+          </div>
+          ${entry}
+        </section>
+      </div>
+      <div class="pay-foot">
+        <span class="hint" id="payHint"></span>
+        <button type="button" class="btn primary" id="btnComplete" data-act="complete">Complete sale</button>
+      </div>
+    </div>`;
+    refreshPay();
+  }
+  function refreshPay() {
+    const p = state.pay;
+    if (!p) return;
+    const c = payCalc();
+    const amt = $('#amtValue', dlgPay);
+    if (amt) amt.textContent = '₱' + ((p.tab === 'cash' ? p.cash : p.nc) || '0');
+
+    const rows = p.nonCash.map((x, i) => `<li><div class="m"><strong>${esc(x.method)}</strong>${x.ref ? `<small>Ref ${esc(x.ref)}</small>` : ''}</div>
+      <span class="num">${fmt(x.amount)}</span><button type="button" class="icon-btn sm" data-rmpay="${i}" aria-label="Remove ${esc(x.method)} payment">✕</button></li>`);
+    if (c.pending) rows.push(`<li class="pending"><div class="m"><strong>${p.tab === 'ewallet' ? esc(p.provider) : 'Card'}</strong><small>Added when you complete the sale</small></div><span class="num">${fmt(c.pending)}</span></li>`);
+    if (c.cash > 0) rows.push(`<li><div class="m"><strong>Cash</strong><small>Received from customer</small></div><span class="num">${fmt(c.cash)}</span></li>`);
+    $('#paidList', dlgPay).innerHTML = rows.join('') || '<li class="muted">No payment yet</li>';
+
+    const bal = $('#payBalance', dlgPay);
+    const hint = $('#payHint', dlgPay);
+    if (c.paid < p.total) {
+      bal.className = 'balance owe';
+      bal.innerHTML = `<span>Still to collect</span><strong>${fmt(c.remaining)}</strong>`;
+      hint.textContent = c.paid ? `${fmt(c.remaining)} more to collect` : 'Enter the cash received, or choose another method';
+    } else if (c.change > 0) {
+      bal.className = 'balance ok';
+      bal.innerHTML = `<span>Change due</span><strong>${fmt(c.change)}</strong>`;
+      hint.textContent = `Give ${fmt(c.change)} change`;
+    } else {
+      bal.className = 'balance ok';
+      bal.innerHTML = '<span>Paid in full</span><strong>No change due</strong>';
+      hint.textContent = 'Exact amount received';
+    }
+    $('#btnComplete', dlgPay).disabled = c.paid < p.total;
+
+    const add = $('#btnAddNc', dlgPay);
+    if (add) {
+      const method = p.tab === 'ewallet' ? p.provider : 'card';
+      add.disabled = !c.pending;
+      add.textContent = c.ncAmt > c.beforeCash
+        ? `Can't be more than ${fmt(c.beforeCash)}`
+        : `Add ${fmt(c.ncAmt)} ${method} payment and split the rest`;
+    }
+  }
+  function setPayTab(k) {
+    const p = state.pay;
+    p.tab = k;
+    if (k !== 'cash') {
+      const rem = Math.max(0, p.total - sum(p.nonCash.map((x) => x.amount)) - parseAmt(p.cash));
+      p.nc = rem ? toInput(rem) : '';
+      p.ref = ''; p.fresh = true;
+    }
+    renderPay();
+  }
+  function keyInput(k) {
+    const p = state.pay;
+    if (!p) return;
+    if (p.tab !== 'cash' && payCalc().beforeCash === 0) return;
+    const f = p.tab === 'cash' ? 'cash' : 'nc';
+    let s = p.fresh ? '' : p[f];
+    p.fresh = false;
+    if (k === 'clear') s = '';
+    else if (k === 'back') s = s.slice(0, -1);
+    else if (k === '.') { if (!s.includes('.')) s = (s || '0') + '.'; }
+    else {
+      const [a, b] = s.split('.');
+      if (b !== undefined ? b.length >= 2 : (a || '').length >= 6) { p[f] = s; refreshPay(); return; }
+      s = s === '0' ? k : s + k;
+    }
+    p[f] = s;
+    refreshPay();
+  }
+  function addNonCash() {
+    const p = state.pay;
+    const c = payCalc();
+    if (!c.pending) return;
+    p.nonCash.push({ kind: p.tab, method: p.tab === 'ewallet' ? p.provider : 'Card', amount: c.pending, ref: p.ref.trim() });
+    p.nc = ''; p.ref = '';
+    if (payCalc().remaining > 0) p.tab = 'cash';
+    renderPay();
+  }
+  function completeSale() {
+    const p = state.pay;
+    if (!p) return;
+    const c = payCalc();
+    if (c.paid < p.total) return;
+    if (c.pending) p.nonCash.push({ kind: p.tab, method: p.tab === 'ewallet' ? p.provider : 'Card', amount: c.pending, ref: p.ref.trim() });
+    const payments = p.nonCash.map((x) => ({ ...x }));
+    if (c.cash > 0) payments.push({ kind: 'cash', method: 'Cash', amount: c.cash, ref: '' });
+
+    const cart = state.cart;
+    const sale = {
+      no: state.nextSaleNo, at: new Date(), type: cart.type, customer: cart.customer.trim(),
+      lines: cart.lines.map((l) => ({ ...l })), totals: totals(), discount: cart.discount ? { ...cart.discount } : null,
+      payments, change: c.change, cashier: CASHIER,
+    };
+    // In the real app this is one call to the Convex `sales.checkout` mutation:
+    // { clientRef, lines: [{ productId, qty, optionKeys }], orderDiscount, payments }.
+    // The server re-prices everything, deducts stock and returns the official sale number.
+    sale.lines.forEach((l) => { const prod = byId(l.pid); if (prod && prod.stock !== undefined) prod.stock -= l.qty; });
+    state.shift.count += 1;
+    state.shift.total += sale.totals.total;
+    state.lastSale = sale;
+    state.nextSaleNo += 1;
+    state.cart = newCart();
+    state.pay = null;
+    dlgPay.close();
+    document.body.classList.remove('show-cart');
+    renderAll();
+    openDone(sale, false);
+  }
+
+  /* ---------- sale complete + receipt ---------- */
+  function receiptHTML(s) {
+    const t = s.totals;
+    const date = s.at.toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' });
+    const time = s.at.toLocaleTimeString('en-PH', { hour: 'numeric', minute: '2-digit' });
+    const row = (a, b, cls = '') => `<div class="row ${cls}"><span>${a}</span><span>${b}</span></div>`;
+    return `<div class="rcpt">
+      <div class="c b">BREWLAB CAFÉ</div>
+      <div class="c">123 Sample Street</div>
+      <div class="c">VAT Reg TIN 000-000-000-00000</div>
+      <hr>
+      ${row(`Receipt #${pad(s.no)}`, s.type === 'dine' ? 'Dine in' : 'Take out')}
+      ${row(date, time)}
+      ${row(`Cashier: ${esc(s.cashier)}`, s.customer ? `For: ${esc(s.customer)}` : '')}
+      <hr>
+      ${s.lines.map((l) => row(`${l.qty} × ${esc(l.name)}`, fmt(l.unit * l.qty)) + (l.opts ? `<div class="sub">${esc(l.opts)}</div>` : '')).join('')}
+      <hr>
+      ${row('Subtotal', fmt(t.subtotal))}
+      ${t.discount ? row(`Discount ${esc(discLabel(s.discount))}`, '−' + fmt(t.discount)) : ''}
+      ${row('TOTAL', fmt(t.total), 'tot')}
+      ${row('VATable sales', fmt(t.vatable))}
+      ${row('VAT 12%', fmt(t.vat))}
+      <hr>
+      ${s.payments.map((x) => row(esc(x.method) + (x.ref ? ` ref ${esc(x.ref)}` : ''), fmt(x.amount))).join('')}
+      ${row('Change', fmt(s.change), 'tot')}
+      <hr>
+      <div class="c">Thank you, come again!</div>
+      <div class="c small">Prototype receipt. Not an official invoice.</div>
+    </div>`;
+  }
+  function openDone(sale, reprint) {
+    state.doneSale = sale;
+    const paidWith = sale.payments.map((x) => `${x.method} ${fmt(x.amount)}`).join(' + ');
+    dlgDone.innerHTML = `<div class="done">
+      <div class="done-main">
+        <p class="done-kicker"><span class="check" aria-hidden="true">✓</span>${reprint ? 'Last sale' : 'Sale complete'}, receipt #${pad(sale.no)}</p>
+        <div class="change-label">${sale.change > 0 ? 'Give change' : 'No change due'}</div>
+        <div class="change-amt">${fmt(sale.change)}</div>
+        <p class="muted" style="margin:0">${esc(paidWith)} received for a ${fmt(sale.totals.total)} order.</p>
+        <div class="done-actions">
+          <button type="button" class="btn" data-act="print">Print receipt</button>
+          <button type="button" class="btn primary" data-act="neworder" autofocus>${reprint ? 'Back to order' : 'Start new order'}</button>
+        </div>
+      </div>
+      <div class="receipt-pane"><p class="note" style="margin:0 0 10px">Receipt preview</p>${receiptHTML(sale)}</div>
+    </div>`;
+    dlgDone.showModal();
+  }
+  function printReceipt(sale) {
+    if (!sale) return;
+    $('#print-area').innerHTML = receiptHTML(sale);
+    try { window.print(); } catch (err) { /* printing can be blocked inside embedded previews */ }
+  }
+
+  /* ---------- parked orders ---------- */
+  function openParked() {
+    const list = state.parked;
+    dlgParked.innerHTML = `<div class="sheet">
+      <div class="sheet-head">
+        <div><h2>Parked orders</h2><p class="muted">${list.length ? `${list.length} waiting` : 'Nothing parked right now'}</p></div>
+        <button type="button" class="icon-btn" data-close aria-label="Close">✕</button>
+      </div>
+      <div class="sheet-body">
+        ${list.length ? `<ul class="parked-list">${list.map((o, i) => {
+          const t = totals(o);
+          const at = o.at.toLocaleTimeString('en-PH', { hour: 'numeric', minute: '2-digit' });
+          return `<li><div class="m"><strong>${esc(o.label)}</strong><small>${t.items} item${t.items === 1 ? '' : 's'}, ${fmt(t.total)}, parked at ${at}</small></div>
+            <button type="button" class="btn" data-discardpark="${i}">Discard</button>
+            <button type="button" class="btn primary" data-resume="${i}">Resume</button></li>`;
+        }).join('')}</ul>`
+        : '<p class="note">Use Park order to set an order aside while a customer decides, then resume it here.</p>'}
+      </div>
+    </div>`;
+    if (!dlgParked.open) dlgParked.showModal();
+  }
+
+  /* ---------- toast + clock ---------- */
+  let toastTimer;
+  function toast(msg) {
+    const el = $('#toast');
+    el.textContent = msg; el.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.remove('show'), 2200);
+  }
+  function tick() {
+    const d = new Date();
+    $('#clock').textContent = d.toLocaleDateString('en-PH', { weekday: 'short', month: 'short', day: 'numeric' }) + ', ' +
+      d.toLocaleTimeString('en-PH', { hour: 'numeric', minute: '2-digit' });
+  }
+
+  /* ---------- events ---------- */
+  const actions = {
+    discount: () => openDiscount(),
+    discamt: () => applyDiscount({ kind: 'amt', value: parseAmt(($('#discAmt').value || '').replace(/[^0-9.]/g, '')) }),
+    discremove: () => { state.cart.discount = null; dlgDisc.close(); renderCart(); toast('Discount removed'); },
+    park: () => park(),
+    clear: () => clearOrder(),
+    charge: () => openPay(),
+    addnc: () => addNonCash(),
+    complete: () => completeSale(),
+    print: () => printReceipt(state.doneSale),
+    neworder: () => dlgDone.close(),
+    parked: () => openParked(),
+    last: () => state.lastSale && openDone(state.lastSale, true),
+    cartopen: () => document.body.classList.add('show-cart'),
+    cartclose: () => document.body.classList.remove('show-cart'),
+  };
+
+  document.addEventListener('click', (e) => {
+    const t = e.target;
+    let el;
+    if ((el = t.closest('[data-close]'))) { el.closest('dialog')?.close(); return; }
+    if ((el = t.closest('[data-pid]'))) { pick(byId(el.dataset.pid)); return; }
+    if ((el = t.closest('[data-cat]'))) { state.cat = el.dataset.cat; renderCats(); renderGrid(); return; }
+    if ((el = t.closest('.seg [data-type]'))) { state.cart.type = el.dataset.type; renderCart(); return; }
+    if ((el = t.closest('[data-line]'))) { lineAction(el.dataset.act, Number(el.dataset.line)); return; }
+    if ((el = t.closest('[data-mq]'))) {
+      state.mod.qty = Math.max(1, Math.min(99, state.mod.qty + Number(el.dataset.mq)));
+      $('#modQty').textContent = state.mod.qty; updateModPrice(); return;
+    }
+    if ((el = t.closest('[data-quick]'))) { state.pay.cash = toInput(Number(el.dataset.quick)); state.pay.fresh = true; refreshPay(); return; }
+    if ((el = t.closest('[data-key]'))) { keyInput(el.dataset.key); return; }
+    if ((el = t.closest('[data-paytab]'))) { setPayTab(el.dataset.paytab); return; }
+    if ((el = t.closest('[data-provider]'))) { state.pay.provider = el.dataset.provider; renderPay(); return; }
+    if ((el = t.closest('[data-rmpay]'))) { state.pay.nonCash.splice(Number(el.dataset.rmpay), 1); renderPay(); return; }
+    if ((el = t.closest('[data-dpct]'))) { applyDiscount({ kind: 'pct', value: Number(el.dataset.dpct) }); return; }
+    if ((el = t.closest('[data-pin]'))) { pinKey(el.dataset.pin); return; }
+    if ((el = t.closest('[data-resume]'))) { resume(Number(el.dataset.resume)); return; }
+    if ((el = t.closest('[data-discardpark]'))) { state.parked.splice(Number(el.dataset.discardpark), 1); renderTop(); openParked(); return; }
+    if ((el = t.closest('[data-act]')) && actions[el.dataset.act]) actions[el.dataset.act](el);
+  });
+
+  // click outside a sheet closes it (not for payment, to avoid losing entered amounts)
+  [dlgMod, dlgDisc, dlgParked].forEach((d) => d.addEventListener('click', (e) => { if (e.target === d) d.close(); }));
+
+  dlgMod.addEventListener('change', (e) => {
+    const inp = e.target;
+    if (!state.mod) return;
+    if (inp.type === 'checkbox') {
+      const G = GROUPS[inp.name];
+      const n = dlgMod.querySelectorAll(`input[name="${inp.name}"]:checked`).length;
+      const msg = dlgMod.querySelector(`[data-msg="${inp.name}"]`);
+      if (n > G.max) { inp.checked = false; msg.textContent = `You can pick up to ${G.max}. Remove one to add another.`; }
+      else msg.textContent = '';
+    }
+    updateModPrice();
+  });
+  dlgMod.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const { p, qty } = state.mod;
+    addLine(p, readSel(p), qty);
+    dlgMod.close();
+    afterAdd();
+  });
+  dlgMod.addEventListener('close', () => { state.mod = null; });
+
+  dlgPay.addEventListener('input', (e) => { if (e.target.id === 'payRef' && state.pay) state.pay.ref = e.target.value; });
+  dlgPay.addEventListener('keydown', (e) => {
+    if (!state.pay || e.target.matches('input')) return;
+    if (/^[0-9]$/.test(e.key)) { e.preventDefault(); keyInput(e.key); }
+    else if (e.key === '.') { e.preventDefault(); keyInput('.'); }
+    else if (e.key === 'Backspace') { e.preventDefault(); keyInput('back'); }
+    else if (e.key === 'Enter' && (e.target === dlgPay || e.target.closest('.keypad, .quick'))) { e.preventDefault(); completeSale(); }
+  });
+  dlgPay.addEventListener('close', () => { state.pay = null; });
+
+  dlgPin.addEventListener('keydown', (e) => {
+    if (/^[0-9]$/.test(e.key)) { e.preventDefault(); pinKey(e.key); }
+    else if (e.key === 'Backspace') { e.preventDefault(); pinKey('back'); }
+  });
+  dlgDisc.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target.id === 'discAmt') { e.preventDefault(); actions.discamt(); } });
+  dlgDone.addEventListener('close', () => { if (matchMedia('(pointer: fine)').matches) search.focus(); });
+
+  $('#customer').addEventListener('input', (e) => { state.cart.customer = e.target.value; });
+
+  search.addEventListener('input', () => { state.q = search.value; renderGrid(); });
+  search.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter') return;
+    const v = search.value.trim();
+    if (!v) return;
+    const byCode = PRODUCTS.find((p) => p.barcode === v);
+    const matches = byCode ? [byCode] : PRODUCTS.filter((p) => p.name.toLowerCase().includes(v.toLowerCase()));
+    if (matches.length === 1) {
+      search.value = ''; state.q = ''; renderGrid();
+      pick(matches[0]);
+      if (!matches[0].groups.length) toast(`Added ${matches[0].name}`);
+    } else if (!matches.length) toast(`No item matches “${v}”`);
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === '/' && !document.querySelector('dialog[open]') && !e.target.matches('input, textarea')) {
+      e.preventDefault(); search.focus();
+    }
+  });
+
+  /* ---------- start ---------- */
+  renderAll();
+  tick(); setInterval(tick, 20000);
+  if (matchMedia('(pointer: fine)').matches) search.focus();
+})();
+</script>
+</body>
+</html>

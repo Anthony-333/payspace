@@ -1,0 +1,1180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Multi-tenant POS: MVP plan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Schibsted+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#EDF1EE;
+  --surface:#FFFFFF;
+  --surface-2:#F4F7F5;
+  --ink:#16201C;
+  --muted:#55635D;
+  --rule:#C8D2CD;
+  --accent:#1D6B4C;
+  --accent-soft:#DCEDE4;
+  --mark:#FFE27A;
+  --code-bg:#F6F8F7;
+  --paper:#FFFFFF;
+  --paper-ink:#1B2420;
+  --slot:#1E2A25;
+  --shadow:rgba(22,48,36,.16);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#131B18;
+    --surface:#1A2420;
+    --surface-2:#1F2B26;
+    --ink:#E3EAE6;
+    --muted:#9AAAA3;
+    --rule:#2F3D37;
+    --accent:#62CB9B;
+    --accent-soft:#1E3A2E;
+    --mark:#8C7422;
+    --code-bg:#17201C;
+    --paper:#EEF2EF;
+    --paper-ink:#1B2420;
+    --slot:#0B100E;
+    --shadow:rgba(0,0,0,.45);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#131B18;
+  --surface:#1A2420;
+  --surface-2:#1F2B26;
+  --ink:#E3EAE6;
+  --muted:#9AAAA3;
+  --rule:#2F3D37;
+  --accent:#62CB9B;
+  --accent-soft:#1E3A2E;
+  --mark:#8C7422;
+  --code-bg:#17201C;
+  --paper:#EEF2EF;
+  --paper-ink:#1B2420;
+  --slot:#0B100E;
+  --shadow:rgba(0,0,0,.45);
+}
+
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+body{
+  margin:0;background:var(--bg);color:var(--ink);
+  font-family:"Schibsted Grotesk",system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  font-size:17px;line-height:1.62;
+}
+img{max-width:100%}
+a{color:var(--accent);text-underline-offset:3px}
+a:focus-visible,button:focus-visible{outline:3px solid var(--accent);outline-offset:3px;border-radius:4px}
+code,pre,.mono{font-family:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+p{margin:0 0 1em}
+h1,h2,h3,h4{line-height:1.12;margin:0}
+h2{font-size:clamp(1.7rem,3.2vw,2.2rem);font-weight:800;letter-spacing:-.015em;margin-bottom:.6em}
+h3{font-size:1.28rem;font-weight:700;letter-spacing:-.005em;margin:1.8em 0 .5em}
+h4{font-size:1rem;font-weight:700;margin:1.2em 0 .35em}
+.muted{color:var(--muted)}
+:not(pre)>code{font-size:.86em;background:var(--surface-2);border:1px solid var(--rule);padding:.05em .35em;border-radius:5px}
+
+/* ---------- hero ---------- */
+.hero{
+  max-width:1180px;margin:0 auto;padding:72px 24px 56px;
+  display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);gap:64px;align-items:start;
+}
+.hero-kicker{font-weight:600;color:var(--accent);margin:0 0 18px}
+.hero h1{
+  font-size:clamp(2.5rem,5.6vw,4.3rem);font-weight:800;letter-spacing:-.035em;line-height:1.0;
+  margin-bottom:28px;max-width:14ch;
+}
+.hero .lead{font-size:1.18rem;line-height:1.55;max-width:56ch;color:var(--ink)}
+.hero .stackline{color:var(--muted);margin-top:22px;font-size:.98rem}
+
+.printer{position:relative;max-width:380px;margin-left:auto;width:100%}
+.slot{height:16px;border-radius:10px;background:var(--slot);position:relative;z-index:2;box-shadow:0 2px 0 rgba(255,255,255,.06) inset}
+.feed{overflow:hidden;margin:0 14px;padding-bottom:28px;margin-top:-6px}
+.receipt{
+  position:relative;background:var(--paper);color:var(--paper-ink);
+  padding:30px 24px 22px;font-family:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;font-size:.84rem;line-height:1.7;
+  filter:drop-shadow(0 12px 18px var(--shadow));
+  animation:feed 1.6s cubic-bezier(.3,.7,.2,1) .25s both;
+}
+.receipt::after{
+  content:"";position:absolute;left:0;right:0;bottom:-8px;height:8px;
+  background:conic-gradient(from -45deg at bottom,var(--paper) 90deg,transparent 0) 0 0/16px 8px repeat-x;
+}
+@keyframes feed{from{transform:translateY(-102%)}to{transform:translateY(0)}}
+@media (prefers-reduced-motion: reduce){.receipt{animation:none}}
+.r-center{text-align:center}
+.r-title{font-weight:600;font-size:1rem;letter-spacing:.06em}
+.r-rule{border:0;border-top:1.5px dashed currentColor;opacity:.45;margin:12px 0}
+.r-row{display:flex;justify-content:space-between;gap:12px}
+.r-row span:last-child{white-space:nowrap}
+.r-total{font-weight:600;font-size:.98rem}
+.r-small{font-size:.76rem;opacity:.75}
+
+/* ---------- doc layout ---------- */
+.doc{
+  max-width:1180px;margin:0 auto;padding:0 24px 110px;
+  display:grid;grid-template-columns:210px minmax(0,1fr);gap:64px;
+}
+.toc{position:sticky;top:28px;align-self:start;padding-top:8px}
+.toc p{font-weight:700;margin:0 0 10px}
+.toc ol{list-style:none;margin:0;padding:0;border-left:2px solid var(--rule)}
+.toc li a{display:block;padding:5px 0 5px 14px;margin-left:-2px;border-left:2px solid transparent;color:var(--muted);text-decoration:none;font-size:.93rem;line-height:1.35}
+.toc li a:hover{color:var(--ink);border-left-color:var(--accent)}
+.content{max-width:790px;min-width:0}
+section{padding-top:56px;margin-top:56px;border-top:1px solid var(--rule)}
+section:first-child{margin-top:0;border-top:0;padding-top:8px}
+
+/* ---------- components ---------- */
+.table-wrap{overflow-x:auto;border:1px solid var(--rule);border-radius:10px;background:var(--surface);margin:18px 0 26px}
+table{border-collapse:collapse;width:100%;min-width:560px;font-size:.93rem;line-height:1.5}
+th,td{padding:11px 14px;text-align:left;vertical-align:top;border-bottom:1px solid var(--rule)}
+tr:last-child td{border-bottom:0}
+th{font-weight:700;background:var(--surface-2)}
+td.c,th.c{text-align:center}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+tr.total td{font-weight:700;background:var(--surface-2)}
+
+.codeblock{margin:18px 0 26px}
+.codeblock .file{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace;font-size:.8rem;color:var(--muted);margin:0 0 6px 2px}
+pre.code{
+  margin:0;background:var(--code-bg);border:1px solid var(--rule);border-radius:10px;
+  padding:18px 20px;overflow-x:auto;font-size:.82rem;line-height:1.6;color:var(--ink);tab-size:2;
+}
+pre.code .cm{color:var(--muted)}
+
+.decision{
+  background:var(--surface);border:1px solid var(--rule);border-left:5px solid var(--accent);
+  border-radius:0 10px 10px 0;padding:18px 22px;margin:22px 0 26px;
+}
+.decision h4{margin:0 0 .4em;font-size:1.02rem}
+.decision p:last-child{margin-bottom:0}
+
+.diagram{background:var(--surface);border:1px solid var(--rule);border-radius:10px;padding:18px;margin:18px 0 26px;overflow-x:auto}
+pre.mermaid{margin:0;background:transparent;text-align:center;font-family:"Schibsted Grotesk",system-ui,sans-serif}
+
+ul.rules,ol.steps{padding-left:1.2em;margin:.2em 0 1.1em}
+ul.rules li,ol.steps li{margin:.35em 0}
+.done{background:var(--accent-soft);border-radius:8px;padding:12px 16px;margin:12px 0 8px;font-size:.96rem}
+.done strong{color:var(--ink)}
+
+.feature{margin-top:2.4em}
+.feature:first-of-type{margin-top:1.2em}
+.feature h3{margin-top:0;display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+
+.standout{border-top:1px solid var(--rule);padding:24px 0 6px}
+.standout:first-of-type{border-top:0;padding-top:8px}
+.standout h3{margin:0 0 .5em;display:flex;flex-wrap:wrap;align-items:center;gap:10px 12px}
+.hl{background:linear-gradient(transparent 52%,var(--mark) 52%,var(--mark) 92%,transparent 92%);padding:0 .12em;margin:0 -.12em}
+.tag{font-size:.76rem;font-weight:600;padding:3px 10px;border-radius:999px;border:1.5px solid var(--accent);color:var(--accent);line-height:1.2;white-space:nowrap}
+.tag.later{border-color:var(--muted);color:var(--muted)}
+.why{color:var(--muted);font-size:.95rem}
+
+ol.weeks{list-style:none;margin:20px 0 0;padding:0}
+ol.weeks>li{display:grid;grid-template-columns:86px minmax(0,1fr);gap:20px;padding:22px 0;border-top:1px solid var(--rule)}
+ol.weeks>li:first-child{border-top:0;padding-top:4px}
+.wk{font-weight:800;font-size:2.4rem;line-height:1;letter-spacing:-.03em;color:var(--accent)}
+.wk small{display:block;font-size:.8rem;font-weight:600;letter-spacing:0;color:var(--muted);margin-top:6px}
+ol.weeks h3{margin:0 0 .35em;font-size:1.15rem}
+ol.weeks ul{margin:.3em 0 .6em;padding-left:1.1em}
+ol.weeks ul li{margin:.2em 0}
+
+footer{max-width:1180px;margin:0 auto;padding:0 24px 48px;color:var(--muted);font-size:.9rem}
+
+@media (max-width: 960px){
+  .doc{grid-template-columns:minmax(0,1fr);gap:28px}
+  .toc{position:static;background:var(--surface);border:1px solid var(--rule);border-radius:10px;padding:16px 18px}
+  .toc ol{border-left:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:0 16px}
+  .toc li a{padding-left:0;border-left:0}
+}
+@media (max-width: 880px){
+  .hero{grid-template-columns:minmax(0,1fr);gap:40px;padding-top:44px}
+  .printer{margin:0 auto}
+}
+@media (max-width: 520px){
+  body{font-size:16px}
+  ol.weeks>li{grid-template-columns:minmax(0,1fr);gap:8px}
+  .wk{font-size:1.9rem}
+  .wk small{display:inline;margin-left:8px}
+}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div>
+    <p class="hero-kicker">MVP plan for a multi-tenant point of sale</p>
+    <h1>A POS that shows small shops their real profit, not just their sales.</h1>
+    <p class="lead">One web app, many businesses. Each coffee shop, grocery or bakery gets its own isolated space with its own staff, menu, stock and reports. The MVP goal: a new shop signs up, sets up its catalog in under 15 minutes, and rings up sales on a tablet the same day, while the owner sees the gross profit on every item sold.</p>
+    <p class="stackline">Built on Next.js (App Router), Clerk for sign-in and organizations, and Convex for the database, server functions and real-time sync.</p>
+  </div>
+  <div class="printer" aria-label="Summary of the build plan, styled as a receipt">
+    <div class="slot" aria-hidden="true"></div>
+    <div class="feed">
+      <div class="receipt">
+        <div class="r-center r-title">MVP BUILD PLAN</div>
+        <div class="r-center r-small">Multi-tenant POS, v0.1</div>
+        <hr class="r-rule">
+        <div class="r-row"><span>Foundation + tenancy</span><span>wk 1</span></div>
+        <div class="r-row"><span>Products + catalog</span><span>wk 2</span></div>
+        <div class="r-row"><span>Inventory + costing</span><span>wk 3</span></div>
+        <div class="r-row"><span>Checkout + shifts</span><span>wk 4–5</span></div>
+        <div class="r-row"><span>Dashboard + CSV export</span><span>wk 6</span></div>
+        <div class="r-row"><span>Roles + standouts</span><span>wk 7</span></div>
+        <div class="r-row"><span>Pilot + launch</span><span>wk 8</span></div>
+        <hr class="r-rule">
+        <div class="r-row r-total"><span>TOTAL</span><span>8 weeks</span></div>
+        <div class="r-row r-small"><span>Tenants</span><span>unlimited</span></div>
+        <div class="r-row r-small"><span>Stack</span><span>Next.js / Clerk / Convex</span></div>
+        <hr class="r-rule">
+        <div class="r-center r-small">THANK YOU, COME AGAIN</div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="doc">
+  <nav class="toc" aria-label="Contents">
+    <p>Contents</p>
+    <ol>
+      <li><a href="#goals">Goals and scope</a></li>
+      <li><a href="#architecture">Architecture and tenancy</a></li>
+      <li><a href="#data">Data model</a></li>
+      <li><a href="#features">Core features</a></li>
+      <li><a href="#roles">Roles and permissions</a></li>
+      <li><a href="#structure">App structure and tooling</a></li>
+      <li><a href="#standout">Features that stand out</a></li>
+      <li><a href="#roadmap">8-week build plan</a></li>
+      <li><a href="#risks">Risks and launch checklist</a></li>
+      <li><a href="#later">After the MVP</a></li>
+    </ol>
+  </nav>
+
+  <main class="content">
+
+    <!-- ================= GOALS ================= -->
+    <section id="goals">
+      <h2>Goals and scope</h2>
+      <p>Most starter POS tools tell an owner how much they sold. Very few tell them how much they <em>made</em>, because that requires knowing what each item costs, down to the grams of coffee and millilitres of milk in a latte. This MVP treats costing as a first-class feature and builds selling, inventory and analytics around it.</p>
+
+      <h3>The MVP is done when</h3>
+      <ul class="rules">
+        <li>A new shop goes from sign-up to its first sale in under 15 minutes using a business template.</li>
+        <li>A cashier checks out a 3-item order with one modifier in under 10 seconds.</li>
+        <li>Every sale deducts the correct ingredients or items from stock and records its cost at the moment of sale.</li>
+        <li>The owner's dashboard shows revenue, gross profit and top items, updating live as sales happen.</li>
+        <li>An owner can export any part of the business to CSV, and the files open correctly in Excel and Google Sheets with totals that match the dashboard.</li>
+        <li>Automated tests prove that one shop can never read or change another shop's data.</li>
+        <li>Three to five pilot shops (at least one café and one grocery) use it for a full week of real trading.</li>
+      </ul>
+
+      <h3>What's in, and what waits</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Area</th><th>In the MVP</th><th>Later</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Tenancy</strong></td><td>Sign-up, one business per Clerk organization, staff invites, three roles, business templates</td><td>Multiple branches per business, franchise roll-ups</td></tr>
+            <tr><td><strong>Products</strong></td><td>Categories, modifiers (size, milk, add-ons), images, barcodes, CSV import, archive</td><td>Combos and bundles, scheduled prices, happy hour</td></tr>
+            <tr><td><strong>Inventory</strong></td><td>Stock items, receiving, adjustments, waste, stock counts, low-stock alerts, stock ledger</td><td>Purchase orders, batch and expiry tracking, branch transfers</td></tr>
+            <tr><td><strong>Costing</strong></td><td>Weighted average cost, recipe costing, margin per item, margin alerts, cost snapshot on each sale</td><td>FIFO costing, landed costs, price-change simulator</td></tr>
+            <tr><td><strong>Selling</strong></td><td>Touch-first checkout, discounts, split payments, change, printed and digital receipts, shifts, voids and refunds</td><td>Full offline mode, customer-facing display, loyalty, card terminal integration</td></tr>
+            <tr><td><strong>Analytics</strong></td><td>Sales, gross profit, top items by profit, hourly heatmap, payment mix, stock and margin alerts</td><td>AI assistant, customer analytics</td></tr>
+            <tr><td><strong>Data export</strong></td><td>CSV export of every dataset with date ranges, full ZIP backup, spreadsheet round-trip for products, export log</td><td>Scheduled exports by email, direct sync to accounting tools</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="muted">Design the schema for multiple locations now (it's cheap), but ship a single-location UI. Adding a <code>locationId</code> later to every stock and sales record is a painful migration.</p>
+    </section>
+
+    <!-- ================= ARCHITECTURE ================= -->
+    <section id="architecture">
+      <h2>Architecture and tenancy</h2>
+      <p>This stack fits a POS unusually well. Convex queries are live subscriptions, so a sale rung up on the counter tablet updates the stock screen and the owner's dashboard on their phone with no polling code. Convex mutations run as transactions, so a checkout either writes the sale, the stock deductions and the stats together, or writes nothing. Clerk Organizations give you business sign-up, staff invitations, an organization switcher and roles without building them.</p>
+
+      <div class="diagram">
+<pre class="mermaid">
+flowchart LR
+  subgraph Devices["Shop devices"]
+    POS["POS screen (tablet)"]
+    BO["Back office (laptop, phone)"]
+    BOARD["Order board (second screen)"]
+  end
+  CLERK["Clerk: sign-in, organizations, roles"]
+  subgraph CVX["Convex"]
+    FN["Queries and mutations via tenant wrapper"]
+    HTTP["HTTP action: Clerk webhooks"]
+    DB[("Tables, all keyed by tenantId")]
+    FILES["File storage: product images"]
+    JOBS["Scheduler and crons"]
+  end
+  POS -->|"session token"| FN
+  BO -->|"session token"| FN
+  BOARD -->|"live query"| FN
+  POS -.->|"sign in"| CLERK
+  CLERK -->|"org and membership events"| HTTP
+  HTTP --> DB
+  FN --> DB
+  FN --> FILES
+  JOBS --> DB
+</pre>
+      </div>
+
+      <div class="decision">
+        <h4>Key decision: one shared database, every row carries a tenantId</h4>
+        <p>All businesses share the same Convex tables, and every tenant-owned document has a <code>tenantId</code> field that leads every index. This is the simplest and cheapest model to run and is standard for SaaS at this stage. The trade-off is that isolation is enforced in your code, so the code must make it impossible to forget: every tenant-scoped function goes through one wrapper that checks membership.</p>
+      </div>
+
+      <h3>How a request finds its tenant</h3>
+      <ol class="steps">
+        <li>A user signs in with Clerk, then creates a business (a Clerk Organization) during onboarding or accepts an invite to one.</li>
+        <li>Clerk sends <code>organization.*</code> and <code>organizationMembership.*</code> webhooks to a Convex HTTP action, which verifies the signature (Svix) and upserts rows in <code>tenants</code> and <code>members</code>.</li>
+        <li>The shop's slug lives in the URL (<code>/brewlab/pos</code>). Clerk's middleware option <code>organizationSyncOptions</code> keeps the active organization matched to the URL, so switching shops is just navigation.</li>
+        <li>The client passes <code>tenantId</code> to every Convex call. The tenant wrapper looks up an active <code>members</code> row for that tenant and the caller's Clerk user ID (<code>identity.subject</code>), and refuses the call if there isn't one.</li>
+        <li>Handlers only query through indexes that start with <code>tenantId</code>, and any document ID the client sends is re-checked to belong to the same tenant before it's read or changed.</li>
+      </ol>
+      <p class="muted">Checking membership in your own table, rather than trusting an organization claim in the token, means access is revoked the moment a manager disables a staff member, and it still works if someone opens a stale tab for a different shop.</p>
+
+      <div class="codeblock">
+        <p class="file">convex/lib/tenant.ts</p>
+<pre class="code">import { ConvexError, v } from "convex/values";
+import { customMutation, customQuery } from "convex-helpers/server/customFunctions";
+import { mutation, query, type QueryCtx } from "../_generated/server";
+import type { Doc, Id } from "../_generated/dataModel";
+
+type Role = Doc&lt;"members"&gt;["role"];
+
+async function loadMembership(ctx: QueryCtx, tenantId: Id&lt;"tenants"&gt;) {
+  const identity = await ctx.auth.getUserIdentity();
+  if (!identity) throw new ConvexError("Sign in to continue.");
+
+  const member = await ctx.db
+    .query("members")
+    .withIndex("by_tenant_user", (q) =&gt;
+      q.eq("tenantId", tenantId).eq("clerkUserId", identity.subject))
+    .unique();
+  if (!member || member.status !== "active") {
+    throw new ConvexError("You don't have access to this business.");
+  }
+
+  const tenant = await ctx.db.get(tenantId);
+  if (!tenant) throw new ConvexError("Business not found.");
+  return { tenant, member };
+}
+
+const tenantArgs = { tenantId: v.id("tenants") };
+
+export const tenantQuery = customQuery(query, {
+  args: tenantArgs,
+  input: async (ctx, { tenantId }) =&gt; ({
+    ctx: { tenantId, ...(await loadMembership(ctx, tenantId)) },
+    args: {},
+  }),
+});
+
+export const tenantMutation = customMutation(mutation, {
+  args: tenantArgs,
+  input: async (ctx, { tenantId }) =&gt; ({
+    ctx: { tenantId, ...(await loadMembership(ctx, tenantId)) },
+    args: {},
+  }),
+});
+
+export function requireRole(member: Doc&lt;"members"&gt;, ...allowed: Role[]) {
+  if (!allowed.includes(member.role)) {
+    throw new ConvexError("Your role can't do this. Ask the owner or a manager.");
+  }
+}
+
+<span class="cm">// Every ID that arrives from the client is re-checked against the tenant.</span>
+type Scoped = "categories" | "products" | "modifierGroups" | "stockItems" | "sales" | "shifts";
+export async function getOwned&lt;T extends Scoped&gt;(
+  ctx: QueryCtx, tenantId: Id&lt;"tenants"&gt;, id: Id&lt;T&gt;,
+) {
+  const doc = (await ctx.db.get(id)) as Doc&lt;Scoped&gt; | null;
+  if (!doc || doc.tenantId !== tenantId) throw new ConvexError("Not found.");
+  return doc as Doc&lt;T&gt;;
+}</pre>
+      </div>
+
+      <div class="codeblock">
+        <p class="file">convex/products.ts (how every tenant function looks)</p>
+<pre class="code">export const list = tenantQuery({
+  args: {},
+  handler: (ctx) =&gt;
+    ctx.db
+      .query("products")
+      .withIndex("by_tenant_active", (q) =&gt;
+        q.eq("tenantId", ctx.tenantId).eq("isActive", true))
+      .collect(),
+});
+
+export const updatePrice = tenantMutation({
+  args: { productId: v.id("products"), price: v.number() },
+  handler: async (ctx, { productId, price }) =&gt; {
+    requireRole(ctx.member, "owner", "manager");
+    await getOwned(ctx, ctx.tenantId, productId);
+    await ctx.db.patch(productId, { price });
+  },
+});</pre>
+      </div>
+      <p>Make it a team rule (and a lint check if you like) that files in <code>convex/</code> never import the plain <code>query</code> or <code>mutation</code> for tenant data. Only the webhook handler and truly public endpoints, such as the digital receipt page, use them.</p>
+    </section>
+
+    <!-- ================= DATA ================= -->
+    <section id="data">
+      <h2>Data model</h2>
+
+      <div class="decision">
+        <h4>Key decision: separate what you sell from what you stock</h4>
+        <p><strong>Products</strong> are what appear on the POS screen. <strong>Stock items</strong> are what sits on your shelves. A café's iced latte is a <em>recipe</em> product that consumes beans, milk and a cup. A grocery's can of soda is a <em>stocked</em> product linked one-to-one to a stock item, which the app creates automatically so grocers never see the difference. A bakery uses both. A service (gift wrapping, printing) has no stock at all. This one model serves every business type you're targeting.</p>
+      </div>
+
+      <h3>Conventions that prevent the classic POS bugs</h3>
+      <ul class="rules">
+        <li><strong>Money is an integer in minor units.</strong> ₱140.00 is stored as <code>14000</code>. Floating-point money causes one-centavo errors that never reconcile. Keep all money maths in one <code>lib/money.ts</code> helper.</li>
+        <li><strong>Quantities use base units</strong> (grams, millilitres, pieces), with an optional purchase unit for receiving (1 bag = 1,000 g).</li>
+        <li><strong>Sales store snapshots.</strong> Each sale line keeps the product name, price and unit cost as they were at checkout, so history and profit never change when you edit the menu.</li>
+        <li><strong>Reports use a business date</strong> computed in the shop's timezone, so a sale at 11:50 pm lands on the right day.</li>
+        <li><strong>The stock ledger is the source of truth.</strong> <code>onHand</code> is a cached total that can always be rebuilt from movements.</li>
+      </ul>
+
+      <div class="codeblock">
+        <p class="file">convex/schema.ts</p>
+<pre class="code">import { defineSchema, defineTable } from "convex/server";
+import { v } from "convex/values";
+
+const tenantId = v.id("tenants");
+const money = v.number(); <span class="cm">// integer minor units: ₱140.00 → 14000</span>
+const role = v.union(v.literal("owner"), v.literal("manager"), v.literal("cashier"));
+const payMethod = v.union(v.literal("cash"), v.literal("ewallet"), v.literal("card"));
+
+export default defineSchema({
+  tenants: defineTable({
+    clerkOrgId: v.string(),
+    name: v.string(),
+    slug: v.string(),
+    businessType: v.union(v.literal("cafe"), v.literal("grocery"),
+      v.literal("bakery"), v.literal("retail")),
+    currency: v.string(),            <span class="cm">// "PHP"</span>
+    timezone: v.string(),            <span class="cm">// "Asia/Manila"</span>
+    taxRateBps: v.number(),          <span class="cm">// 1200 = 12%</span>
+    pricesIncludeTax: v.boolean(),
+    targetMarginBps: v.number(),     <span class="cm">// 6000 = 60%, drives margin alerts</span>
+    discountLimitBps: v.number(),    <span class="cm">// max cashier discount without a manager PIN</span>
+    receiptFooter: v.optional(v.string()),
+  })
+    .index("by_clerk_org", ["clerkOrgId"])
+    .index("by_slug", ["slug"]),
+
+  members: defineTable({
+    tenantId,
+    clerkUserId: v.string(),
+    name: v.string(),
+    role,
+    status: v.union(v.literal("active"), v.literal("disabled")),
+    pinHash: v.optional(v.string()), <span class="cm">// manager overrides at the counter</span>
+  })
+    .index("by_tenant_user", ["tenantId", "clerkUserId"])
+    .index("by_user", ["clerkUserId"]),
+
+  categories: defineTable({ tenantId, name: v.string(), sortOrder: v.number() })
+    .index("by_tenant", ["tenantId", "sortOrder"]),
+
+  products: defineTable({
+    tenantId,
+    categoryId: v.optional(v.id("categories")),
+    name: v.string(),
+    kind: v.union(v.literal("stocked"), v.literal("recipe"), v.literal("service")),
+    stockItemId: v.optional(v.id("stockItems")), <span class="cm">// when kind is "stocked"</span>
+    price: money,
+    unitCost: money,                 <span class="cm">// cached, recomputed when costs change</span>
+    barcode: v.optional(v.string()),
+    sku: v.optional(v.string()),
+    imageId: v.optional(v.id("_storage")),
+    modifierGroupIds: v.array(v.id("modifierGroups")),
+    isActive: v.boolean(),           <span class="cm">// archive instead of delete</span>
+  })
+    .index("by_tenant_active", ["tenantId", "isActive"])
+    .index("by_tenant_barcode", ["tenantId", "barcode"])
+    .index("by_stock_item", ["stockItemId"])
+    .searchIndex("search_name", { searchField: "name", filterFields: ["tenantId", "isActive"] }),
+
+  modifierGroups: defineTable({
+    tenantId,
+    name: v.string(),                <span class="cm">// "Size", "Milk", "Add-ons"</span>
+    minSelect: v.number(),
+    maxSelect: v.number(),
+    options: v.array(v.object({
+      key: v.string(),
+      name: v.string(),              <span class="cm">// "Oat milk"</span>
+      priceDelta: money,             <span class="cm">// +2000</span>
+      recipeDelta: v.array(v.object({ stockItemId: v.id("stockItems"), qty: v.number() })),
+    })),
+  }).index("by_tenant", ["tenantId"]),
+
+  stockItems: defineTable({
+    tenantId,
+    name: v.string(),
+    baseUnit: v.union(v.literal("pc"), v.literal("g"), v.literal("ml")),
+    purchaseUnit: v.optional(v.object({ name: v.string(), factor: v.number() })),
+    onHand: v.number(),              <span class="cm">// base units, cache of the ledger</span>
+    avgCost: v.number(),             <span class="cm">// minor units per base unit (can be fractional)</span>
+    reorderPoint: v.number(),
+    supplierId: v.optional(v.id("suppliers")),
+  }).index("by_tenant", ["tenantId"]),
+
+  recipeLines: defineTable({
+    tenantId,
+    productId: v.id("products"),
+    stockItemId: v.id("stockItems"),
+    qty: v.number(),                 <span class="cm">// base units per 1 product sold</span>
+  })
+    .index("by_product", ["productId"])
+    .index("by_stock_item", ["stockItemId"]),
+
+  stockMovements: defineTable({
+    tenantId,
+    stockItemId: v.id("stockItems"),
+    type: v.union(v.literal("receive"), v.literal("sale"), v.literal("refund"),
+      v.literal("adjust"), v.literal("waste")),
+    qty: v.number(),                 <span class="cm">// positive in, negative out</span>
+    unitCost: v.number(),
+    saleId: v.optional(v.id("sales")),
+    memberId: v.id("members"),
+    note: v.optional(v.string()),
+  }).index("by_tenant_item", ["tenantId", "stockItemId"]),
+
+  suppliers: defineTable({ tenantId, name: v.string(), phone: v.optional(v.string()) })
+    .index("by_tenant", ["tenantId"]),
+
+  shifts: defineTable({
+    tenantId,
+    memberId: v.id("members"),
+    status: v.union(v.literal("open"), v.literal("closed")),
+    openingCash: money,
+    expectedCash: v.optional(money),
+    countedCash: v.optional(money),
+    closedAt: v.optional(v.number()),
+  }).index("by_tenant_status", ["tenantId", "status"]),
+
+  sales: defineTable({
+    tenantId,
+    number: v.number(),              <span class="cm">// sequential per tenant, never reset</span>
+    clientRef: v.string(),           <span class="cm">// idempotency key generated on the device</span>
+    shiftId: v.id("shifts"),
+    memberId: v.id("members"),
+    businessDate: v.string(),        <span class="cm">// "2026-09-11" in the shop's timezone</span>
+    lines: v.array(v.object({
+      productId: v.id("products"),
+      name: v.string(),
+      optionNames: v.array(v.string()),
+      qty: v.number(),
+      unitPrice: money,
+      unitCost: money,               <span class="cm">// snapshot at checkout</span>
+      discount: money,
+    })),
+    subtotal: money, discount: money, tax: money, total: money, cogs: money,
+    payments: v.array(v.object({ method: payMethod, amount: money, ref: v.optional(v.string()) })),
+    changeGiven: money,
+    status: v.union(v.literal("completed"), v.literal("voided"), v.literal("refunded")),
+    receiptToken: v.string(),        <span class="cm">// unguessable, for the public receipt link</span>
+  })
+    .index("by_tenant_date", ["tenantId", "businessDate"])
+    .index("by_tenant_clientRef", ["tenantId", "clientRef"])
+    .index("by_receipt_token", ["receiptToken"]),
+
+  dailyStats: defineTable({
+    tenantId,
+    businessDate: v.string(),
+    revenue: money, cogs: money, orders: v.number(),
+    cash: money, ewallet: money, card: money,
+    byHour: v.array(v.number()),     <span class="cm">// 24 revenue buckets</span>
+  }).index("by_tenant_date", ["tenantId", "businessDate"]),
+
+  productDailyStats: defineTable({
+    tenantId,
+    businessDate: v.string(),
+    productId: v.id("products"),
+    qty: v.number(), revenue: money, cogs: money,
+  }).index("by_tenant_date_product", ["tenantId", "businessDate", "productId"]),
+
+  exports: defineTable({
+    tenantId,
+    requestedBy: v.id("members"),
+    dataset: v.union(v.literal("products"), v.literal("stockItems"), v.literal("stockMovements"),
+      v.literal("sales"), v.literal("saleLines"), v.literal("shifts"),
+      v.literal("dailySummary"), v.literal("productPerformance"), v.literal("fullBackup")),
+    from: v.optional(v.string()),    <span class="cm">// business dates, for date-ranged datasets</span>
+    to: v.optional(v.string()),
+    status: v.union(v.literal("working"), v.literal("ready"), v.literal("failed")),
+    fileId: v.optional(v.id("_storage")),
+    rowCount: v.optional(v.number()),
+    error: v.optional(v.string()),
+    expiresAt: v.optional(v.number()), <span class="cm">// file deleted by a daily cron after 7 days</span>
+  })
+    .index("by_tenant", ["tenantId"])
+    .index("by_tenant_status", ["tenantId", "status"])
+    .index("by_expires", ["expiresAt"]),
+
+  counters: defineTable({ tenantId, name: v.string(), value: v.number() })
+    .index("by_tenant_name", ["tenantId", "name"]),
+});</pre>
+      </div>
+    </section>
+
+    <!-- ================= FEATURES ================= -->
+    <section id="features">
+      <h2>Core features</h2>
+      <p>Each feature below lists what it does, the rules that matter most when you build it, and a concrete test for calling it done.</p>
+
+      <div class="feature">
+        <h3>Products and catalog</h3>
+        <p>Owners and managers add products with a category, price, optional photo and barcode, then attach modifier groups: Size (small, medium, large), Milk (fresh, oat +₱20), Add-ons (extra shot +₱30), Sugar level. Grocery shops import products from a CSV and scan barcodes with a USB scanner or the device camera.</p>
+        <ul class="rules">
+          <li>A modifier can change both the price and the recipe, so a large drink adds 60 ml of milk to the stock deduction as well as ₱20 to the price.</li>
+          <li>Products are archived, never deleted, because past sales reference them.</li>
+          <li>Barcodes are unique within a shop (enforce in the mutation using the <code>by_tenant_barcode</code> index).</li>
+          <li>Images upload straight to Convex file storage using a generated upload URL; resize on the client first so the POS grid stays fast on cheap tablets.</li>
+          <li>The CSV importer previews rows, flags errors per row and imports in batches, so one bad row doesn't block 300 good ones.</li>
+        </ul>
+        <p class="done"><strong>Done when</strong> the café template creates 20 drinks with sizes in one step, and a grocery imports 300 items from CSV with clear per-row errors.</p>
+      </div>
+
+      <div class="feature">
+        <h3>Inventory</h3>
+        <p>Stock items hold quantities in base units. Staff receive deliveries, log waste (spilled milk, expired bread) and correct counts. Every change writes a row to the stock ledger with who, what, why and when, so any on-hand figure can be explained.</p>
+        <ul class="rules">
+          <li>Receiving asks for quantity and <em>total</em> cost (what's on the supplier's receipt) and derives the unit cost. That matches how owners actually think.</li>
+          <li>Never block a sale because stock says zero. Real shops run ahead of their data. Allow negative stock, flag it on the dashboard, and prompt a count.</li>
+          <li>A stock count screen lists items with expected quantities; staff enter what they counted and the app writes adjustments for the differences in one pass.</li>
+          <li>Low stock triggers when on-hand drops to the reorder point, and every item shows days of cover based on recent sales.</li>
+        </ul>
+        <p class="done"><strong>Done when</strong> the sum of the ledger equals on-hand for every item, and a full count of 50 items takes under 10 minutes.</p>
+      </div>
+
+      <div class="feature">
+        <h3>Costing</h3>
+        <p>Use weighted average cost for the MVP. It's what small businesses understand, it needs no batch tracking, and it's accurate enough for pricing decisions. When stock is received, the average cost blends the old stock with the new:</p>
+<pre class="code">newAvgCost = (onHand × avgCost + qtyIn × unitCostIn) ÷ (onHand + qtyIn)
+<span class="cm">// if onHand ≤ 0, newAvgCost = unitCostIn</span>
+
+recipeCost  = Σ (recipe qty × stock item avgCost) + selected modifier deltas
+netPrice    = pricesIncludeTax ? price ÷ (1 + taxRate) : price
+grossMargin = (netPrice − recipeCost) ÷ netPrice
+suggested   = recipeCost ÷ (1 − targetMargin)   <span class="cm">// then add tax, round to a friendly price</span></pre>
+        <p style="margin-top:1em">A worked example for a 16 oz iced latte:</p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Ingredient</th><th class="num">Qty</th><th class="num">Avg cost</th><th class="num">Line cost</th></tr></thead>
+            <tbody>
+              <tr><td>Espresso beans</td><td class="num">18 g</td><td class="num">₱1.20 / g</td><td class="num">₱21.60</td></tr>
+              <tr><td>Fresh milk</td><td class="num">180 ml</td><td class="num">₱0.11 / ml</td><td class="num">₱19.80</td></tr>
+              <tr><td>Cup, lid and straw</td><td class="num">1 set</td><td class="num">₱7.50</td><td class="num">₱7.50</td></tr>
+              <tr class="total"><td>Cost per cup</td><td></td><td></td><td class="num">₱48.90</td></tr>
+              <tr><td>Selling price ₱140 incl. 12% tax</td><td></td><td></td><td class="num">₱125.00 net</td></tr>
+              <tr class="total"><td>Gross margin</td><td></td><td></td><td class="num">60.9%</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <ul class="rules">
+          <li>Each sale line stores <code>unitCost</code> at checkout, so cost of goods sold and profit for past days never shift when prices change.</li>
+          <li>When a receipt changes a stock item's average cost, schedule a background job (<code>ctx.scheduler.runAfter</code>) that finds affected products through the <code>by_stock_item</code> indexes, updates their cached <code>unitCost</code> and flags any that fall below the target margin.</li>
+          <li>Show cost and margin only to owners and managers.</li>
+        </ul>
+        <p class="done"><strong>Done when</strong> receiving milk at a higher price immediately updates the latte's cost and margin on screen, and yesterday's profit report is unchanged.</p>
+      </div>
+
+      <div class="feature">
+        <h3>Selling (checkout)</h3>
+        <p>The POS screen is full-screen and touch-first: category tabs and a large product grid on the left, the cart on the right, and a search and barcode field that always has focus. Tapping a drink with modifiers opens a quick sheet; tapping a grocery item adds it straight to the cart. Payment offers cash with quick-tender buttons (exact, ₱100, ₱500, ₱1,000) and automatic change, e-wallet with a reference number, and card (recorded, not processed, in the MVP), with split payments allowed.</p>
+
+        <div class="diagram">
+<pre class="mermaid">
+sequenceDiagram
+  participant T as POS tablet
+  participant M as sales.checkout
+  participant D as Convex tables
+  T->>M: cart lines, payments, clientRef
+  M->>D: clientRef already used? return that sale
+  M->>D: read open shift, products, recipes
+  M->>M: price, discount, tax and cost on the server
+  M->>D: insert sale, deduct stock, write ledger
+  M->>D: bump daily and product stats
+  M-->>T: sale number and receipt link
+  D-->>T: stock and dashboard views refresh live
+</pre>
+        </div>
+
+        <div class="codeblock">
+          <p class="file">convex/sales.ts (outline)</p>
+<pre class="code">export const checkout = tenantMutation({
+  args: {
+    clientRef: v.string(),
+    lines: v.array(v.object({
+      productId: v.id("products"),
+      qty: v.number(),
+      optionKeys: v.array(v.string()),
+      discount: v.number(),
+    })),
+    orderDiscount: v.number(),
+    payments: v.array(v.object({ method: payMethod, amount: v.number(), ref: v.optional(v.string()) })),
+  },
+  handler: async (ctx, args) =&gt; {
+    <span class="cm">// 1. Retry-safe: a repeated clientRef returns the original sale</span>
+    const existing = await ctx.db.query("sales")
+      .withIndex("by_tenant_clientRef", (q) =&gt;
+        q.eq("tenantId", ctx.tenantId).eq("clientRef", args.clientRef))
+      .unique();
+    if (existing) return { saleId: existing._id, number: existing.number };
+
+    <span class="cm">// 2. Server is the only source of prices and costs</span>
+    const shift = await requireOpenShift(ctx);
+    const priced = await priceLines(ctx, args.lines);
+    const totals = computeTotals(priced, args.orderDiscount, ctx.tenant);
+    await checkDiscountLimit(ctx, totals);   <span class="cm">// manager PIN over the limit</span>
+    assertFullyPaid(totals.total, args.payments);
+
+    <span class="cm">// 3. One transaction: sale, stock, ledger, stats</span>
+    const number = await nextCounter(ctx, "sale");
+    const saleId = await ctx.db.insert("sales", { ...buildSale(ctx, shift, priced, totals, args, number) });
+    await deductStock(ctx, priced, saleId);  <span class="cm">// recipes + modifier deltas → stockMovements</span>
+    await bumpStats(ctx, priced, totals);
+    return { saleId, number };
+  },
+});</pre>
+        </div>
+
+        <ul class="rules">
+          <li>The client never sends prices. It sends product IDs, quantities and chosen options; the server prices everything. This closes the easiest fraud path.</li>
+          <li>The device creates <code>clientRef</code> (a UUID) when the cart is started, so a double-tap or a retry after a dropped connection can never create two sales.</li>
+          <li>Printed receipts use browser printing with a print stylesheet for 58 mm and 80 mm thermal paper; most thermal printers work once installed as a system printer. Each receipt carries a QR code to the digital receipt at <code>/r/[token]</code>.</li>
+          <li>Orders can be parked and resumed (a customer who forgot their wallet shouldn't hold up the line).</li>
+          <li>Cashiers can void within their own open shift. Refunds need a manager and ask whether to return items to stock (usually yes for groceries, no for a made drink).</li>
+          <li>Shifts open with a cash float and close with a blind count: the cashier enters what's in the drawer before seeing the expected amount. The variance is saved.</li>
+        </ul>
+        <p class="done"><strong>Done when</strong> a 3-item order checks out in under 10 seconds, switching Wi-Fi off mid-checkout and retrying never creates a duplicate, and the shift report matches the drawer.</p>
+      </div>
+
+      <div class="feature">
+        <h3>Dashboard analytics</h3>
+        <p>The dashboard reads from the small rollup tables that checkout updates in the same transaction, so showing today's numbers means reading a handful of documents instead of scanning every sale. Because Convex queries are live, the numbers tick up while the owner watches.</p>
+        <ul class="rules">
+          <li><strong>Today at a glance:</strong> revenue, gross profit, orders and average ticket, each compared with the same weekday last week (a fairer comparison than yesterday).</li>
+          <li><strong>Sales by hour and weekday:</strong> a heatmap that answers “when do I need two baristas?”</li>
+          <li><strong>Top items by revenue and by profit, side by side.</strong> They're rarely the same list, and that gap is the most useful insight in the whole app.</li>
+          <li><strong>Payment mix:</strong> cash versus e-wallet versus card, for cash planning.</li>
+          <li><strong>Alerts:</strong> low stock, negative stock, and items below the target margin.</li>
+          <li><strong>Date ranges:</strong> today, 7 days, 30 days and custom. Cashiers see only their own shift totals.</li>
+        </ul>
+        <p class="done"><strong>Done when</strong> the dashboard loads in under a second for a shop with 90 days of sales, and its totals reconcile exactly with sales history.</p>
+      </div>
+
+      <div class="feature" id="export">
+        <h3>CSV export</h3>
+        <p>Owners and managers can export any part of the business to CSV. Every list page (products, inventory, sales, shifts) has an <strong>Export CSV</strong> button that uses the filters and date range currently on screen, and Settings → Data and exports lists every dataset in one place, plus a full backup. Files open cleanly in Excel and Google Sheets, so an accountant or bookkeeper can work with them directly.</p>
+
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>File</th><th>One row per</th><th>Main columns</th></tr></thead>
+            <tbody>
+              <tr><td><strong>Products</strong></td><td>Product</td><td>SKU, barcode, name, category, type, price, unit cost, margin %, modifier groups, active</td></tr>
+              <tr><td><strong>Stock items</strong></td><td>Stock item</td><td>Name, unit, on hand, average cost, stock value, reorder point, days of cover, supplier</td></tr>
+              <tr><td><strong>Stock movements</strong></td><td>Ledger entry</td><td>Date, time, item, type, quantity, unit cost, value, staff member, sale number, note</td></tr>
+              <tr><td><strong>Sales</strong></td><td>Sale</td><td>Sale number, business date, time, cashier, subtotal, discount, tax, total, cost of goods, gross profit, payments, status</td></tr>
+              <tr><td><strong>Sale line items</strong></td><td>Item on a sale</td><td>Sale number, date, product, options, quantity, unit price, discount, line total, unit cost, line profit</td></tr>
+              <tr><td><strong>Shifts</strong></td><td>Shift</td><td>Cashier, opened, closed, opening cash, cash sales, expected cash, counted cash, variance</td></tr>
+              <tr><td><strong>Daily summary</strong></td><td>Business day</td><td>Revenue, tax, cost of goods, gross profit, orders, average ticket, cash, e-wallet, card</td></tr>
+              <tr><td><strong>Product performance</strong></td><td>Product in the date range</td><td>Quantity sold, revenue, cost, profit, margin %, rank by profit</td></tr>
+              <tr><td><strong>Full backup (ZIP)</strong></td><td>—</td><td>Every file above, plus categories, modifier groups, recipes, suppliers and the staff list</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h4>How it works</h4>
+        <p>Every export goes through one server-side pipeline. A mutation checks the caller's role and records the request; a background action then reads the data 500 rows at a time, builds the CSV, saves it to Convex file storage and marks the job ready. The Exports screen is a live query, so the download button appears the moment the file is done. Because the action pages through the data, a year of sales never hits Convex's per-query read limits, and the browser never freezes building a huge file.</p>
+
+        <div class="codeblock">
+          <p class="file">convex/exports.ts (authorization happens here)</p>
+<pre class="code">export const request = tenantMutation({
+  args: { dataset: datasetValidator, from: v.optional(v.string()), to: v.optional(v.string()) },
+  handler: async (ctx, args) =&gt; {
+    requireRole(ctx.member, "owner", "manager");
+    if (args.dataset === "fullBackup") requireRole(ctx.member, "owner");
+
+    const busy = await ctx.db.query("exports")
+      .withIndex("by_tenant_status", (q) =&gt;
+        q.eq("tenantId", ctx.tenantId).eq("status", "working"))
+      .first();
+    if (busy) throw new ConvexError("Another export is still being prepared. Try again when it's ready.");
+
+    const exportId = await ctx.db.insert("exports", {
+      tenantId: ctx.tenantId, requestedBy: ctx.member._id, ...args, status: "working",
+    });
+    await ctx.scheduler.runAfter(0, internal.exportsRun.run, { exportId });
+    return exportId;
+  },
+});</pre>
+        </div>
+
+        <div class="codeblock">
+          <p class="file">convex/exportsRun.ts (outline; Node runtime for memory headroom on big files)</p>
+<pre class="code">"use node";
+
+export const run = internalAction({
+  args: { exportId: v.id("exports") },
+  handler: async (ctx, { exportId }) =&gt; {
+    const job = await ctx.runQuery(internal.exports.getJob, { exportId });
+    const spec = DATASETS[job.dataset];   <span class="cm">// header, paginated internal query, row mapper</span>
+    try {
+      const lines = [spec.header.map((h) =&gt; cell(h)).join(",")];
+      let cursor: string | null = null;
+      do {
+        const page = await ctx.runQuery(spec.pageQuery, {
+          tenantId: job.tenantId, from: job.from, to: job.to,
+          paginationOpts: { numItems: 500, cursor },
+        });
+        for (const doc of page.page) {
+          for (const row of spec.toRows(doc)) lines.push(row.join(","));  <span class="cm">// a sale → many line rows</span>
+        }
+        cursor = page.isDone ? null : page.continueCursor;
+      } while (cursor !== null);
+
+      const csv = "\uFEFF" + lines.join("\r\n");   <span class="cm">// BOM so Excel reads UTF-8 (₱, ñ)</span>
+      const fileId = await ctx.storage.store(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+      await ctx.runMutation(internal.exports.markReady, { exportId, fileId, rowCount: lines.length - 1 });
+    } catch (err) {
+      await ctx.runMutation(internal.exports.markFailed, { exportId, error: String(err) });
+    }
+  },
+});</pre>
+        </div>
+
+        <div class="codeblock">
+          <p class="file">convex/lib/csv.ts</p>
+<pre class="code">const FORMULA_START = /^[=+\-@\t\r]/;
+
+export function cell(value: string | number | null | undefined, kind: "text" | "number" = "text") {
+  if (value === null || value === undefined) return "";
+  let s = String(value);
+  if (kind === "text" &amp;&amp; FORMULA_START.test(s)) s = "'" + s;  <span class="cm">// block spreadsheet formulas</span>
+  return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+}
+
+export function money(minor: number) {                          <span class="cm">// 14000 → "140.00"</span>
+  const sign = minor &lt; 0 ? "-" : "";
+  const abs = Math.abs(Math.round(minor));
+  return `${sign}${Math.floor(abs / 100)}.${String(abs % 100).padStart(2, "0")}`;
+}</pre>
+        </div>
+
+        <ul class="rules">
+          <li>The authorization check happens in the mutation. The internal action and its paginated queries can only be started by that mutation, so they can safely trust the <code>tenantId</code> stored on the job.</li>
+          <li>Money is exported as plain decimals converted from integer minor units, with no currency symbol, so spreadsheets treat it as numbers. The currency goes in the header instead (“Total (PHP)”).</li>
+          <li>Dates and times are shown in the shop's timezone as <code>YYYY-MM-DD</code> and <code>HH:mm</code>, and the business date gets its own column so late-night sales group correctly.</li>
+          <li>Files are UTF-8 with a byte-order mark, CRLF line endings and standard quoting, which is what Excel on Windows expects.</li>
+          <li>Text cells starting with <code>=</code>, <code>+</code>, <code>-</code> or <code>@</code> get a leading apostrophe, so a product named like a formula can't run in someone's spreadsheet. Numeric columns are left alone so negative numbers stay numbers.</li>
+          <li>Barcodes and SKUs are text, but Excel strips leading zeros and turns 13-digit barcodes into scientific notation when it opens a CSV directly. Offer an “Excel-friendly” option that writes those columns as <code>="4801234567890"</code> so Excel keeps them intact, and have the importer accept both forms.</li>
+          <li>The products export uses exactly the same columns as the CSV import. Owners can bulk-edit prices in a spreadsheet and import the file back, matched by SKU or barcode, with a preview of what will change.</li>
+          <li>The full backup zips every dataset into one file (fflate works well inside the action) and is owner-only.</li>
+          <li>Every export is logged with who, what, date range and row count. Files expire after 7 days; a daily cron deletes them and marks any job stuck in “working” for over 15 minutes as failed, so one crashed export can't block the next.</li>
+        </ul>
+        <p class="done"><strong>Done when</strong> a year of sales for a busy café (around 100,000 line items) exports in under two minutes, opens correctly in Excel and Google Sheets, and its totals match the dashboard to the centavo.</p>
+      </div>
+    </section>
+
+    <!-- ================= ROLES ================= -->
+    <section id="roles">
+      <h2>Roles and permissions</h2>
+      <p>Three roles cover almost every small shop. Create <code>manager</code> and <code>cashier</code> as custom roles in the Clerk dashboard alongside the default admin (mapped to owner), sync them into <code>members</code>, and enforce them in Convex with <code>requireRole</code>. Hiding a button in the UI is a convenience, never the protection.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Action</th><th class="c">Owner</th><th class="c">Manager</th><th class="c">Cashier</th></tr></thead>
+          <tbody>
+            <tr><td>Ring up sales, park orders, print receipts</td><td class="c">✓</td><td class="c">✓</td><td class="c">✓</td></tr>
+            <tr><td>Discounts up to the shop's limit</td><td class="c">✓</td><td class="c">✓</td><td class="c">✓</td></tr>
+            <tr><td>Larger discounts, refunds</td><td class="c">✓</td><td class="c">✓</td><td class="c">Manager PIN</td></tr>
+            <tr><td>Void within own open shift</td><td class="c">✓</td><td class="c">✓</td><td class="c">✓</td></tr>
+            <tr><td>Log waste</td><td class="c">✓</td><td class="c">✓</td><td class="c">✓</td></tr>
+            <tr><td>Receive stock, adjust counts</td><td class="c">✓</td><td class="c">✓</td><td class="c">—</td></tr>
+            <tr><td>Add or edit products, prices, recipes</td><td class="c">✓</td><td class="c">✓</td><td class="c">—</td></tr>
+            <tr><td>See costs, margins, full dashboard</td><td class="c">✓</td><td class="c">✓</td><td class="c">—</td></tr>
+            <tr><td>Export products, stock, sales and reports to CSV</td><td class="c">✓</td><td class="c">✓</td><td class="c">—</td></tr>
+            <tr><td>Download the full backup (ZIP)</td><td class="c">✓</td><td class="c">—</td><td class="c">—</td></tr>
+            <tr><td>Invite staff, change roles</td><td class="c">✓</td><td class="c">—</td><td class="c">—</td></tr>
+            <tr><td>Business, tax and receipt settings, billing</td><td class="c">✓</td><td class="c">—</td><td class="c">—</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="muted">Counter tablets are usually shared. For the MVP, staff sign in with their own Clerk account when they open a shift. Fast PIN switching between cashiers on one signed-in device is a good post-MVP feature once you've watched real shops work.</p>
+    </section>
+
+    <!-- ================= STRUCTURE ================= -->
+    <section id="structure">
+      <h2>App structure and tooling</h2>
+      <div class="codeblock">
+        <p class="file">Project layout</p>
+<pre class="code">app/
+  (marketing)/page.tsx          <span class="cm">landing page and pricing</span>
+  sign-in/[[...sign-in]]/       <span class="cm">Clerk</span>
+  sign-up/[[...sign-up]]/
+  onboarding/                   <span class="cm">create business, pick template, set tax and currency</span>
+  [shop]/                       <span class="cm">shop slug; reserve words like "app", "api", "r"</span>
+    layout.tsx                  <span class="cm">resolves tenant, sidebar, org switcher</span>
+    pos/                        <span class="cm">full-screen checkout</span>
+    board/                      <span class="cm">live order board for baristas or kitchen</span>
+    dashboard/
+    products/  categories/  modifiers/
+    inventory/                  <span class="cm">items, receive, adjust, counts, ledger</span>
+    sales/                      <span class="cm">history, sale detail, refunds</span>
+    shifts/
+    settings/                   <span class="cm">business, tax, receipt, staff, billing, data and exports</span>
+  r/[token]/page.tsx            <span class="cm">public digital receipt</span>
+convex/
+  schema.ts
+  lib/        tenant.ts  money.ts  costing.ts  stock.ts  dates.ts  csv.ts
+  tenants.ts  members.ts  products.ts  categories.ts  modifiers.ts
+  inventory.ts  sales.ts  shifts.ts  analytics.ts  templates.ts
+  exports.ts                    <span class="cm">request, list, internal job queries</span>
+  exportsRun.ts                 <span class="cm">"use node" action that builds CSV and ZIP files</span>
+  http.ts                       <span class="cm">Clerk webhooks, verified with Svix</span>
+  crons.ts                      <span class="cm">low-stock digest, stats checks, expired export cleanup</span>
+proxy.ts                        <span class="cm">clerkMiddleware (middleware.ts on Next.js 15)</span></pre>
+      </div>
+
+      <h3>Supporting libraries</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Need</th><th>Pick</th><th>Why</th></tr></thead>
+          <tbody>
+            <tr><td>UI components</td><td>Tailwind CSS and shadcn/ui</td><td>Accessible components you own; its chart components (built on Recharts) cover the dashboard</td></tr>
+            <tr><td>Cart state</td><td>Zustand, persisted to IndexedDB</td><td>The cart survives a refresh and becomes the basis of the retry queue</td></tr>
+            <tr><td>Forms</td><td>React Hook Form and Zod</td><td>One schema validates product, stock and settings forms</td></tr>
+            <tr><td>Convex utilities</td><td>convex-helpers</td><td>Custom functions for the tenant wrapper, plus pagination and relationship helpers</td></tr>
+            <tr><td>Testing</td><td>Vitest and convex-test</td><td>Runs your Convex functions in tests, including the tenant-isolation suite</td></tr>
+            <tr><td>Barcode scanning</td><td>BarcodeDetector API, with @zxing/browser as fallback</td><td>Scan with the device camera; USB scanners work as keyboards with no code</td></tr>
+            <tr><td>ZIP backups</td><td>fflate</td><td>Small, fast, pure JavaScript zip for the full backup inside the export action</td></tr>
+            <tr><td>Email</td><td>Resend, called from a Convex action</td><td>Digital receipts and the daily digest</td></tr>
+            <tr><td>Monitoring</td><td>Sentry and PostHog</td><td>Errors at the counter, and where onboarding loses people</td></tr>
+            <tr><td>Hosting</td><td>Vercel, Convex cloud, Clerk production instance</td><td>No servers to run while you find product-market fit</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Make the app an installable PWA from week one (a manifest, icons and full-screen display). Shops can then pin the POS to a tablet's home screen, and it looks and feels like a native app.</p>
+    </section>
+
+    <!-- ================= STANDOUT ================= -->
+    <section id="standout">
+      <h2>Features that make this MVP stand out</h2>
+      <p>Your competition is a notebook, a calculator and a free POS app that only counts sales. These features are chosen because they're hard for those tools to copy and cheap for you to build on Convex.</p>
+
+      <article class="standout">
+        <h3><span class="hl">True profit on every item</span><span class="tag">In the MVP</span></h3>
+        <p>Recipe costing with live margin alerts. When the supplier raises the price of milk and you receive the new stock, every drink that uses milk recalculates, and any that drop below your target margin get flagged with a suggested new price. The dashboard ranks items by profit, not just sales.</p>
+        <p class="why">Why it matters: it's the difference between “we sold ₱30,000 today” and “we made ₱17,000, and the matcha latte is losing money.” That sentence sells the product.</p>
+      </article>
+
+      <article class="standout">
+        <h3><span class="hl">Open for business in 15 minutes</span><span class="tag">In the MVP</span></h3>
+        <p>Business templates at sign-up. Choosing “Coffee shop” preloads categories, a starter menu, modifier groups (size, milk, sugar level, add-ons), common ingredients with sensible units and costs, and a starter recipe for each drink. “Grocery” switches to a barcode-first POS layout and opens the CSV importer. Owners edit instead of starting from a blank screen.</p>
+        <p class="why">Why it matters: setup is where most small-business software loses people. A shop that makes a sale on day one tends to stay.</p>
+      </article>
+
+      <article class="standout">
+        <h3><span class="hl">Every phone is a barcode scanner</span><span class="tag">MVP: camera scan</span><span class="tag later">Version 1.1: phone pairing</span></h3>
+        <p>Scan barcodes with the tablet's or phone's camera, so there's no hardware to buy on day one. In version 1.1, a staff member's phone joins the shop and scans items straight into the counter tablet's cart in real time, which is ideal for bulky grocery items or a busy line.</p>
+        <p class="why">Why it matters: it removes a cost barrier for new shops, and live sync makes it feel like magic. Convex's reactivity makes the pairing mostly a shared “cart” document.</p>
+      </article>
+
+      <article class="standout">
+        <h3><span class="hl">Stock that warns you before you run out</span><span class="tag">In the MVP</span></h3>
+        <p>Every item shows days of cover based on the last 14 days of sales (“Oat milk runs out in about 2 days”). One tap builds a reorder list grouped by supplier, ready to copy into a text or chat message, which is how most small shops actually order.</p>
+        <p class="why">Why it matters: running out of your best-seller on a Saturday is the most expensive stock mistake a small shop makes, and a reorder point alone doesn't catch it early enough.</p>
+      </article>
+
+      <article class="standout">
+        <h3><span class="hl">Cash drawer you can trust</span><span class="tag">In the MVP</span></h3>
+        <p>Blind cash counts at shift close, variance history per cashier, and an audit trail of every void, refund, discount and manual stock change with who approved it.</p>
+        <p class="why">Why it matters: owners who can't be at the shop all day worry about leakage. This lets them stop worrying without accusing anyone.</p>
+      </article>
+
+      <article class="standout">
+        <h3><span class="hl">Checkout that survives bad Wi-Fi</span><span class="tag">MVP: retry queue</span><span class="tag later">Later: full offline</span></h3>
+        <p>Idempotent checkout plus a small local queue: if the connection drops, completed orders are saved on the device and sent when it returns, with a clear status indicator so staff know what's pending. Full offline mode (catalog cached, many hours without internet) comes later.</p>
+        <p class="why">Why it matters: a POS that freezes during the lunch rush gets uninstalled. Being honest and resilient here builds trust quickly.</p>
+      </article>
+
+      <article class="standout">
+        <h3><span class="hl">Your data is always yours</span><span class="tag">In the MVP</span></h3>
+        <p>Export any list, or the whole business, to CSV in two taps, with a one-file ZIP backup for owners. The products export doubles as a bulk editor: change prices in a spreadsheet and import them back. The daily summary is laid out for an accountant, with tax and cost of goods in their own columns.</p>
+        <p class="why">Why it matters: owners are wary of software that holds their records hostage. Easy, complete export lowers the risk of trying you, and bookkeepers become fans when month-end takes minutes.</p>
+      </article>
+
+      <article class="standout">
+        <h3><span class="hl">Live order board</span><span class="tag">MVP stretch</span></h3>
+        <p>Open <code>/board</code> on any second screen and orders appear the moment they're paid, with modifiers highlighted (oat milk, less sugar). Baristas tap to mark them ready; an optional “now serving” view can face customers.</p>
+        <p class="why">Why it matters: cafés usually pay extra for a kitchen display. With Convex it's one live query and a status field, maybe two days of work.</p>
+      </article>
+
+      <article class="standout">
+        <h3><span class="hl">Ask your shop</span><span class="tag later">Version 1.1</span></h3>
+        <p>A plain-language assistant over your own sales data: “Which items lose money?”, “What sold best on Saturdays last month?”, “How much milk did we waste this week?” It runs as a Convex action that queries the rollup tables and asks an LLM to explain the numbers, plus a weekly summary sent to the owner.</p>
+        <p class="why">Why it matters: most owners never open a dashboard. They will read a message that says “Your iced drinks drove 40% of profit this week; consider a second size.”</p>
+      </article>
+    </section>
+
+    <!-- ================= ROADMAP ================= -->
+    <section id="roadmap">
+      <h2>8-week build plan</h2>
+      <p>Paced for one full-time developer, or two part-time. Each week ends with something you can demo, and tenant isolation is built and tested first, because it's the one thing you can't retrofit safely.</p>
+
+      <ol class="weeks">
+        <li>
+          <div class="wk">1<small>Foundation</small></div>
+          <div>
+            <h3>Foundation and tenancy</h3>
+            <ul>
+              <li>Next.js app, Tailwind, shadcn/ui, PWA manifest; Clerk with Organizations and custom roles; Convex project and schema.</li>
+              <li>Clerk webhooks to Convex; <code>tenantQuery</code>, <code>tenantMutation</code>, <code>requireRole</code>, <code>getOwned</code>.</li>
+              <li>Onboarding: create business, choose type, currency, tax; app shell with shop slug routing.</li>
+            </ul>
+            <p class="done"><strong>Done when</strong> a convex-test suite proves shop A can't list, read, or edit shop B's data through any function.</p>
+          </div>
+        </li>
+        <li>
+          <div class="wk">2<small>Catalog</small></div>
+          <div>
+            <h3>Products and catalog</h3>
+            <ul>
+              <li>Categories, products, modifier groups, images, barcodes, search, archive.</li>
+              <li>Business templates for café, grocery and bakery; CSV import with preview.</li>
+            </ul>
+            <p class="done"><strong>Done when</strong> the café template produces a usable menu and a 300-row CSV imports cleanly.</p>
+          </div>
+        </li>
+        <li>
+          <div class="wk">3<small>Stock</small></div>
+          <div>
+            <h3>Inventory and costing</h3>
+            <ul>
+              <li>Stock items with units, receiving with weighted average cost, adjustments, waste, stock counts, ledger.</li>
+              <li>Recipe editor with live cost and margin; background cost recalculation and margin flags.</li>
+            </ul>
+            <p class="done"><strong>Done when</strong> receiving stock at a new price updates recipe costs and margins within seconds.</p>
+          </div>
+        </li>
+        <li>
+          <div class="wk">4<small>Checkout</small></div>
+          <div>
+            <h3>Checkout screen</h3>
+            <ul>
+              <li>Touch-first POS layout, cart, modifier sheet, discounts, split payments, change calculation.</li>
+              <li>The <code>checkout</code> mutation with server-side pricing, stock deduction, ledger and stats.</li>
+              <li>Printed receipt stylesheet for 58 mm and 80 mm.</li>
+            </ul>
+            <p class="done"><strong>Done when</strong> a real barista can ring up 20 test orders without asking how.</p>
+          </div>
+        </li>
+        <li>
+          <div class="wk">5<small>Operations</small></div>
+          <div>
+            <h3>Shifts and selling operations</h3>
+            <ul>
+              <li>Open and close shifts with blind count, voids, refunds with manager PIN, parked orders.</li>
+              <li>Sales history, digital receipts with QR, idempotent retry queue and connection indicator.</li>
+            </ul>
+            <p class="done"><strong>Done when</strong> pulling the network mid-sale never loses or duplicates an order.</p>
+          </div>
+        </li>
+        <li>
+          <div class="wk">6<small>Insights</small></div>
+          <div>
+            <h3>Dashboard analytics and CSV export</h3>
+            <ul>
+              <li>KPI tiles with week-over-week comparison, hourly heatmap, top items by revenue and profit, payment mix.</li>
+              <li>Low stock, negative stock, days of cover, margin alerts; date range picker.</li>
+              <li>Export pipeline (request mutation, paginated action, file storage), the Exports screen and Export CSV buttons on list pages.</li>
+            </ul>
+            <p class="done"><strong>Done when</strong> dashboard totals and a 90-day sales export both match a manual sum of sales for a seeded shop.</p>
+          </div>
+        </li>
+        <li>
+          <div class="wk">7<small>Polish</small></div>
+          <div>
+            <h3>Roles, settings and standouts</h3>
+            <ul>
+              <li>Server-side permission checks on every mutation, staff management, tax and receipt settings.</li>
+              <li>Reorder list, live order board, daily low-stock email; performance pass on a low-cost Android tablet.</li>
+              <li>Full backup ZIP, products export-and-reimport round trip, export log and expiry cron.</li>
+            </ul>
+            <p class="done"><strong>Done when</strong> a cashier account can't reach any owner-only function, even by calling it directly.</p>
+          </div>
+        </li>
+        <li>
+          <div class="wk">8<small>Launch</small></div>
+          <div>
+            <h3>Pilot and launch</h3>
+            <ul>
+              <li>Production Convex and Clerk instances on Vercel, Sentry and PostHog wired up, backups via Convex export.</li>
+              <li>Onboard 3 to 5 pilot shops in person, watch a full shift at each, fix what hurts.</li>
+            </ul>
+            <p class="done"><strong>Done when</strong> every pilot shop trades a full week on the app and wants to keep using it.</p>
+          </div>
+        </li>
+      </ol>
+    </section>
+
+    <!-- ================= RISKS ================= -->
+    <section id="risks">
+      <h2>Risks and launch checklist</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Risk</th><th>Mitigation</th></tr></thead>
+          <tbody>
+            <tr><td>Data leaking between shops</td><td>All tenant functions use the wrapper; every client-supplied ID is checked with <code>getOwned</code>; an isolation test suite runs in CI on every change.</td></tr>
+            <tr><td>Internet drops at the counter</td><td>Idempotent checkout, local retry queue and a visible connection status now; full offline mode later.</td></tr>
+            <tr><td>Busy shops hitting the same documents</td><td>The sale counter and daily stats are written on every sale. That's fine at small-shop volumes, and Convex retries conflicting mutations automatically. If a large tenant appears, move stats to sharded counters or the Convex Aggregate component.</td></tr>
+            <tr><td>Money rounding errors</td><td>Integer minor units, one money helper, tax rounded once per sale, unit tests for tax-inclusive and exclusive pricing.</td></tr>
+            <tr><td>Stock drifting from reality</td><td>Allow negative stock but surface it, prompt weekly counts, keep the ledger rebuildable.</td></tr>
+            <tr><td>Exported files exposing sensitive data</td><td>Exports limited to owners and managers (full backup to owners), every export logged, files deleted after 7 days, formula-injection guard on text cells. If you need stricter control later, serve downloads through an HTTP action that checks the session.</td></tr>
+            <tr><td>Printer compatibility</td><td>Start with browser printing and test with two popular thermal printers; add direct printing later.</td></tr>
+            <tr><td>Building too much</td><td>Anything not in the scope table goes on the “after the MVP” list until pilots ask for it twice.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="decision">
+        <h4>Check receipt and tax rules before you launch</h4>
+        <p>Many countries regulate POS systems that issue official receipts or invoices. If you're launching in the Philippines, for example, check the BIR's current requirements for registering or accrediting a POS or computerized accounting system early, because they affect receipt layout, sequential invoice numbering and end-of-day X and Z reading reports. The schema above already uses non-resetting sale numbers, which makes adding those reports straightforward. Until you're compliant, pilots can run the app for operations and analytics alongside their existing receipting.</p>
+      </div>
+
+      <h3>Launch checklist</h3>
+      <ul class="rules">
+        <li>Tenant isolation tests pass, and every mutation has a role check.</li>
+        <li>Clerk and Convex production instances configured, with webhook secrets set in the Convex dashboard.</li>
+        <li>Error tracking live, with alerts for failed checkouts and failed exports.</li>
+        <li>Every export opened in Excel (Windows and Mac) and Google Sheets, with ₱, ñ and long barcodes displayed correctly.</li>
+        <li>Scheduled Convex data exports for backups.</li>
+        <li>Terms of service and a privacy policy that cover staff and customer data.</li>
+        <li>A printed one-page quick start for cashiers: open shift, sell, refund, close shift.</li>
+        <li>A support channel pilots actually use (a group chat works fine at this stage).</li>
+      </ul>
+    </section>
+
+    <!-- ================= LATER ================= -->
+    <section id="later">
+      <h2>After the MVP</h2>
+      <p>Let pilot feedback pick the order, but these are the likely next steps, roughly by demand: fast PIN switching for shared tablets, the “Ask your shop” assistant and weekly summary, full offline mode, multiple branches with stock transfers, purchase orders to suppliers, batch and expiry tracking for groceries and bakeries, loyalty and customer profiles, e-wallet and card payment integrations that confirm payment automatically, a price-change simulator (“what if milk rises 15%?”), scheduled exports emailed to the accountant each month, and direct sync with accounting tools.</p>
+      <p>On pricing, charge per location per month rather than per user. Small shops dislike paying for every part-time cashier, and a location-based price grows naturally as your customers grow. A free tier with one register and a product cap lets new businesses try it with no risk, with costing, alerts and the assistant as reasons to upgrade.</p>
+    </section>
+
+  </main>
+</div>
+
+<footer>Plan drafted September 2026 for a Next.js, Clerk and Convex build.</footer>
+
+</body>
+</html>
