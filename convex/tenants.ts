@@ -13,6 +13,25 @@ const DEFAULTS = {
   discountLimitBps: 1000,
 };
 
+const MAX_RECEIPT_FOOTER = 200;
+
+/** Settings that later code relies on (businessDate uses the timezone), so they're checked on the way in. */
+function checkLocale(args: { currency?: string; timezone?: string; receiptFooter?: string }) {
+  if (args.currency !== undefined && !/^[A-Z]{3}$/.test(args.currency)) {
+    throw new ConvexError("Currency must be a 3-letter code, like PHP.");
+  }
+  if (args.timezone !== undefined) {
+    try {
+      new Intl.DateTimeFormat("en", { timeZone: args.timezone });
+    } catch {
+      throw new ConvexError("That time zone isn't recognized. Use a name like Asia/Manila.");
+    }
+  }
+  if (args.receiptFooter !== undefined && args.receiptFooter.length > MAX_RECEIPT_FOOTER) {
+    throw new ConvexError(`Keep the receipt footer under ${MAX_RECEIPT_FOOTER} characters.`);
+  }
+}
+
 function checkBps(label: string, value: number | undefined) {
   if (value === undefined) return;
   if (!Number.isInteger(value) || value < 0 || value > 10000) {
@@ -37,6 +56,7 @@ export const create = userMutation({
       throw new ConvexError("Enter a business name between 2 and 80 characters.");
     }
     checkBps("Tax rate", args.taxRateBps);
+    checkLocale(args);
     const slug = validateSlug(args.slug);
 
     const taken = await ctx.db
@@ -124,6 +144,7 @@ export const updateSettings = tenantMutation({
     checkBps("Tax rate", args.taxRateBps);
     checkBps("Target margin", args.targetMarginBps);
     checkBps("Discount limit", args.discountLimitBps);
+    checkLocale(args);
     const name = args.name?.trim();
     if (name !== undefined && (name.length < 2 || name.length > 80)) {
       throw new ConvexError("Enter a business name between 2 and 80 characters.");

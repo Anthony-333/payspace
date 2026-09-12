@@ -207,6 +207,12 @@ describe("roles", () => {
     const tenantId = shopA.tenantId;
     await expect(alice.mutation(api.tenants.updateSettings, { tenantId, taxRateBps: 12000 }))
       .rejects.toThrow(/between 0% and 100%/);
+    await expect(alice.mutation(api.tenants.updateSettings, { tenantId, timezone: "Nope/Nope" }))
+      .rejects.toThrow(/time zone/);
+    await expect(alice.mutation(api.tenants.updateSettings, { tenantId, currency: "pesos" }))
+      .rejects.toThrow(/3-letter/);
+    await expect(alice.mutation(api.tenants.updateSettings, { tenantId, receiptFooter: "x".repeat(201) }))
+      .rejects.toThrow(/footer/);
     await alice.mutation(api.tenants.updateSettings, { tenantId, taxRateBps: 0, pricesIncludeTax: false });
     expect(await alice.query(api.tenants.get, { tenantId })).toMatchObject({ taxRateBps: 0, pricesIncludeTax: false });
   });

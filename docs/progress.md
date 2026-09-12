@@ -4,8 +4,8 @@ Update this at the end of every session: tick what's done, note decisions and op
 
 ## Current status
 
-**Week 2 (products and catalog) is built (2026-09-13).** Security review pending; see "Left for Week 2".
-- Checks: `npm test` (50 tests), `npx tsc --noEmit`, `npm run lint` and `npm run build` all pass.
+**Week 2 (products and catalog) is built (2026-09-13).** The security review of Weeks 1 and 2 is done: no critical or high findings, the small fixes are in, and 2 medium items remain (below).
+- Checks: `npm test` (65 tests), `npx tsc --noEmit`, `npm run lint` and `npm run build` all pass.
 - An end-to-end run on the cloud dev deployment passed:
   - sign-up and sign-in
   - create a café
@@ -21,7 +21,20 @@ Update this at the end of every session: tick what's done, note decisions and op
   - edit modifiers
   - import a real 300-row CSV
   - check the layout on a phone and tablet
-- Act on the `security-reviewer` findings (Weeks 1 and 2).
+- Security review follow-ups (2026-09-13 review). Fixed so far:
+  - the `next` redirect bypass with tab or newline characters (`lib/safe-redirect.ts`, now tested)
+  - photos limited to JPEG, PNG and WebP
+  - currency, time zone and receipt footer validated
+
+**Security items still to decide (from the review):**
+- **Medium: sign-in rate limiting.** Better Auth only turns its limiter on when `NODE_ENV === "production"`, which Convex doesn't set, and it defaults to in-memory storage.
+  - Set `rateLimit: { enabled: true, storage: "database" }` with a sign-in rule, and set `advanced.ipAddress` for the Vercel to Convex header chain.
+  - Verify on the deployed stack: 10 bad sign-ins in a row should return 429.
+- **Low: storage IDs aren't tied to a shop.** Add an `uploads` table `{ tenantId, storageId }` and require it in `prepareProduct` before any code deletes photos. Stop sending `imageId` to clients.
+- **Low: security headers.** Add `frame-ancestors 'none'` (clickjacking), `nosniff`, `Referrer-Policy`, and a basic CSP in `next.config.ts`.
+- **Low: shops per user.** Cap how many shops one account can create (slug squatting), especially while email verification is off.
+- **Week 4 note:** checkout must clamp line totals at zero or above, because modifier price changes can be negative, and cap quantities.
+- **Lint gap:** the lint rule should also block `queryGeneric` and `mutationGeneric`.
 
 **Still open from Week 1:** real PWA icons (192 and 512 px).
 

@@ -5,6 +5,8 @@ import { assertMoney } from "./money";
 import { getOwned, type TenantMutationCtx, type TenantQueryCtx } from "./tenant";
 
 export const MAX_IMAGE_BYTES = 1024 * 1024;
+// Raster formats only: an SVG could carry script if its storage URL were opened directly.
+const IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 const MAX_MODIFIER_GROUPS = 10;
 
 export type ProductInput = {
@@ -69,7 +71,7 @@ export async function prepareProduct(ctx: TenantMutationCtx, input: ProductInput
   if (input.imageId !== undefined && input.imageId !== existing?.imageId) {
     const file = await ctx.db.system.get("_storage", input.imageId);
     if (!file) throw new ConvexError("The photo didn't upload. Try again.");
-    if (!file.contentType?.startsWith("image/") || file.size > MAX_IMAGE_BYTES) {
+    if (!file.contentType || !IMAGE_TYPES.has(file.contentType) || file.size > MAX_IMAGE_BYTES) {
       throw new ConvexError("Use a JPEG, PNG or WebP photo under 1 MB.");
     }
   }
