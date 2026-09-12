@@ -4,25 +4,36 @@ Update this at the end of every session: tick what's done, note decisions and op
 
 ## Current status
 
-**Week 1 is nearly done (2026-09-12).** Auth, schema, tenancy wrappers, onboarding and the isolation suite are in.
-- Checks: `npm test` (12 tests), `npx tsc --noEmit` and `npm run lint` all pass.
-- A curl smoke test against the running app passed: sign-up sets the session and Convex JWT cookies; signed-in `/` goes to onboarding; an unknown shop returns 404; signed-out visitors go to sign-in.
+**Week 2 (products and catalog) is built (2026-09-13).** Security review pending; see "Left for Week 2".
+- Checks: `npm test` (50 tests), `npx tsc --noEmit`, `npm run lint` and `npm run build` all pass.
+- An end-to-end run on the cloud dev deployment passed:
+  - sign-up and sign-in
+  - create a café
+  - apply the template (20 products, 5 modifier groups, iced latte cost ₱50.40)
+  - search
+  - an import batch with a duplicate barcode reported per row
+  - every new page returns 200
+- That run left a test user `smoke+1789243401@example.com` and shop `smokemtytcb0x` in the dev deployment.
 
-**Left for Week 1:**
-- Click through onboarding → shop → add a category in a browser.
-- Add real PWA icons (192 and 512 px).
-- Run a `security-reviewer` pass.
-- Link a cloud Convex project (see open questions).
+**Left for Week 2:**
+- Click through in a real browser:
+  - add a product with a photo (convex-test can't check an accepted upload's content type)
+  - edit modifiers
+  - import a real 300-row CSV
+  - check the layout on a phone and tablet
+- Act on the `security-reviewer` findings (Weeks 1 and 2).
 
-**Next up:** Week 2, Products and catalog.
+**Still open from Week 1:** real PWA icons (192 and 512 px).
+
+**Next up:** Week 3, inventory and costing.
 
 ### Open questions
-- Development currently runs on an **anonymous local Convex deployment** (`CONVEX_DEPLOYMENT=anonymous:anonymous-agent` in `.env.local`).
-  - To use a cloud dev project: run `npx convex login`, then `npx convex dev --configure`.
-  - Then set `BETTER_AUTH_SECRET` and `SITE_URL` on the new deployment, and update `NEXT_PUBLIC_CONVEX_SITE_URL`.
+- Development now runs on the **cloud dev deployment** `dev:judicious-porcupine-20` (team anthony-333, project payspace). The anonymous local deployment is no longer used.
 - `components/convex-client-provider.tsx` casts `authClient`: `@convex-dev/better-auth` 0.12.5 is typed against `better-auth` 1.6.15, and 1.6.31's session type no longer matches. Remove the cast when the component updates.
 - Email verification is off (`requireEmailVerification: false`) until Resend is wired up. It must be on before pilots.
-- After sign-in, `/` opens the user's first shop. A proper shop picker comes with the app shell.
+- Product photos that are replaced or removed stay in file storage. Add a cleanup job (unreferenced `_storage` files older than a day) before launch.
+- Until receiving exists, the cost typed on a stocked product sets its stock item's `avgCost` directly. In Week 3, decide whether that field stays editable once an item has receipts.
+- Blank lines in an import CSV are skipped, so the row numbers in the preview can drift from spreadsheet line numbers if a file has blank lines in the middle.
 
 ## Roadmap
 
@@ -36,9 +47,11 @@ Update this at the end of every session: tick what's done, note decisions and op
 - [x] **Tests:** shop A can't list, read or edit shop B's data through any function (`convex/tenancy.test.ts`)
 
 ### Week 2: Products and catalog
-- [ ] Categories, products, modifier groups, images, barcodes, search, archive
-- [ ] Business templates (café, grocery, bakery)
-- [ ] CSV import with preview and per-row errors
+- [x] Categories (reorder, delete when empty), products, modifier groups, images, barcodes (unique per shop), search, archive
+- [x] Business templates (café, grocery, bakery), from onboarding or the home page
+- [x] CSV import with preview and per-row errors
+- [x] App shell: sidebar with shop switcher (`app/[shop]/(manage)`)
+- [x] **Tests:** catalog behaviour (`convex/catalog.test.ts`), isolation for every new function, money and CSV helpers
 
 ### Week 3: Inventory and costing
 - [ ] Stock items with units, receiving with weighted average cost
@@ -71,6 +84,8 @@ Update this at the end of every session: tick what's done, note decisions and op
 - [ ] Onboard 3 to 5 pilot shops
 
 ## Backlog (before a real launch)
+- [ ] Camera barcode scanning (`BarcodeDetector`, maybe `@zxing/browser`). Deferred on 2026-09-13; USB scanners work today.
+- [ ] Clean up orphaned product photos in file storage
 - [ ] Senior Citizen / PWD discount: 20% off the VAT-exclusive price, VAT-exempt, applies only to the qualifying customer's items; needs ID number on the sale and its own receipt lines
 - [ ] Check BIR requirements for POS registration/accreditation, invoice format, X and Z readings
 - [ ] Fast PIN switching between cashiers on a shared tablet
@@ -83,3 +98,13 @@ Update this at the end of every session: tick what's done, note decisions and op
 - 2026-09-12: `@hookform/resolvers` is pinned at 5.2.2. Newer 5.x releases list `@typeschema/main` as an optional peer, and npm resolves it to Zod 3, which conflicts with Zod 4.
 - 2026-09-12: shadcn/ui set up with the Nova preset on Radix. It uses shadcn's own `cn` package in place of `clsx` and `tailwind-merge`.
 - 2026-09-12: `@convex-dev/agent`, `ai` and `@ai-sdk/anthropic` approved for the Version 1.1 "Ask your shop" assistant; setup notes in `docs/setup/convex-agent.md`.
+- 2026-09-13: **Camera barcode scanning deferred.** Barcode fields accept typing and USB scanners for now.
+- 2026-09-13: **Toasts use `sonner`** through shadcn's wrapper, fixed to the light theme so `next-themes` isn't needed. Removed the unused `@better-auth/infra` dependency.
+- 2026-09-13: **A stocked product creates its own stock item** (base unit `pc`, 0 on hand). The name stays in step unless the stock item was renamed.
+- 2026-09-13: **Cashiers can read products, but `unitCost` comes back as `null`** for them; only owners and managers see cost and margin.
+- 2026-09-13: **Barcodes are unique per shop, including archived products,** so restoring a product never causes a clash.
+- 2026-09-13: **Deleting a modifier group is allowed,** because sales snapshot option names. Products skip the missing ID and drop it the next time they're saved.
+- 2026-09-13: **Templates seed ingredients and recipe lines now** (0 on hand, no ledger rows) and cache each recipe product's `unitCost`. The recipe editor comes in Week 3. `templates.apply` is owner-only and only runs on an empty catalog.
+- 2026-09-13: **CSV import is validated twice.** The browser parses and checks rows (shared rules in `convex/lib/catalog.ts`), then sends batches of 100; `products.importBatch` checks every row again and returns per-row errors. The parser is hand-written (`convex/lib/csv.ts`), with no dependency.
+- 2026-09-13: **Added the `products.by_tenant_active_category` index** for the category filter and the empty-category check.
+- 2026-09-13: **Photos are resized in the browser** to 512 px WebP (JPEG as a fallback). The server accepts only `image/*` files up to 1 MB.
