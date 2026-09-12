@@ -12,7 +12,8 @@ A web point of sale for small businesses: coffee shops, groceries, bakeries and 
 
 - `docs/mvp-plan.md` is the full plan: scope, architecture, Convex schema, feature rules, roles, the 8-week roadmap, risks. Treat it as the spec.
 - `docs/progress.md` tracks what's done, plus the decisions log. Update it at the end of every session.
-- `docs/prototypes/pos-checkout.html` is a working prototype of the checkout screen (open it in a browser). Use it as the reference for the POS layout, the payment flow, and the pricing, change and split-payment logic.
+- `docs/design/blueprint.md`, with its reference image `docs/design/pos-reference.png`, is the visual design system for every screen: tokens, layout and components.
+- `docs/prototypes/pos-checkout.html` is a working prototype of the checkout screen (open it in a browser). Use it as the reference for the payment flow and the pricing, change and split-payment logic; the blueprint decides how screens look.
 - `docs/prototypes/mvp-plan.html` is an older formatted copy of the plan for humans. It still describes Clerk, so the markdown file wins.
 - `docs/setup/` holds setup notes for components we add later (for example `convex-agent.md`).
 - `.claude/agents/` holds the project's specialist agents: `orchestrator`, `stack-expert`, `security-reviewer`, `ui-ux-designer` and `legal-compliance`.
