@@ -18,3 +18,8 @@ export function useShop() {
   if (!shop) throw new Error("useShop must be used inside app/[shop]");
   return shop;
 }
+
+/** Owners and managers edit the catalog and see costs. The server enforces this too. */
+export function canManage(role: Shop["role"]) {
+  return role === "owner" || role === "manager";
+}
