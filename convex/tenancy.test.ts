@@ -90,6 +90,74 @@ describe("tenant isolation", () => {
     expect(category?.name).toBe("Coffee");
   });
 
+  test("catalog functions refuse shop A's data to a member of shop B", async () => {
+    const { t, alice, bob, shopA, shopB, categoryA } = await setup();
+    const a = shopA.tenantId;
+    const b = shopB.tenantId;
+    const stockItemA = await t.run((ctx) => ctx.db.insert("stockItems", {
+      tenantId: a, name: "Fresh milk", baseUnit: "ml", onHand: 0, avgCost: 11, reorderPoint: 0,
+    }));
+    const groupA = await alice.mutation(api.modifiers.create, {
+      tenantId: a, name: "Milk", minSelect: 0, maxSelect: 1,
+      options: [{ name: "Oat milk", priceDelta: 2000, recipeDelta: [{ stockItemId: stockItemA, qty: 150 }] }],
+    });
+    const productA = await alice.mutation(api.products.create, {
+      tenantId: a, name: "Iced latte", price: 14000, kind: "recipe", categoryId: categoryA, modifierGroupIds: [groupA],
+    });
+    const paginationOpts = { numItems: 10, cursor: null };
+    const product = { name: "Hacked", price: 1, modifierGroupIds: [] };
+    const group = { name: "Hacked", minSelect: 0, maxSelect: 1 };
+
+    // Through shop A's tenantId: no membership.
+    for (const call of [
+      () => bob.query(api.products.list, { tenantId: a, paginationOpts }),
+      () => bob.query(api.products.search, { tenantId: a, term: "latte" }),
+      () => bob.query(api.products.get, { tenantId: a, productId: productA }),
+      () => bob.query(api.modifiers.list, { tenantId: a }),
+      () => bob.query(api.templates.available, { tenantId: a }),
+      () => bob.mutation(api.products.create, { tenantId: a, ...product, kind: "service" }),
+      () => bob.mutation(api.products.update, { tenantId: a, productId: productA, ...product }),
+      () => bob.mutation(api.products.setArchived, { tenantId: a, productId: productA, archived: true }),
+      () => bob.mutation(api.products.generateUploadUrl, { tenantId: a }),
+      () => bob.mutation(api.products.importBatch, { tenantId: a, rows: [] }),
+      () => bob.mutation(api.modifiers.remove, { tenantId: a, modifierGroupId: groupA }),
+      () => bob.mutation(api.categories.move, { tenantId: a, categoryId: categoryA, direction: "down" }),
+      () => bob.mutation(api.categories.remove, { tenantId: a, categoryId: categoryA }),
+      () => bob.mutation(api.templates.apply, { tenantId: a }),
+    ]) {
+      await expect(call()).rejects.toThrow(/access/);
+    }
+
+    // Through shop B's own tenantId, with IDs that belong to shop A.
+    for (const call of [
+      () => bob.query(api.products.get, { tenantId: b, productId: productA }),
+      () => bob.mutation(api.products.update, { tenantId: b, productId: productA, ...product }),
+      () => bob.mutation(api.products.setArchived, { tenantId: b, productId: productA, archived: true }),
+      () => bob.mutation(api.products.create, { tenantId: b, ...product, kind: "service", categoryId: categoryA }),
+      () => bob.mutation(api.products.create, { tenantId: b, ...product, kind: "service", modifierGroupIds: [groupA] }),
+      () => bob.mutation(api.modifiers.update, {
+        tenantId: b, modifierGroupId: groupA, ...group, options: [{ name: "X", priceDelta: 0, recipeDelta: [] }],
+      }),
+      () => bob.mutation(api.modifiers.remove, { tenantId: b, modifierGroupId: groupA }),
+      () => bob.mutation(api.modifiers.create, {
+        tenantId: b, ...group, options: [{ name: "X", priceDelta: 0, recipeDelta: [{ stockItemId: stockItemA, qty: 1 }] }],
+      }),
+      () => bob.mutation(api.categories.move, { tenantId: b, categoryId: categoryA, direction: "down" }),
+      () => bob.mutation(api.categories.remove, { tenantId: b, categoryId: categoryA }),
+    ]) {
+      await expect(call()).rejects.toThrow(/Not found/);
+    }
+
+    // Shop B's own lists and searches never include shop A's rows.
+    expect((await bob.query(api.products.list, { tenantId: b, paginationOpts })).page).toEqual([]);
+    expect(await bob.query(api.products.list, { tenantId: b, paginationOpts, categoryId: categoryA }))
+      .toMatchObject({ page: [] });
+    expect(await bob.query(api.products.search, { tenantId: b, term: "latte" })).toEqual([]);
+    expect(await bob.query(api.modifiers.list, { tenantId: b })).toEqual([]);
+    const after = await alice.query(api.products.get, { tenantId: a, productId: productA });
+    expect(after).toMatchObject({ name: "Iced latte", isActive: true });
+  });
+
   test("lists only the caller's own shops and categories", async () => {
     const { alice, bob, shopB } = await setup();
     expect((await alice.query(api.tenants.mine, {})).map((s) => s.slug)).toEqual(["brewlab"]);

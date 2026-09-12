@@ -1,11 +1,16 @@
 import { ConvexError, v } from "convex/values";
 import { customMutation, customQuery } from "convex-helpers/server/customFunctions";
-import { mutation, query, type QueryCtx } from "../_generated/server";
+import { mutation, query, type MutationCtx, type QueryCtx } from "../_generated/server";
 import type { Doc, Id, TableNames } from "../_generated/dataModel";
 
 // The only file allowed to import the raw `query` and `mutation` (see eslint.config.mjs).
 
 export type Role = Doc<"members">["role"];
+
+type TenantExtras = { tenantId: Id<"tenants">; tenant: Doc<"tenants">; member: Doc<"members"> };
+/** The ctx a tenantQuery/tenantMutation handler receives, for helpers outside the handler. */
+export type TenantQueryCtx = QueryCtx & TenantExtras;
+export type TenantMutationCtx = MutationCtx & TenantExtras;
 
 async function requireIdentity(ctx: QueryCtx) {
   const identity = await ctx.auth.getUserIdentity();

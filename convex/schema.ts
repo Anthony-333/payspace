@@ -13,6 +13,9 @@ export const businessType = v.union(
   v.literal("retail"),
 );
 
+export const productKind = v.union(v.literal("stocked"), v.literal("recipe"), v.literal("service"));
+export const baseUnit = v.union(v.literal("pc"), v.literal("g"), v.literal("ml"));
+
 export default defineSchema({
   tenants: defineTable({
     name: v.string(),
@@ -45,7 +48,7 @@ export default defineSchema({
     tenantId,
     categoryId: v.optional(v.id("categories")),
     name: v.string(),
-    kind: v.union(v.literal("stocked"), v.literal("recipe"), v.literal("service")),
+    kind: productKind,
     stockItemId: v.optional(v.id("stockItems")), // when kind is "stocked"
     price: money,
     unitCost: money,                 // cached, recomputed when costs change
@@ -56,6 +59,7 @@ export default defineSchema({
     isActive: v.boolean(),           // archive instead of delete
   })
     .index("by_tenant_active", ["tenantId", "isActive"])
+    .index("by_tenant_active_category", ["tenantId", "isActive", "categoryId"])
     .index("by_tenant_barcode", ["tenantId", "barcode"])
     .index("by_tenant_stock_item", ["tenantId", "stockItemId"])
     .searchIndex("search_name", { searchField: "name", filterFields: ["tenantId", "isActive"] }),
@@ -76,7 +80,7 @@ export default defineSchema({
   stockItems: defineTable({
     tenantId,
     name: v.string(),
-    baseUnit: v.union(v.literal("pc"), v.literal("g"), v.literal("ml")),
+    baseUnit,
     purchaseUnit: v.optional(v.object({ name: v.string(), factor: v.number() })),
     onHand: v.number(),              // base units, cache of the ledger
     avgCost: v.number(),             // minor units per base unit (can be fractional)
