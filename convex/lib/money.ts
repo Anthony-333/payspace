@@ -63,6 +63,19 @@ export function grossMarginBps(price: number, unitCost: number, taxRateBps: numb
   return Math.round(((net - unitCost) * 10_000) / net);
 }
 
+/**
+ * Splits an order total into net and VAT. With tax-inclusive prices the VAT is already inside
+ * the subtotal; otherwise it's added on top. Rounded once, on the order, to whole centavos.
+ */
+export function taxBreakdown(subtotal: number, taxRateBps: number, pricesIncludeTax: boolean) {
+  if (pricesIncludeTax) {
+    const net = netOfTax(subtotal, taxRateBps, true);
+    return { net, tax: subtotal - net, total: subtotal };
+  }
+  const tax = roundMinor((subtotal * taxRateBps) / 10_000);
+  return { net: subtotal, tax, total: subtotal + tax };
+}
+
 export function formatBps(bps: number) {
   return `${(bps / 100).toFixed(1)}%`;
 }

@@ -112,6 +112,7 @@ describe("tenant isolation", () => {
     for (const call of [
       () => bob.query(api.products.list, { tenantId: a, paginationOpts }),
       () => bob.query(api.products.search, { tenantId: a, term: "latte" }),
+      () => bob.query(api.products.forSale, { tenantId: a }),
       () => bob.query(api.products.get, { tenantId: a, productId: productA }),
       () => bob.query(api.modifiers.list, { tenantId: a }),
       () => bob.query(api.templates.available, { tenantId: a }),
@@ -153,6 +154,7 @@ describe("tenant isolation", () => {
     expect(await bob.query(api.products.list, { tenantId: b, paginationOpts, categoryId: categoryA }))
       .toMatchObject({ page: [] });
     expect(await bob.query(api.products.search, { tenantId: b, term: "latte" })).toEqual([]);
+    expect(await bob.query(api.products.forSale, { tenantId: b })).toEqual([]);
     expect(await bob.query(api.modifiers.list, { tenantId: b })).toEqual([]);
     const after = await alice.query(api.products.get, { tenantId: a, productId: productA });
     expect(after).toMatchObject({ name: "Iced latte", isActive: true });

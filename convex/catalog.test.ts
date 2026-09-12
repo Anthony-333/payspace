@@ -77,6 +77,9 @@ describe("products", () => {
     expect(await cashier.query(api.products.get, { tenantId, productId })).toMatchObject({ name: "Soda", unitCost: null });
     const listed = await cashier.query(api.products.list, { tenantId, paginationOpts: page });
     expect(listed.page[0].unitCost).toBeNull();
+    const [forSale] = await cashier.query(api.products.forSale, { tenantId });
+    expect(forSale).toMatchObject({ name: "Soda", price: 4500 });
+    expect(forSale).not.toHaveProperty("unitCost");
     await expect(cashier.mutation(api.products.create, { tenantId, ...soda })).rejects.toThrow(/role/);
     await expect(cashier.mutation(api.products.setArchived, { tenantId, productId, archived: true })).rejects.toThrow(/role/);
     await expect(cashier.mutation(api.products.generateUploadUrl, { tenantId })).rejects.toThrow(/role/);

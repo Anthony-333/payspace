@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { formatMoney, grossMarginBps, moneyToInput, netOfTax, parseMoney } from "./money";
+import { formatMoney, grossMarginBps, moneyToInput, netOfTax, parseMoney, taxBreakdown } from "./money";
 
 describe("parseMoney", () => {
   test.each([
@@ -34,5 +34,11 @@ describe("tax and margin", () => {
     expect(grossMarginBps(14000, 4890, 1200, true)).toBe(6088);
     expect(netOfTax(14000, 1200, false)).toBe(14000);
     expect(grossMarginBps(0, 100, 1200, true)).toBeNull();
+  });
+
+  test("splits VAT out of an order total", () => {
+    expect(taxBreakdown(42300, 1200, true)).toEqual({ net: 37768, tax: 4532, total: 42300 });
+    expect(taxBreakdown(10000, 1200, false)).toEqual({ net: 10000, tax: 1200, total: 11200 });
+    expect(taxBreakdown(0, 1200, true)).toEqual({ net: 0, tax: 0, total: 0 });
   });
 });

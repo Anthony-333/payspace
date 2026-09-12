@@ -68,6 +68,27 @@ export const search = tenantQuery({
   },
 });
 
+/** Everything the POS screen sells: active products with photos, never costs. Any member may call it. */
+export const forSale = tenantQuery({
+  args: {},
+  handler: async (ctx) => {
+    const products = await ctx.db
+      .query("products")
+      .withIndex("by_tenant_active", (q) => q.eq("tenantId", ctx.tenantId).eq("isActive", true))
+      .take(2000);
+    return Promise.all(products.map(async (p) => ({
+      _id: p._id,
+      name: p.name,
+      kind: p.kind,
+      price: p.price,
+      categoryId: p.categoryId,
+      barcode: p.barcode,
+      modifierGroupIds: p.modifierGroupIds,
+      imageUrl: p.imageId ? await ctx.storage.getUrl(p.imageId) : null,
+    })));
+  },
+});
+
 export const get = tenantQuery({
   args: { productId: v.id("products") },
   handler: async (ctx, { productId }) => toClientProduct(ctx, await getOwned(ctx, ctx.tenantId, productId)),

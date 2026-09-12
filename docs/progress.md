@@ -5,7 +5,7 @@ Update this at the end of every session: tick what's done, note decisions and op
 ## Current status
 
 **Week 2 (products and catalog) is built (2026-09-13).** The security review of Weeks 1 and 2 is done: no critical or high findings, the small fixes are in, and 2 medium items remain (below).
-- Checks: `npm test` (65 tests), `npx tsc --noEmit`, `npm run lint` and `npm run build` all pass.
+- Checks: `npm test` (66 tests), `npx tsc --noEmit`, `npm run lint` and `npm run build` all pass.
 - An end-to-end run on the cloud dev deployment passed:
   - sign-up and sign-in
   - create a café
@@ -14,6 +14,19 @@ Update this at the end of every session: tick what's done, note decisions and op
   - an import batch with a duplicate barcode reported per row
   - every new page returns 200
 - That run left a test user `smoke+1789243401@example.com` and shop `smokemtytcb0x` in the dev deployment.
+
+**Design refresh and early POS screen (2026-09-13):**
+- **New look everywhere:** the app follows `docs/design/blueprint.md` and its reference image `docs/design/pos-reference.png`. That means a blue primary, light gray page, white cards, Plus Jakarta Sans, an icon rail and a top bar with search and a profile menu.
+- **Rail order:** Sell, Dashboard (replaces Home), Analytics, Products, Categories, Modifiers.
+  - Cashiers see only Sell and Products, and `/[shop]` sends them to the POS.
+- **Dashboard:** starter-menu card, KPI cards (empty until sales exist) and shortcuts.
+- **Analytics:** KPI and chart layout with empty states; real data comes in Week 6.
+- **POS screen `/[shop]/pos`** (Week 4 UI pulled forward):
+  - Screens: category tiles, product cards with steppers, an options dialog for modifiers, the invoice with VAT breakdown, and Cash / E-wallet / Card tabs.
+  - Keyboard and scanner: USB scanners add a product with Enter in the search field.
+  - Phones: a bottom "View order" bar opens the order.
+  - **Place order is turned off** until `sales.checkout` exists.
+- **Checked:** headless Chrome screenshots at 1440×900, 1024×768 and 390×844, plus the dashboard, analytics and products screens.
 
 **Left for Week 2:**
 - Click through in a real browser:
@@ -121,3 +134,9 @@ Update this at the end of every session: tick what's done, note decisions and op
 - 2026-09-13: **CSV import is validated twice.** The browser parses and checks rows (shared rules in `convex/lib/catalog.ts`), then sends batches of 100; `products.importBatch` checks every row again and returns per-row errors. The parser is hand-written (`convex/lib/csv.ts`), with no dependency.
 - 2026-09-13: **Added the `products.by_tenant_active_category` index** for the category filter and the empty-category check.
 - 2026-09-13: **Photos are resized in the browser** to 512 px WebP (JPEG as a fallback). The server accepts only `image/*` files up to 1 MB.
+- 2026-09-13: **Visual design comes from `docs/design/blueprint.md`** (reference image `docs/design/pos-reference.png`); the `ui-ux-designer` agent and CLAUDE.md point to it. `docs/prototypes/pos-checkout.html` still defines checkout behaviour. The design was adapted for PH: ₱, VAT included, Cash / E-wallet / Card instead of Paylater, and no language flags or notifications.
+- 2026-09-13: **The POS screen UI was pulled forward from Week 4, without the checkout mutation.**
+  - The cart uses `zustand` (in the approved stack), persisted to `localStorage` per shop and rehydrated after mount. The plan's IndexedDB would need another package; decide on it with the Week 5 retry queue.
+  - Cart lines store only the product, option refs and quantity. Names and prices are read from the live catalog for display, and checkout will price on the server.
+- 2026-09-13: **Added `products.forSale`**, which returns active products for the POS without costs, and `taxBreakdown` in `convex/lib/money.ts` (VAT rounded once per order).
+- 2026-09-13: **Replaced shadcn's `sidebar` component** with a custom icon rail (`components/shop/app-shell.tsx`). The top-bar search is shared through `useShellSearch` on the POS and Products pages.
