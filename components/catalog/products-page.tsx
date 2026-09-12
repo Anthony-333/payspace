@@ -1,11 +1,12 @@
 "use client";
 
 import { useMutation, usePaginatedQuery, useQuery } from "convex/react";
-import { Archive, ArchiveRestore, FileUp, ImageIcon, MoreHorizontal, Pencil, Plus, Search } from "lucide-react";
+import { Archive, ArchiveRestore, FileUp, ImageIcon, MoreHorizontal, Pencil, Plus } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
 import { ProductFormSheet, type Product } from "@/components/catalog/product-form-sheet";
+import { useShellSearch } from "@/components/shop/app-shell";
 import { PageHeader } from "@/components/shop/page-header";
 import { canManage, useShop } from "@/components/shop/shop-provider";
 import { Badge } from "@/components/ui/badge";
@@ -16,7 +17,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -36,7 +36,7 @@ export function ProductsPage() {
   const manage = canManage(shop.role);
   const [tab, setTab] = useState<"active" | "archived">("active");
   const [categoryId, setCategoryId] = useState<string>(ALL);
-  const [term, setTerm] = useState("");
+  const { value: term } = useShellSearch();
   const search = useDebouncedValue(term.trim(), 250);
   // A snapshot of the product being edited, so live updates don't reset the open form.
   const [editing, setEditing] = useState<{ product: Product | null } | null>(null);
@@ -100,17 +100,7 @@ export function ProductsPage() {
             <TabsTrigger value="archived">Archived</TabsTrigger>
           </TabsList>
         </Tabs>
-        <div className="relative min-w-48 flex-1">
-          <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            type="search"
-            value={term}
-            onChange={(e) => setTerm(e.target.value)}
-            placeholder="Search by name or scan a barcode"
-            aria-label="Search products"
-            className="h-10 pl-9"
-          />
-        </div>
+        <div className="flex-1" />
         <Select value={categoryId} onValueChange={setCategoryId}>
           <SelectTrigger className="h-10 w-44" aria-label="Filter by category">
             <SelectValue />
@@ -124,7 +114,7 @@ export function ProductsPage() {
         </Select>
       </div>
 
-      <div className="overflow-x-auto rounded-lg border">
+      <div className="overflow-x-auto rounded-xl border bg-card">
         <Table>
           <TableHeader>
             <TableRow>

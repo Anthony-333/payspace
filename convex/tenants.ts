@@ -118,7 +118,7 @@ export const bySlug = userQuery({
       .withIndex("by_tenant_user", (q) => q.eq("tenantId", tenant._id).eq("userId", ctx.userId))
       .unique();
     if (!member || member.status !== "active") return null;
-    return { tenantId: tenant._id, name: tenant.name, slug: tenant.slug, role: member.role };
+    return { tenantId: tenant._id, name: tenant.name, slug: tenant.slug, role: member.role, memberName: member.name };
   },
 });
 

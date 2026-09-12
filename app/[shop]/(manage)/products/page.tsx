@@ -1,5 +1,10 @@
+import { PageBody } from "@/components/shop/app-shell";
 import { ProductsPage } from "@/components/catalog/products-page";
 
 export default function Page() {
-  return <ProductsPage />;
+  return (
+    <PageBody>
+      <ProductsPage />
+    </PageBody>
+  );
 }

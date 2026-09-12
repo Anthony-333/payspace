@@ -1,10 +1,10 @@
-import { DashboardPage } from "@/components/shop/dashboard-page";
+import { AnalyticsPage } from "@/components/shop/analytics-page";
 import { PageBody } from "@/components/shop/app-shell";
 
 export default function Page() {
   return (
     <PageBody>
-      <DashboardPage />
+      <AnalyticsPage />
     </PageBody>
   );
 }

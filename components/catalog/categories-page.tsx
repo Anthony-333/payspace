@@ -75,7 +75,7 @@ export function CategoriesPage() {
         </form>
       )}
 
-      <ul className="max-w-xl divide-y rounded-lg border">
+      <ul className="max-w-xl divide-y rounded-xl border bg-card">
         {categories === undefined ? (
           <li className="p-4 text-sm text-muted-foreground">Loading…</li>
         ) : categories.length === 0 ? (
