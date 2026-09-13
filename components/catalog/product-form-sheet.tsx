@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
 import { ImagePlus, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -9,6 +9,7 @@ import { Controller, useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 import { FieldError } from "@/components/auth/auth-card";
+import { IngredientLines, readIngredientRows, toIngredientRows, type IngredientRow } from "@/components/inventory/ingredient-lines";
 import { canManage, useShop } from "@/components/shop/shop-provider";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -19,7 +20,8 @@ import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetT
 import { api } from "@/convex/_generated/api";
 import type { Doc, Id } from "@/convex/_generated/dataModel";
 import { checkBarcode, LIMITS } from "@/convex/lib/catalog";
-import { formatBps, formatMoney, grossMarginBps, moneyToInput, parseMoney } from "@/convex/lib/money";
+import { recipeCost, suggestedPrice } from "@/convex/lib/costing";
+import { formatBps, formatMoney, grossMarginBps, moneyToInput, parseMoney, roundMinor } from "@/convex/lib/money";
 import { errorMessage } from "@/lib/errors";
 import { resizeImage, uploadFile } from "@/lib/image";
 import { cn } from "@/lib/utils";
@@ -104,13 +106,46 @@ function ProductForm({ product, categories, groups, tenant, onDone }: FormProps)
     if (photo?.file) URL.revokeObjectURL(photo.previewUrl);
   }, [photo]);
 
+  // Recipe: ingredients come from inventory; the saved lines load once, then edits are kept locally.
+  const items = useQuery(api.inventory.listItems, showCost ? { tenantId: shop.tenantId } : "skip");
+  const savedRecipe = useQuery(
+    api.recipes.forProduct,
+    showCost && product?.kind === "recipe" ? { tenantId: shop.tenantId, productId: product._id } : "skip",
+  );
+  const [editedRecipe, setEditedRecipe] = useState<IngredientRow[] | null>(null);
+  const [recipeError, setRecipeError] = useState<string | null>(null);
+  const recipeRows = editedRecipe ?? (savedRecipe ? toIngredientRows(savedRecipe) : []);
+  const recipeReady = items !== undefined && (product?.kind !== "recipe" || savedRecipe !== undefined);
+
+  // Stocked: once a delivery is received, the cost comes from receiving (decisions log, 2026-09-14).
+  const stockItem = useQuery(
+    api.inventory.getItem,
+    showCost && product?.kind === "stocked" && product.stockItemId
+      ? { tenantId: shop.tenantId, stockItemId: product.stockItemId }
+      : "skip",
+  );
+  const costLocked = stockItem !== undefined && stockItem.lastReceivedAt !== undefined;
+
   const priceMinor = parseMoney(price);
-  const costMinor = kind === "recipe" ? (product?.unitCost ?? 0) : parseMoney(cost);
+  let costMinor: number | null;
+  if (kind === "recipe") {
+    costMinor = items
+      ? recipeCost(readIngredientRows(recipeRows).lines, new Map(items.map((i) => [i._id, { avgCost: i.avgCost ?? 0 }])))
+      : (product?.unitCost ?? 0);
+  } else {
+    costMinor = costLocked ? roundMinor(stockItem.avgCost ?? 0) : parseMoney(cost);
+  }
   const margin = tenant && priceMinor !== null && costMinor !== null && costMinor > 0
     ? grossMarginBps(priceMinor, costMinor, tenant.taxRateBps, tenant.pricesIncludeTax)
     : null;
+  const suggested = tenant && costMinor ? suggestedPrice(costMinor, tenant) : null;
 
   const onSubmit = form.handleSubmit(async (values) => {
+    const recipe = readIngredientRows(recipeRows);
+    if (values.kind === "recipe" && recipe.error) {
+      setRecipeError(recipe.error);
+      return;
+    }
     let imageId = photo?.imageId;
     if (photo?.file) {
       try {
@@ -130,7 +165,9 @@ function ProductForm({ product, categories, groups, tenant, onDone }: FormProps)
         sku: values.sku || undefined,
         imageId,
         modifierGroupIds: values.modifierGroupIds as Id<"modifierGroups">[],
-        cost: values.kind !== "recipe" && values.cost.trim() ? parseMoney(values.cost)! : undefined,
+        cost: values.kind !== "recipe" && !costLocked && values.cost.trim() ? parseMoney(values.cost)! : undefined,
+        // Only send the recipe for a new product, or when the saved one was loaded and changed.
+        recipe: values.kind === "recipe" && (!product || editedRecipe !== null) ? recipe.lines : undefined,
       };
       if (product) {
         await update({ ...fields, productId: product._id });
@@ -252,28 +289,69 @@ function ProductForm({ product, categories, groups, tenant, onDone }: FormProps)
             <Input id="price" inputMode="decimal" className="h-11" placeholder="0.00" {...form.register("price")} />
             <FieldError message={errors.price?.message} />
           </div>
-          {showCost && kind !== "recipe" && (
+          {showCost && kind !== "recipe" && !costLocked && (
             <div className="grid gap-2">
               <Label htmlFor="cost">{kind === "stocked" ? "Cost per piece (₱)" : "Cost (₱)"}</Label>
               <Input id="cost" inputMode="decimal" className="h-11" placeholder="Optional" {...form.register("cost")} />
               <FieldError message={errors.cost?.message} />
             </div>
           )}
-          {showCost && kind === "recipe" && (
+          {showCost && (kind === "recipe" || costLocked) && (
             <div className="grid content-start gap-2">
-              <span className="text-sm font-medium">Cost</span>
-              <span className="flex h-11 items-center text-sm text-muted-foreground">
-                {product?.unitCost ? formatMoney(product.unitCost) : "Worked out from the recipe"}
+              <span className="text-sm font-medium">{kind === "recipe" ? "Cost" : "Cost per piece"}</span>
+              <span className="flex h-11 flex-col justify-center text-sm">
+                {costMinor ? (
+                  <span className="font-medium tabular-nums">{formatMoney(costMinor)}</span>
+                ) : (
+                  <span className="text-muted-foreground">Add ingredients below</span>
+                )}
+                <span className="text-xs text-muted-foreground">
+                  {kind === "recipe" ? "From the recipe" : "Average of the stock you received"}
+                </span>
               </span>
             </div>
           )}
         </div>
-        {showCost && margin !== null && tenant && (
-          <p className={cn("text-sm", margin < tenant.targetMarginBps ? "text-destructive" : "text-muted-foreground")}>
-            Gross margin {formatBps(margin)}
-            {tenant.pricesIncludeTax ? " after VAT" : ""}
-            {margin < tenant.targetMarginBps ? `, below your ${formatBps(tenant.targetMarginBps)} target` : ""}.
-          </p>
+        {showCost && tenant && (margin !== null || suggested !== null) && (
+          <div className="-mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
+            {margin !== null && (
+              <span className={cn(margin < tenant.targetMarginBps ? "text-destructive" : "text-muted-foreground")}>
+                Gross margin {formatBps(margin)}
+                {tenant.pricesIncludeTax ? " after VAT" : ""}
+                {margin < tenant.targetMarginBps ? `, below your ${formatBps(tenant.targetMarginBps)} target` : ""}.
+              </span>
+            )}
+            {suggested !== null && suggested !== priceMinor && (
+              <Button
+                type="button"
+                variant="link"
+                className="h-auto p-0"
+                onClick={() => form.setValue("price", moneyToInput(suggested), { shouldValidate: true, shouldDirty: true })}
+              >
+                Use {formatMoney(suggested)} for a {formatBps(tenant.targetMarginBps)} margin
+              </Button>
+            )}
+          </div>
+        )}
+
+        {showCost && kind === "recipe" && (
+          <fieldset className="grid gap-2">
+            <legend className="mb-2 text-sm font-medium">
+              Recipe <span className="font-normal text-muted-foreground">(for one sold, before modifiers)</span>
+            </legend>
+            {recipeReady ? (
+              <IngredientLines
+                items={items}
+                rows={recipeRows}
+                onChange={(rows) => { setEditedRecipe(rows); setRecipeError(null); }}
+                showCost
+                label="Ingredient"
+              />
+            ) : (
+              <p className="text-sm text-muted-foreground">Loading ingredients…</p>
+            )}
+            <FieldError message={recipeError ?? undefined} />
+          </fieldset>
         )}
 
         <div className="grid grid-cols-2 gap-3">

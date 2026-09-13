@@ -3,6 +3,7 @@
 import { useQuery } from "convex/react";
 import {
   ChartLine,
+  Boxes,
   Check,
   LayoutDashboard,
   LogOut,
@@ -43,6 +44,7 @@ const NAV: NavItem[] = [
   { href: "", label: "Dashboard", icon: LayoutDashboard, manageOnly: true, exact: true },
   { href: "/analytics", label: "Analytics", icon: ChartLine, manageOnly: true },
   { href: "/products", label: "Products", icon: Package },
+  { href: "/inventory", label: "Inventory", icon: Boxes },
   { href: "/categories", label: "Categories", icon: Tags, manageOnly: true },
   { href: "/modifiers", label: "Modifiers", icon: SlidersHorizontal, manageOnly: true },
 ];
@@ -51,6 +53,8 @@ const NAV: NavItem[] = [
 const SEARCH_PLACEHOLDER: Record<string, string> = {
   "/pos": "Search the menu or scan a barcode",
   "/products": "Search by name or scan a barcode",
+  "/inventory": "Search stock items",
+  "/inventory/count": "Find an item to count",
 };
 
 type ShellSearch = {
