@@ -12,7 +12,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { api } from "@/convex/_generated/api";
 import { LIMITS, mapImportHeaders, readImportRow, type ImportColumn, type ImportRow } from "@/convex/lib/catalog";
-import { parseCsv } from "@/convex/lib/csv";
+import { parseCsvRows } from "@/convex/lib/csv";
 import { formatMoney } from "@/convex/lib/money";
 import { errorMessage } from "@/lib/errors";
 
@@ -26,8 +26,9 @@ const COLUMN_LABEL: Record<ImportColumn, string> = {
 
 /** Reads the file in the browser: every row is checked here first, then again on the server. */
 function parseFile(fileName: string, text: string): Parsed | string {
-  const [headers, ...lines] = parseCsv(text);
-  if (!headers) return "That file is empty.";
+  const [headerRow, ...lines] = parseCsvRows(text);
+  if (!headerRow) return "That file is empty.";
+  const headers = headerRow.cells;
   const { columns, missing } = mapImportHeaders(headers);
   if (missing.length) {
     return `The file needs a ${missing.map((c) => COLUMN_LABEL[c]).join(" and a ")} column. Found: ${headers.join(", ")}.`;
@@ -39,8 +40,8 @@ function parseFile(fileName: string, text: string): Parsed | string {
   const ready: ImportRow[] = [];
   const problems: Problem[] = [];
   const barcodeRow = new Map<string, number>();
-  lines.forEach((cells, index) => {
-    const rowNumber = index + 2; // line 1 is the header
+  // Row numbers match the spreadsheet, even when the file has blank lines.
+  lines.forEach(({ cells, rowNumber }) => {
     const { row, errors } = readImportRow(cells, columns, rowNumber);
     if (!row) return problems.push({ row: rowNumber, message: errors.join(" ") });
     if (row.barcode) {

@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 import { mapImportHeaders, readImportRow } from "./catalog";
-import { parseCsv } from "./csv";
+import { parseCsv, parseCsvRows } from "./csv";
 
 describe("parseCsv", () => {
   test("handles quotes, embedded commas, newlines and doubled quotes", () => {
@@ -16,6 +16,13 @@ describe("parseCsv", () => {
 
   test("keeps empty cells and a last line with no newline", () => {
     expect(parseCsv("a,,c\n,,")).toEqual([["a", "", "c"], ["", "", ""]]);
+  });
+
+  test("row numbers match the spreadsheet when there are blank lines or multi-line cells", () => {
+    const rows = parseCsvRows('name,price\n\nCola,45\r\n\r\n"Two\nlines",5\nChips,35');
+    expect(rows.map((r) => [r.cells[0], r.rowNumber])).toEqual([
+      ["name", 1], ["Cola", 3], ["Two\nlines", 5], ["Chips", 6],
+    ]);
   });
 });
 
