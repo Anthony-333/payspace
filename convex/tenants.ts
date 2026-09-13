@@ -15,6 +15,8 @@ const DEFAULTS = {
 };
 
 const MAX_RECEIPT_FOOTER = 200;
+/** Stops one account squatting shop links, especially while email verification is off. */
+export const MAX_OWNED_SHOPS = 5;
 
 /** Settings that later code relies on (businessDate uses the timezone), so they're checked on the way in. */
 function checkLocale(args: { currency?: string; timezone?: string; receiptFooter?: string }) {
@@ -59,6 +61,15 @@ export const create = userMutation({
     checkBps("Tax rate", args.taxRateBps);
     checkLocale(args);
     const slug = validateSlug(args.slug);
+
+    // Memberships per user are few, so reading them all is cheap; count only shops this user owns.
+    const memberships = await ctx.db
+      .query("members")
+      .withIndex("by_user", (q) => q.eq("userId", ctx.userId))
+      .take(200);
+    if (memberships.filter((m) => m.role === "owner").length >= MAX_OWNED_SHOPS) {
+      throw new ConvexError(`One account can own up to ${MAX_OWNED_SHOPS} shops. Contact us if you need more.`);
+    }
 
     const taken = await ctx.db
       .query("tenants")

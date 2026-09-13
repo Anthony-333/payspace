@@ -52,6 +52,22 @@ describe("onboarding", () => {
     await expect(make("x")).rejects.toThrow(/3 to 40/);
   });
 
+  test("one account can own at most 5 shops", async () => {
+    const { t, alice } = await setup();
+    for (let i = 2; i <= 5; i++) {
+      await alice.mutation(api.tenants.create, { name: `Brew Lab ${i}`, slug: `brewlab-${i}`, businessType: "cafe" });
+    }
+    await expect(alice.mutation(api.tenants.create, { name: "Brew Lab 6", slug: "brewlab-6", businessType: "cafe" }))
+      .rejects.toThrow(/up to 5 shops/);
+    // Being staff somewhere else doesn't count against it.
+    const carol = t.withIdentity({ subject: "user_carol" });
+    const shops = await alice.query(api.tenants.mine, {});
+    for (const shop of shops) {
+      await t.run((ctx) => ctx.db.insert("members", { tenantId: shop.tenantId, userId: "user_carol", name: "Carol", role: "manager", status: "active" }));
+    }
+    await carol.mutation(api.tenants.create, { name: "Carol's Bakery", slug: "carolsbakery", businessType: "bakery" });
+  });
+
   test("requires sign-in", async () => {
     const { t } = await setup();
     await expect(
