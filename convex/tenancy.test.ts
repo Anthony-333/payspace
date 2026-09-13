@@ -160,6 +160,52 @@ describe("tenant isolation", () => {
     expect(after).toMatchObject({ name: "Iced latte", isActive: true });
   });
 
+  test("inventory and recipe functions refuse shop A's data to a member of shop B", async () => {
+    const { t, alice, bob, shopA, shopB } = await setup();
+    const a = shopA.tenantId;
+    const b = shopB.tenantId;
+    const milkA = await alice.mutation(api.inventory.createItem, { tenantId: a, name: "Fresh milk", baseUnit: "ml", reorderPoint: 0, avgCost: 11 });
+    const latteA = await alice.mutation(api.products.create, {
+      tenantId: a, name: "Latte", kind: "recipe", price: 12000, modifierGroupIds: [], recipe: [{ stockItemId: milkA, qty: 180 }],
+    });
+    const recipeB = await bob.mutation(api.products.create, { tenantId: b, name: "Taho", kind: "recipe", price: 3000, modifierGroupIds: [] });
+    const paginationOpts = { numItems: 10, cursor: null };
+    const line = { stockItemId: milkA, qty: 1, unit: "base" as const, totalCost: 100 };
+
+    for (const tenantId of [a, b]) {
+      const expected = tenantId === a ? /access/ : /Not found/;
+      for (const call of [
+        () => bob.query(api.inventory.getItem, { tenantId, stockItemId: milkA }),
+        () => bob.query(api.inventory.movements, { tenantId, stockItemId: milkA, paginationOpts }),
+        () => bob.query(api.recipes.forProduct, { tenantId, productId: latteA }),
+        () => bob.mutation(api.inventory.updateItem, { tenantId, stockItemId: milkA, name: "Hacked", reorderPoint: 0 }),
+        () => bob.mutation(api.inventory.removeItem, { tenantId, stockItemId: milkA }),
+        () => bob.mutation(api.inventory.receive, { tenantId, lines: [line] }),
+        () => bob.mutation(api.inventory.logWaste, { tenantId, stockItemId: milkA, qty: 1 }),
+        () => bob.mutation(api.inventory.adjust, { tenantId, stockItemId: milkA, counted: 0 }),
+        () => bob.mutation(api.inventory.submitCount, { tenantId, counts: [{ stockItemId: milkA, counted: 0 }] }),
+      ]) {
+        await expect(call()).rejects.toThrow(expected);
+      }
+    }
+    await expect(bob.query(api.inventory.listItems, { tenantId: a })).rejects.toThrow(/access/);
+    await expect(bob.mutation(api.inventory.createItem, { tenantId: a, name: "X", baseUnit: "pc", reorderPoint: 0 }))
+      .rejects.toThrow(/access/);
+    // Shop A's ingredient can't be put into shop B's recipe.
+    await expect(bob.mutation(api.products.create, {
+      tenantId: b, name: "Stolen", kind: "recipe", price: 1, modifierGroupIds: [], recipe: [{ stockItemId: milkA, qty: 1 }],
+    })).rejects.toThrow(/Not found/);
+    await expect(bob.mutation(api.products.update, {
+      tenantId: b, productId: recipeB, name: "Taho", price: 3000, modifierGroupIds: [], recipe: [{ stockItemId: milkA, qty: 1 }],
+    })).rejects.toThrow(/Not found/);
+
+    expect(await bob.query(api.inventory.listItems, { tenantId: b })).toEqual([]);
+    const milk = await t.run((ctx) => ctx.db.get(milkA));
+    expect(milk).toMatchObject({ name: "Fresh milk", onHand: 0, avgCost: 11 });
+    const movements = await t.run((ctx) => ctx.db.query("stockMovements").collect());
+    expect(movements).toEqual([]);
+  });
+
   test("lists only the caller's own shops and categories", async () => {
     const { alice, bob, shopB } = await setup();
     expect((await alice.query(api.tenants.mine, {})).map((s) => s.slug)).toEqual(["brewlab"]);

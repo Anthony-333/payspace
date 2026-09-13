@@ -1,4 +1,5 @@
 import { ConvexError, v } from "convex/values";
+import { internal } from "./_generated/api";
 import { businessType } from "./schema";
 import { requireRole, tenantMutation, tenantQuery, userMutation, userQuery } from "./lib/tenant";
 import { validateSlug } from "./lib/slugs";
@@ -150,5 +151,13 @@ export const updateSettings = tenantMutation({
       throw new ConvexError("Enter a business name between 2 and 80 characters.");
     }
     await ctx.db.patch(ctx.tenantId, { ...args, ...(name !== undefined && { name }) });
+
+    // Margin flags depend on these, so re-flag every product in the background.
+    const { tenant } = ctx;
+    if ((args.targetMarginBps !== undefined && args.targetMarginBps !== tenant.targetMarginBps)
+      || (args.taxRateBps !== undefined && args.taxRateBps !== tenant.taxRateBps)
+      || (args.pricesIncludeTax !== undefined && args.pricesIncludeTax !== tenant.pricesIncludeTax)) {
+      await ctx.scheduler.runAfter(0, internal.costing.refreshAllProducts, { tenantId: ctx.tenantId, cursor: null });
+    }
   },
 });

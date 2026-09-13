@@ -2,8 +2,9 @@ import { paginationOptsValidator } from "convex/server";
 import { ConvexError, v } from "convex/values";
 import { productKind } from "./schema";
 import { checkImportRow, LIMITS, optionalText } from "./lib/catalog";
-import { assertMoney } from "./lib/money";
+import { assertMoney, roundMinor } from "./lib/money";
 import { insertProduct, prepareProduct, toClientProduct } from "./lib/products";
+import { prepareRecipe, refreshProductCost, scheduleCostRefresh, writeRecipe } from "./lib/stock";
 import { getOwned, requireRole, tenantMutation, tenantQuery } from "./lib/tenant";
 
 const productFields = {
@@ -14,8 +15,10 @@ const productFields = {
   sku: v.optional(v.string()),
   imageId: v.optional(v.id("_storage")),
   modifierGroupIds: v.array(v.id("modifierGroups")),
-  /** Stocked: cost per piece. Service: fixed cost. Ignored for recipes (costed from the recipe). */
+  /** Stocked: cost per piece, until the first delivery. Service: fixed cost. Ignored for recipes. */
   cost: v.optional(v.number()),
+  /** Recipe products only: replaces the ingredient lines, in base units per product sold. */
+  recipe: v.optional(v.array(v.object({ stockItemId: v.id("stockItems"), qty: v.number() }))),
 };
 
 /** A page of products, newest first, optionally for one category. Archived products are a separate list. */
@@ -105,36 +108,53 @@ export const generateUploadUrl = tenantMutation({
 
 export const create = tenantMutation({
   args: { ...productFields, kind: productKind },
-  handler: async (ctx, { kind, cost, ...input }) => {
+  handler: async (ctx, { kind, cost, recipe, ...input }) => {
     requireRole(ctx.member, "owner", "manager");
     const fields = await prepareProduct(ctx, input);
-    return insertProduct(ctx, kind, fields, kind === "recipe" ? undefined : cost);
+    if (kind !== "recipe") return insertProduct(ctx, kind, fields, cost);
+
+    const lines = await prepareRecipe(ctx, recipe ?? []);
+    const productId = await insertProduct(ctx, kind, fields, undefined);
+    await writeRecipe(ctx, productId, lines);
+    await refreshProductCost(ctx, ctx.tenant, (await ctx.db.get(productId))!);
+    return productId;
   },
 });
 
 export const update = tenantMutation({
   args: { productId: v.id("products"), ...productFields },
-  handler: async (ctx, { productId, cost, ...input }) => {
+  handler: async (ctx, { productId, cost, recipe, ...input }) => {
     requireRole(ctx.member, "owner", "manager");
     const product = await getOwned(ctx, ctx.tenantId, productId);
     const fields = await prepareProduct(ctx, input, product);
     if (cost !== undefined) assertMoney("Cost", cost);
+    if (recipe !== undefined && product.kind !== "recipe") {
+      throw new ConvexError("Only products made from ingredients have a recipe.");
+    }
 
     let unitCost = product.unitCost;
     if (product.kind === "stocked" && product.stockItemId) {
       const item = await getOwned(ctx, ctx.tenantId, product.stockItemId);
+      // Before the first delivery, the cost typed on the product is the stock item's cost.
+      // After that, receiving sets it (docs/progress.md decisions, 2026-09-14).
+      const costChanged = cost !== undefined && cost !== roundMinor(item.avgCost);
+      if (costChanged && item.lastReceivedAt !== undefined) {
+        throw new ConvexError("This product's cost comes from the stock you receive. Receive a delivery to update it.");
+      }
       // Keep the linked stock item's name in step unless someone renamed it on purpose.
       await ctx.db.patch(item._id, {
         ...(item.name === product.name && { name: fields.name }),
-        // Until receiving arrives, the cost typed on the product is the stock item's cost.
-        ...(cost !== undefined && { avgCost: cost }),
+        ...(costChanged && { avgCost: cost }),
       });
-      if (cost !== undefined) unitCost = cost;
+      if (costChanged) await scheduleCostRefresh(ctx, ctx.tenantId, [item._id]);
     } else if (product.kind === "service" && cost !== undefined) {
       unitCost = cost;
     }
+    if (recipe !== undefined) await writeRecipe(ctx, productId, await prepareRecipe(ctx, recipe));
+
     // Optional fields that come back empty are cleared.
     await ctx.db.patch(productId, { ...fields, unitCost });
+    await refreshProductCost(ctx, ctx.tenant, (await ctx.db.get(productId))!);
   },
 });
 

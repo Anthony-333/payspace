@@ -57,8 +57,10 @@ export default defineSchema({
     imageId: v.optional(v.id("_storage")),
     modifierGroupIds: v.array(v.id("modifierGroups")),
     isActive: v.boolean(),           // archive instead of delete
+    belowTargetMargin: v.optional(v.boolean()), // kept in step with price and cost changes
   })
     .index("by_tenant_active", ["tenantId", "isActive"])
+    .index("by_tenant_below_margin", ["tenantId", "belowTargetMargin"])
     .index("by_tenant_active_category", ["tenantId", "isActive", "categoryId"])
     .index("by_tenant_barcode", ["tenantId", "barcode"])
     .index("by_tenant_stock_item", ["tenantId", "stockItemId"])
@@ -86,6 +88,7 @@ export default defineSchema({
     avgCost: v.number(),             // minor units per base unit (can be fractional)
     reorderPoint: v.number(),
     supplierId: v.optional(v.id("suppliers")),
+    lastReceivedAt: v.optional(v.number()), // once set, avgCost only changes by receiving stock
   }).index("by_tenant", ["tenantId"]),
 
   recipeLines: defineTable({

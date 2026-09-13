@@ -1,6 +1,7 @@
 import { ConvexError } from "convex/values";
 import type { Doc, Id } from "../_generated/dataModel";
 import { checkBarcode, checkProductName, checkSku, optionalText } from "./catalog";
+import { isBelowTarget } from "./costing";
 import { assertMoney } from "./money";
 import { getOwned, type TenantMutationCtx, type TenantQueryCtx } from "./tenant";
 
@@ -91,6 +92,7 @@ export async function insertProduct(
   cost: number | undefined,
 ) {
   if (cost !== undefined) assertMoney("Cost", cost);
+  const unitCost = kind === "recipe" ? 0 : (cost ?? 0);
   let stockItemId: Id<"stockItems"> | undefined;
   if (kind === "stocked") {
     stockItemId = await ctx.db.insert("stockItems", {
@@ -107,7 +109,8 @@ export async function insertProduct(
     ...fields,
     kind,
     stockItemId,
-    unitCost: kind === "recipe" ? 0 : (cost ?? 0),
+    unitCost,
+    belowTargetMargin: isBelowTarget(fields.price, unitCost, ctx.tenant),
     isActive: true,
   });
 }
@@ -121,6 +124,7 @@ export async function toClientProduct(ctx: TenantQueryCtx, product: Doc<"product
   return {
     ...product,
     unitCost: canSeeCost(ctx.member) ? product.unitCost : null,
+    belowTargetMargin: canSeeCost(ctx.member) ? product.belowTargetMargin === true : null,
     imageUrl: product.imageId ? await ctx.storage.getUrl(product.imageId) : null,
   };
 }

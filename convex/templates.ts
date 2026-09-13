@@ -1,6 +1,6 @@
 import { ConvexError } from "convex/values";
 import type { Id } from "./_generated/dataModel";
-import { recipeCost } from "./lib/costing";
+import { isBelowTarget, recipeCost } from "./lib/costing";
 import { insertProduct } from "./lib/products";
 import { TEMPLATES } from "./lib/templateData";
 import { requireRole, tenantMutation, tenantQuery, type TenantQueryCtx } from "./lib/tenant";
@@ -83,13 +83,15 @@ export const apply = tenantMutation({
         continue;
       }
       const recipe = lines(product.recipe);
+      const unitCost = recipeCost(recipe, avgCosts);
       const productId = await ctx.db.insert("products", {
         tenantId,
         categoryId,
         name: product.name,
         kind: "recipe",
         price: product.price,
-        unitCost: recipeCost(recipe, avgCosts),
+        unitCost,
+        belowTargetMargin: isBelowTarget(product.price, unitCost, ctx.tenant),
         modifierGroupIds: (product.groups ?? []).map((key) => {
           const id = groupIds.get(key);
           if (!id) throw new Error(`Template product uses unknown modifier group "${key}"`);
