@@ -34,7 +34,7 @@ type Props = { open: boolean; items: StockItem[]; initialItem: StockItem | null;
 export function ReceiveSheet({ open, onOpenChange, ...props }: Props) {
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full overflow-y-auto sm:max-w-xl">
+      <SheetContent className="w-full! overflow-y-auto sm:max-w-xl!">
         {open && <ReceiveForm {...props} onDone={() => onOpenChange(false)} />}
       </SheetContent>
     </Sheet>
@@ -116,7 +116,7 @@ function ReceiveForm({ items, initialItem, onDone }: Omit<Props, "open" | "onOpe
                   value={line.stockItemId}
                   onValueChange={(stockItemId) => update(line.key, { stockItemId, unit: byId.get(stockItemId)?.purchaseUnit ? "purchase" : "base" })}
                 >
-                  <SelectTrigger className="h-11 min-w-0 flex-1" aria-label={`Line ${index + 1}: item`}>
+                  <SelectTrigger size="lg" className="min-w-0 flex-1 [contain:inline-size]" aria-label={`Line ${index + 1}: item`}>
                     <SelectValue placeholder="Choose item" />
                   </SelectTrigger>
                   <SelectContent>
@@ -157,7 +157,7 @@ function ReceiveForm({ items, initialItem, onDone }: Omit<Props, "open" | "onOpe
                     onValueChange={(unit) => update(line.key, { unit: unit as Line["unit"] })}
                     disabled={!item?.purchaseUnit}
                   >
-                    <SelectTrigger id={`unit-${line.key}`} className="h-11 w-full">
+                    <SelectTrigger id={`unit-${line.key}`} size="lg" className="w-full">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>

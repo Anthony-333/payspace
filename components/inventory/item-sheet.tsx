@@ -34,7 +34,7 @@ type Props = Actions & { stockItemId: Id<"stockItems"> | null; onClose: () => vo
 export function ItemSheet({ stockItemId, onClose, ...actions }: Props) {
   return (
     <Sheet open={stockItemId !== null} onOpenChange={(open) => !open && onClose()}>
-      <SheetContent className="w-full overflow-y-auto sm:max-w-lg">
+      <SheetContent className="w-full! overflow-y-auto sm:max-w-lg!">
         {stockItemId && <ItemDetails key={stockItemId} stockItemId={stockItemId} {...actions} />}
       </SheetContent>
     </Sheet>

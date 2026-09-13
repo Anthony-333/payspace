@@ -116,23 +116,25 @@ export function CountPage() {
               const counted = text.trim() ? parseQty(text) : undefined;
               const diff = counted === undefined || counted === null ? null : roundQty(counted - item.onHand);
               return (
-                <li key={item._id} className="flex flex-wrap items-center gap-x-4 gap-y-2 p-3 sm:flex-nowrap">
-                  <label htmlFor={`count-${item._id}`} className="min-w-0 flex-1 basis-full sm:basis-auto">
+                <li key={item._id} className="flex items-center gap-3 p-3">
+                  <label htmlFor={`count-${item._id}`} className="min-w-0 flex-1">
                     <span className="block font-medium">{item.name}</span>
-                    <span className="text-xs text-muted-foreground tabular-nums">
+                    <span className="block text-xs text-muted-foreground tabular-nums">
                       Expected {formatQty(item.onHand, item.baseUnit)}
+                      <span
+                        aria-live="polite"
+                        className={cn(
+                          "font-medium",
+                          counted === null || (diff !== null && diff < 0) ? "text-destructive" : "text-foreground",
+                        )}
+                      >
+                        {counted === null
+                          ? " · not a number"
+                          : diff === null ? "" : diff === 0 ? " · matches" : ` · ${diff > 0 ? "+" : ""}${formatQty(diff)}`}
+                      </span>
                     </span>
                   </label>
-                  <span
-                    className={cn(
-                      "min-w-20 flex-1 text-sm tabular-nums sm:flex-none sm:text-right",
-                      counted === null ? "text-destructive" : diff !== null && diff < 0 ? "text-destructive" : "text-muted-foreground",
-                    )}
-                    aria-live="polite"
-                  >
-                    {counted === null ? "Not a number" : diff === null ? "" : diff === 0 ? "Matches" : `${diff > 0 ? "+" : ""}${formatQty(diff)}`}
-                  </span>
-                  <div className="relative w-36 shrink-0">
+                  <div className="relative w-32 shrink-0 sm:w-36">
                     <Input
                       id={`count-${item._id}`}
                       ref={(el) => {

@@ -72,7 +72,7 @@ export function IngredientLines({ items, rows, onChange, allowNegative = false, 
           <div key={index} className="grid gap-1">
             <div className="flex gap-2">
               <Select value={row.stockItemId} onValueChange={(stockItemId) => update(index, { stockItemId })}>
-                <SelectTrigger className="h-11 min-w-0 flex-1" aria-label={`${label} ${index + 1}: ingredient`}>
+                <SelectTrigger size="lg" className="min-w-0 flex-1 [contain:inline-size]" aria-label={`${label} ${index + 1}: ingredient`}>
                   <SelectValue placeholder="Choose ingredient" />
                 </SelectTrigger>
                 <SelectContent>
@@ -83,7 +83,7 @@ export function IngredientLines({ items, rows, onChange, allowNegative = false, 
                   ))}
                 </SelectContent>
               </Select>
-              <div className="relative w-28 shrink-0">
+              <div className="relative w-24 shrink-0 sm:w-28">
                 <Input
                   inputMode="decimal"
                   className="h-11 pr-10 text-right tabular-nums"

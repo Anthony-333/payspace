@@ -189,7 +189,7 @@ export function PosScreen() {
         </Button>
       </div>
       <Sheet open={orderOpen} onOpenChange={setOrderOpen}>
-        <SheetContent side="right" className="w-full p-0 sm:max-w-md" showCloseButton>
+        <SheetContent side="right" className="w-full! p-0 sm:max-w-md!" showCloseButton>
           <SheetTitle className="sr-only">Order</SheetTitle>
           <InvoicePanel invoice={invoice} tenant={tenant} className="h-full rounded-none border-0" />
         </SheetContent>

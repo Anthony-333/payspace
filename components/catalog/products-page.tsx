@@ -102,7 +102,7 @@ export function ProductsPage() {
         </Tabs>
         <div className="flex-1" />
         <Select value={categoryId} onValueChange={setCategoryId}>
-          <SelectTrigger className="h-10 w-44" aria-label="Filter by category">
+          <SelectTrigger size="lg" className="w-44" aria-label="Filter by category">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>

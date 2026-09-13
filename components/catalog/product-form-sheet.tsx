@@ -79,7 +79,7 @@ export function ProductFormSheet({
 }: Omit<FormProps, "onDone"> & { open: boolean; onOpenChange: (open: boolean) => void }) {
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full overflow-y-auto sm:max-w-lg">
+      <SheetContent className="w-full! overflow-y-auto sm:max-w-lg!">
         {/* Mounted fresh each time the sheet opens, so the form starts from the product. */}
         <ProductForm {...props} onDone={() => onOpenChange(false)} />
       </SheetContent>
@@ -191,7 +191,7 @@ function ProductForm({ product, categories, groups, tenant, onDone }: FormProps)
         </SheetDescription>
       </SheetHeader>
 
-      <div className="grid gap-5 px-4 pb-4">
+      <div className="grid grid-cols-1 gap-5 px-4 pb-4">
         <div className="flex items-center gap-4">
           <button
             type="button"
@@ -269,7 +269,7 @@ function ProductForm({ product, categories, groups, tenant, onDone }: FormProps)
             name="categoryId"
             render={({ field }) => (
               <Select value={field.value} onValueChange={field.onChange}>
-                <SelectTrigger id="category" className="h-11 w-full">
+                <SelectTrigger id="category" size="lg" className="w-full">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -325,7 +325,7 @@ function ProductForm({ product, categories, groups, tenant, onDone }: FormProps)
               <Button
                 type="button"
                 variant="link"
-                className="h-auto p-0"
+                className="h-auto p-0 text-left whitespace-normal"
                 onClick={() => form.setValue("price", moneyToInput(suggested), { shouldValidate: true, shouldDirty: true })}
               >
                 Use {formatMoney(suggested)} for a {formatBps(tenant.targetMarginBps)} margin
@@ -374,7 +374,7 @@ function ProductForm({ product, categories, groups, tenant, onDone }: FormProps)
               control={form.control}
               name="modifierGroupIds"
               render={({ field }) => (
-                <div className="grid gap-1">
+                <div className="grid grid-cols-1 gap-1">
                   {groups.map((g) => {
                     const checked = field.value.includes(g._id);
                     return (

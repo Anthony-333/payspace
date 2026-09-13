@@ -72,7 +72,7 @@ export function ModifiersPage() {
       />
 
       {groups === undefined ? (
-        <p className="text-sm text-muted-foreground">Loadingâ€¦</p>
+        <p className="text-sm text-muted-foreground">Loading…</p>
       ) : groups.length === 0 ? (
         <p className="text-sm text-muted-foreground">No modifier groups yet.</p>
       ) : (
@@ -257,7 +257,7 @@ function GroupDialog({ open, group, items, onClose }: { open: boolean; group: Gr
                 <div key={field.id} className="grid gap-1">
                   <div className="flex gap-2">
                     <Input aria-label={`Option ${index + 1} name`} placeholder="Name" className="h-11 flex-1" {...form.register(`options.${index}.name`)} />
-                    <Input aria-label={`Option ${index + 1} price change`} placeholder="+â‚±0.00" inputMode="decimal" className="h-11 w-28" {...form.register(`options.${index}.price`)} />
+                    <Input aria-label={`Option ${index + 1} price change`} placeholder="+₱0.00" inputMode="decimal" className="h-11 w-28" {...form.register(`options.${index}.price`)} />
                     <Button
                       type="button" variant="ghost" size="icon-lg" className="size-11" aria-label={`Remove option ${index + 1}`}
                       disabled={options.fields.length === 1}
@@ -310,7 +310,7 @@ function GroupDialog({ open, group, items, onClose }: { open: boolean; group: Gr
 
           <DialogFooter>
             <Button type="submit" size="lg" className="h-11" disabled={isSubmitting}>
-              {isSubmitting ? "Savingâ€¦" : "Save"}
+              {isSubmitting ? "Saving…" : "Save"}
             </Button>
           </DialogFooter>
         </form>

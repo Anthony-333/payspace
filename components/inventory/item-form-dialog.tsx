@@ -120,7 +120,7 @@ export function ItemFormDialog({ open, item, onClose }: Props) {
               name="baseUnit"
               render={({ field }) => (
                 <Select value={field.value} onValueChange={field.onChange} disabled={item !== null}>
-                  <SelectTrigger id="base-unit" className="h-11 w-full">
+                  <SelectTrigger id="base-unit" size="lg" className="w-full">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
