@@ -4,6 +4,7 @@ import { ConvexBetterAuthProvider, type AuthClient } from "@convex-dev/better-au
 import { ConvexReactClient } from "convex/react";
 import type { ReactNode } from "react";
 import { authClient } from "@/lib/auth-client";
+import "@/lib/zod-config";
 
 const convex = new ConvexReactClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
