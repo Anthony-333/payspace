@@ -11,12 +11,20 @@ const eslintConfig = defineConfig([
     ignores: ["convex/lib/tenant.ts"],
     rules: {
       "no-restricted-imports": ["error", {
-        patterns: [{
-          group: ["**/_generated/server"],
-          importNames: ["query", "mutation", "action"],
-          message:
-            "Use tenantQuery/tenantMutation (or userQuery/userMutation) from convex/lib/tenant.ts. Internal functions are fine.",
-        }],
+        patterns: [
+          {
+            group: ["**/_generated/server"],
+            importNames: ["query", "mutation", "action"],
+            message:
+              "Use tenantQuery/tenantMutation (or userQuery/userMutation) from convex/lib/tenant.ts. Internal functions are fine.",
+          },
+          {
+            // The untyped builders register public functions just the same, so they'd bypass the wrappers too.
+            group: ["convex/server"],
+            importNames: ["queryGeneric", "mutationGeneric", "actionGeneric"],
+            message: "Use tenantQuery/tenantMutation (or userQuery/userMutation) from convex/lib/tenant.ts.",
+          },
+        ],
       }],
     },
   },
