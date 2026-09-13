@@ -3,7 +3,7 @@ import { ConvexError, v } from "convex/values";
 import { productKind } from "./schema";
 import { checkImportRow, LIMITS, optionalText } from "./lib/catalog";
 import { assertMoney, roundMinor } from "./lib/money";
-import { insertProduct, prepareProduct, toClientProduct } from "./lib/products";
+import { IMAGE_TYPES, MAX_IMAGE_BYTES, insertProduct, prepareProduct, toClientProduct } from "./lib/products";
 import { prepareRecipe, refreshProductCost, scheduleCostRefresh, writeRecipe } from "./lib/stock";
 import { getOwned, requireRole, tenantMutation, tenantQuery } from "./lib/tenant";
 
@@ -103,6 +103,28 @@ export const generateUploadUrl = tenantMutation({
   handler: async (ctx) => {
     requireRole(ctx.member, "owner", "manager");
     return ctx.storage.generateUploadUrl();
+  },
+});
+
+/**
+ * Claims an uploaded photo for this shop, after checking it's a small JPEG, PNG or WebP.
+ * Products only accept claimed photos, and a file can belong to one shop only.
+ */
+export const claimUpload = tenantMutation({
+  args: { storageId: v.id("_storage") },
+  handler: async (ctx, { storageId }) => {
+    requireRole(ctx.member, "owner", "manager");
+    const claim = await ctx.db.query("uploads").withIndex("by_storage", (q) => q.eq("storageId", storageId)).first();
+    if (claim) {
+      if (claim.tenantId !== ctx.tenantId) throw new ConvexError("Not found.");
+      return;
+    }
+    const file = await ctx.db.system.get("_storage", storageId);
+    if (!file) throw new ConvexError("The photo didn't upload. Try again.");
+    if (!file.contentType || !IMAGE_TYPES.has(file.contentType) || file.size > MAX_IMAGE_BYTES) {
+      throw new ConvexError("Use a JPEG, PNG or WebP photo under 1 MB.");
+    }
+    await ctx.db.insert("uploads", { tenantId: ctx.tenantId, storageId });
   },
 });
 

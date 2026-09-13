@@ -7,7 +7,7 @@ import { getOwned, type TenantMutationCtx, type TenantQueryCtx } from "./tenant"
 
 export const MAX_IMAGE_BYTES = 1024 * 1024;
 // Raster formats only: an SVG could carry script if its storage URL were opened directly.
-const IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
+export const IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 const MAX_MODIFIER_GROUPS = 10;
 
 export type ProductInput = {
@@ -70,11 +70,13 @@ export async function prepareProduct(ctx: TenantMutationCtx, input: ProductInput
   }
 
   if (input.imageId !== undefined && input.imageId !== existing?.imageId) {
-    const file = await ctx.db.system.get("_storage", input.imageId);
-    if (!file) throw new ConvexError("The photo didn't upload. Try again.");
-    if (!file.contentType || !IMAGE_TYPES.has(file.contentType) || file.size > MAX_IMAGE_BYTES) {
-      throw new ConvexError("Use a JPEG, PNG or WebP photo under 1 MB.");
-    }
+    // Only a photo this shop uploaded and claimed (products.claimUpload checked its type and size).
+    const imageId = input.imageId;
+    const [claim, file] = await Promise.all([
+      ctx.db.query("uploads").withIndex("by_tenant_storage", (q) => q.eq("tenantId", ctx.tenantId).eq("storageId", imageId)).first(),
+      ctx.db.system.get("_storage", imageId),
+    ]);
+    if (!claim || !file) throw new ConvexError("The photo didn't upload. Try again.");
   }
 
   return { name, price: input.price, barcode, sku, categoryId: input.categoryId, imageId: input.imageId, modifierGroupIds };

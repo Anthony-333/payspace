@@ -93,6 +93,7 @@ function ProductForm({ product, categories, groups, tenant, onDone }: FormProps)
   const create = useMutation(api.products.create);
   const update = useMutation(api.products.update);
   const generateUploadUrl = useMutation(api.products.generateUploadUrl);
+  const claimUpload = useMutation(api.products.claimUpload);
   const fileInput = useRef<HTMLInputElement>(null);
   const [photo, setPhoto] = useState<Photo>(
     product?.imageId && product.imageUrl ? { imageId: product.imageId, previewUrl: product.imageUrl } : null,
@@ -150,6 +151,7 @@ function ProductForm({ product, categories, groups, tenant, onDone }: FormProps)
     if (photo?.file) {
       try {
         imageId = await uploadFile(await generateUploadUrl({ tenantId: shop.tenantId }), await resizeImage(photo.file));
+        await claimUpload({ tenantId: shop.tenantId, storageId: imageId });
       } catch (err) {
         toast.error(errorMessage(err, "Couldn't upload that photo. Try another one."));
         return;

@@ -11,6 +11,7 @@
 import type * as auth from "../auth.js";
 import type * as categories from "../categories.js";
 import type * as costing from "../costing.js";
+import type * as crons from "../crons.js";
 import type * as http from "../http.js";
 import type * as inventory from "../inventory.js";
 import type * as lib_catalog from "../lib/catalog.js";
@@ -26,6 +27,7 @@ import type * as lib_templateData from "../lib/templateData.js";
 import type * as lib_tenant from "../lib/tenant.js";
 import type * as members from "../members.js";
 import type * as modifiers from "../modifiers.js";
+import type * as photos from "../photos.js";
 import type * as products from "../products.js";
 import type * as recipes from "../recipes.js";
 import type * as templates from "../templates.js";
@@ -41,6 +43,7 @@ declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   categories: typeof categories;
   costing: typeof costing;
+  crons: typeof crons;
   http: typeof http;
   inventory: typeof inventory;
   "lib/catalog": typeof lib_catalog;
@@ -56,6 +59,7 @@ declare const fullApi: ApiFromModules<{
   "lib/tenant": typeof lib_tenant;
   members: typeof members;
   modifiers: typeof modifiers;
+  photos: typeof photos;
   products: typeof products;
   recipes: typeof recipes;
   templates: typeof templates;

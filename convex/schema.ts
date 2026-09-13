@@ -64,7 +64,13 @@ export default defineSchema({
     .index("by_tenant_active_category", ["tenantId", "isActive", "categoryId"])
     .index("by_tenant_barcode", ["tenantId", "barcode"])
     .index("by_tenant_stock_item", ["tenantId", "stockItemId"])
+    .index("by_tenant_image", ["tenantId", "imageId"])
     .searchIndex("search_name", { searchField: "name", filterFields: ["tenantId", "isActive"] }),
+
+  // Which shop uploaded each photo, so one shop can never use another's file.
+  uploads: defineTable({ tenantId, storageId: v.id("_storage") })
+    .index("by_tenant_storage", ["tenantId", "storageId"])
+    .index("by_storage", ["storageId"]), // global: a file belongs to one shop; used by the cleanup job
 
   modifierGroups: defineTable({
     tenantId,

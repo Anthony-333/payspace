@@ -1,6 +1,6 @@
 import { convexTest } from "convex-test";
-import { describe, expect, test } from "vitest";
-import { api } from "./_generated/api";
+import { describe, expect, test, vi } from "vitest";
+import { api, internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import schema from "./schema";
 import { modules } from "./test.setup";
@@ -100,6 +100,75 @@ describe("products", () => {
     // an accepted upload is checked in the browser.
     const text = await t.run((ctx) => ctx.storage.store(new Blob(["hello"], { type: "text/plain" })));
     await expect(owner.mutation(api.products.create, { tenantId, ...soda, imageId: text })).rejects.toThrow(/photo/);
+    await expect(owner.mutation(api.products.claimUpload, { tenantId, storageId: text })).rejects.toThrow(/JPEG, PNG or WebP/);
+  });
+});
+
+describe("photos", () => {
+  // convex-test doesn't record content types, so a claim that passes the type check is written directly.
+  const storePhoto = (t: Awaited<ReturnType<typeof setup>>["t"]) =>
+    t.run((ctx) => ctx.storage.store(new Blob(["png"], { type: "image/png" })));
+
+  test("a product only takes a photo its own shop claimed", async () => {
+    const { t, owner, tenantId } = await setup("grocery");
+    const photo = await storePhoto(t);
+    await expect(owner.mutation(api.products.create, { tenantId, ...soda, imageId: photo })).rejects.toThrow(/didn't upload/);
+    await t.run((ctx) => ctx.db.insert("uploads", { tenantId, storageId: photo }));
+    await owner.mutation(api.products.claimUpload, { tenantId, storageId: photo }); // already ours: fine
+    const productId = await owner.mutation(api.products.create, { tenantId, ...soda, imageId: photo });
+    expect((await owner.query(api.products.get, { tenantId, productId })).imageUrl).toBeTruthy();
+
+    const other = t.withIdentity({ subject: "user_other" });
+    const shop2 = await other.mutation(api.tenants.create, { name: "Other shop", slug: "othershop", businessType: "grocery" });
+    await expect(other.mutation(api.products.claimUpload, { tenantId: shop2.tenantId, storageId: photo })).rejects.toThrow(/Not found/);
+    await expect(other.mutation(api.products.create, { tenantId: shop2.tenantId, ...soda, imageId: photo })).rejects.toThrow(/didn't upload/);
+  });
+
+  test("the daily cleanup deletes photos no product uses once they're a day old", async () => {
+    vi.useFakeTimers();
+    try {
+      vi.setSystemTime(new Date("2026-09-01T00:00:00Z"));
+      const { t, owner, tenantId } = await setup("grocery");
+      const used = await storePhoto(t);
+      const replaced = await storePhoto(t);
+      const loose = await storePhoto(t); // uploaded, never claimed or saved
+      const other = await t.run((ctx) => ctx.storage.store(new Blob(["id,name"]))); // not a photo: e.g. an export
+      await t.run(async (ctx) => {
+        await ctx.db.insert("uploads", { tenantId, storageId: used });
+        await ctx.db.insert("uploads", { tenantId, storageId: replaced });
+      });
+      const productId = await owner.mutation(api.products.create, { tenantId, ...soda, imageId: replaced });
+      await owner.mutation(api.products.update, { tenantId, productId, name: "Soda", price: 4500, modifierGroupIds: [], imageId: used });
+      await owner.mutation(api.products.setArchived, { tenantId, productId, archived: true }); // archived still counts
+
+      vi.setSystemTime(new Date("2026-09-02T01:00:00Z"));
+      const fresh = await storePhoto(t);
+      await t.run((ctx) => ctx.db.insert("uploads", { tenantId, storageId: fresh }));
+
+      await t.mutation(internal.photos.cleanup, { cursor: null });
+      const exists = (id: Id<"_storage">) => t.run(async (ctx) => (await ctx.db.system.get("_storage", id)) !== null);
+      expect(await exists(used)).toBe(true);
+      expect(await exists(replaced)).toBe(false);
+      expect(await exists(fresh)).toBe(true);
+      expect(await exists(other)).toBe(true);
+      // convex-test has no content type for `loose`, so it's kept like any unknown file.
+      expect(await exists(loose)).toBe(true);
+      const claims = await t.run((ctx) => ctx.db.query("uploads").collect());
+      expect(claims.map((c) => c.storageId).sort()).toEqual([used, fresh].sort());
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  test("existing product photos can be claimed after the fact", async () => {
+    const { t, tenantId } = await setup("grocery");
+    const photo = await storePhoto(t);
+    await t.run((ctx) => ctx.db.insert("products", {
+      tenantId, name: "Old", kind: "service", price: 100, unitCost: 0, imageId: photo, modifierGroupIds: [], isActive: true,
+    }));
+    await t.mutation(internal.photos.claimExisting, { cursor: null });
+    await t.mutation(internal.photos.claimExisting, { cursor: null }); // running twice is harmless
+    expect(await t.run((ctx) => ctx.db.query("uploads").collect())).toMatchObject([{ tenantId, storageId: photo }]);
   });
 });
 
