@@ -14,6 +14,7 @@ import type * as costing from "../costing.js";
 import type * as http from "../http.js";
 import type * as inventory from "../inventory.js";
 import type * as lib_catalog from "../lib/catalog.js";
+import type * as lib_clientIp from "../lib/clientIp.js";
 import type * as lib_costing from "../lib/costing.js";
 import type * as lib_csv from "../lib/csv.js";
 import type * as lib_money from "../lib/money.js";
@@ -43,6 +44,7 @@ declare const fullApi: ApiFromModules<{
   http: typeof http;
   inventory: typeof inventory;
   "lib/catalog": typeof lib_catalog;
+  "lib/clientIp": typeof lib_clientIp;
   "lib/costing": typeof lib_costing;
   "lib/csv": typeof lib_csv;
   "lib/money": typeof lib_money;
