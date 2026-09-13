@@ -4,7 +4,7 @@ import { useMutation } from "convex/react";
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import type { StockItem } from "@/components/inventory/stock-parts";
-import { useShop } from "@/components/shop/shop-provider";
+import { canManage, useShop } from "@/components/shop/shop-provider";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -73,6 +73,7 @@ function ActionForm({ action, onClose }: { action: StockAction; onClose: () => v
         <DialogDescription>
           {formatQty(item.onHand, item.baseUnit)} on hand now.{" "}
           {waste ? "Spilled, expired or damaged stock comes off the shelf." : "Enter what's really on the shelf; the difference is recorded."}
+          {waste && !canManage(shop.role) && " You can log up to what's on hand; a manager can write off more."}
         </DialogDescription>
       </DialogHeader>
 

@@ -7,6 +7,8 @@ import { getOwned, requireRole, tenantMutation, tenantQuery, type TenantMutation
 // Modifier groups: Size, Milk, Add-ons. Each option changes the price and, optionally, the recipe
 // (a large drink adds 60 ml of milk). Checkout receives option keys, so keys stay stable across edits.
 
+/** Keeps whole-shop scans of modifier groups (inventory.removeItem) bounded. */
+export const MAX_MODIFIER_GROUPS = 200;
 const MAX_OPTIONS = 30;
 const MAX_RECIPE_DELTAS = 20;
 const KEY_PATTERN = /^[a-z0-9-]{1,40}$/;
@@ -100,6 +102,13 @@ export const create = tenantMutation({
   args: groupFields,
   handler: async (ctx, input) => {
     requireRole(ctx.member, "owner", "manager");
+    const existing = await ctx.db
+      .query("modifierGroups")
+      .withIndex("by_tenant", (q) => q.eq("tenantId", ctx.tenantId))
+      .take(MAX_MODIFIER_GROUPS);
+    if (existing.length >= MAX_MODIFIER_GROUPS) {
+      throw new ConvexError(`A shop can have up to ${MAX_MODIFIER_GROUPS} modifier groups. Delete one you no longer use.`);
+    }
     return ctx.db.insert("modifierGroups", { tenantId: ctx.tenantId, ...(await prepareGroup(ctx, input)) });
   },
 });

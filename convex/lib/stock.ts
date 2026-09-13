@@ -3,7 +3,7 @@ import { internal } from "../_generated/api";
 import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 import { isBelowTarget, recipeCost } from "./costing";
-import { roundMinor } from "./money";
+import { MAX_MONEY, roundMinor } from "./money";
 import { checkQty, roundQty } from "./quantity";
 import { getOwned, type TenantMutationCtx } from "./tenant";
 
@@ -61,12 +61,15 @@ export async function recordMovement(
   return { ...item, onHand, ...patch };
 }
 
-/** What one unit of a product costs now: its stock item's average, its recipe, or a service's fixed cost. */
+/**
+ * What one unit of a product costs now: its stock item's average, its recipe, or a service's fixed
+ * cost. Capped at MAX_MONEY so an absurd recipe amount can never store an unsafe integer.
+ */
 export async function productCost(ctx: QueryCtx, product: Doc<"products">): Promise<number> {
   if (product.kind === "service") return product.unitCost;
   if (product.kind === "stocked") {
     const item = product.stockItemId && (await ctx.db.get(product.stockItemId));
-    return item && item.tenantId === product.tenantId ? roundMinor(item.avgCost) : product.unitCost;
+    return item && item.tenantId === product.tenantId ? Math.min(roundMinor(item.avgCost), MAX_MONEY) : product.unitCost;
   }
   const lines = await ctx.db
     .query("recipeLines")
@@ -78,7 +81,7 @@ export async function productCost(ctx: QueryCtx, product: Doc<"products">): Prom
     const item = await ctx.db.get(line.stockItemId);
     if (item && item.tenantId === product.tenantId) items.set(line.stockItemId, item);
   }
-  return recipeCost(lines, items);
+  return Math.min(recipeCost(lines, items), MAX_MONEY);
 }
 
 /** Brings a product's cached cost and margin flag up to date. Pass the product as it is now. */
@@ -95,7 +98,7 @@ export async function refreshProductCost(ctx: MutationCtx, tenant: Doc<"tenants"
 export async function scheduleCostRefresh(ctx: MutationCtx, tenantId: Id<"tenants">, stockItemIds: Id<"stockItems">[]) {
   const unique = [...new Set(stockItemIds)];
   if (unique.length === 0) return;
-  await ctx.scheduler.runAfter(0, internal.costing.refreshForStockItems, { tenantId, stockItemIds: unique });
+  await ctx.scheduler.runAfter(0, internal.costing.refreshForStockItems, { tenantId, stockItemIds: unique, cursor: null });
 }
 
 /** Validates recipe lines: shop-owned items, positive amounts, each item once. */

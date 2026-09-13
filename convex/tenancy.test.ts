@@ -206,6 +206,29 @@ describe("tenant isolation", () => {
     expect(movements).toEqual([]);
   });
 
+  test("a batch that sneaks in another shop's item is refused as a whole", async () => {
+    const { t, alice, bob, shopA, shopB } = await setup();
+    const b = shopB.tenantId;
+    const milkA = await alice.mutation(api.inventory.createItem, { tenantId: shopA.tenantId, name: "Fresh milk", baseUnit: "ml", reorderPoint: 0 });
+    const waterB = await bob.mutation(api.inventory.createItem, { tenantId: b, name: "Water", baseUnit: "pc", reorderPoint: 0 });
+
+    await expect(bob.mutation(api.inventory.receive, {
+      tenantId: b,
+      lines: [
+        { stockItemId: waterB, qty: 24, unit: "base", totalCost: 24000 },
+        { stockItemId: milkA, qty: 1000, unit: "base", totalCost: 1 },
+      ],
+    })).rejects.toThrow(/Not found/);
+    await expect(bob.mutation(api.inventory.submitCount, {
+      tenantId: b, counts: [{ stockItemId: waterB, counted: 5 }, { stockItemId: milkA, counted: 0 }],
+    })).rejects.toThrow(/Not found/);
+
+    // The valid first lines were rolled back with the rest.
+    expect(await t.run((ctx) => ctx.db.get(waterB))).toMatchObject({ onHand: 0, avgCost: 0 });
+    expect(await t.run((ctx) => ctx.db.get(waterB))).not.toHaveProperty("lastReceivedAt");
+    expect(await t.run((ctx) => ctx.db.query("stockMovements").collect())).toEqual([]);
+  });
+
   test("lists only the caller's own shops and categories", async () => {
     const { alice, bob, shopB } = await setup();
     expect((await alice.query(api.tenants.mine, {})).map((s) => s.slug)).toEqual(["brewlab"]);

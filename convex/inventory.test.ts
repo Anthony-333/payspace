@@ -98,7 +98,10 @@ describe("waste, adjustments and counts", () => {
     await cashier.mutation(api.inventory.logWaste, { tenantId, stockItemId: milk, qty: 0.1, note: "Spilled" });
     await cashier.mutation(api.inventory.logWaste, { tenantId, stockItemId: milk, qty: 0.2 });
     expect(await owner.mutation(api.inventory.adjust, { tenantId, stockItemId: milk, counted: 950 })).toEqual({ diff: -49.7 });
-    await cashier.mutation(api.inventory.logWaste, { tenantId, stockItemId: milk, qty: 1200 });
+    // More than is on hand: a cashier is refused, a manager or owner can write it off.
+    await expect(cashier.mutation(api.inventory.logWaste, { tenantId, stockItemId: milk, qty: 1200 }))
+      .rejects.toThrow(/more than the 950 ml/);
+    await owner.mutation(api.inventory.logWaste, { tenantId, stockItemId: milk, qty: 1200 });
 
     const got = await owner.query(api.inventory.getItem, { tenantId, stockItemId: milk });
     expect(got).toMatchObject({ onHand: -250, status: "negative" });
@@ -106,7 +109,7 @@ describe("waste, adjustments and counts", () => {
 
     const ledger = await owner.query(api.inventory.movements, { tenantId, stockItemId: milk, paginationOpts: page });
     expect(ledger.page.map((m) => m.type)).toEqual(["waste", "adjust", "waste", "waste", "receive"]);
-    expect(ledger.page[1].memberName).toBe("Owner");
+    expect(ledger.page[0].memberName).toBe("Owner");
     expect(ledger.page[2].memberName).toBe("user_cashier");
   });
 
@@ -290,7 +293,15 @@ describe("roles", () => {
     expect(listed).toMatchObject({ name: "Fresh milk", avgCost: null });
     expect(await cashier.query(api.inventory.getItem, { tenantId, stockItemId: milk })).toMatchObject({ avgCost: null });
     expect(await cashier.query(api.products.get, { tenantId, productId: recipeProduct })).toMatchObject({ unitCost: null, belowTargetMargin: null });
+    const listedProducts = await cashier.query(api.products.list, { tenantId, paginationOpts: page });
+    expect(listedProducts.page[0]).toMatchObject({ unitCost: null, belowTargetMargin: null });
+    expect((await cashier.query(api.products.search, { tenantId, term: "Latte" }))[0]).toMatchObject({ unitCost: null, belowTargetMargin: null });
+
+    // Nothing on hand yet, so even a little waste needs a manager.
+    await expect(cashier.mutation(api.inventory.logWaste, { tenantId, stockItemId: milk, qty: 10 })).rejects.toThrow(/Ask a manager/);
+    await owner.mutation(api.inventory.receive, { tenantId, lines: [{ stockItemId: milk, qty: 100, unit: "base", totalCost: 1100 }] });
     await cashier.mutation(api.inventory.logWaste, { tenantId, stockItemId: milk, qty: 10 });
+    await cashier.mutation(api.inventory.logWaste, { tenantId, stockItemId: milk, qty: 90 });
 
     for (const call of [
       () => cashier.query(api.inventory.movements, { tenantId, stockItemId: milk, paginationOpts: page }),
@@ -309,5 +320,104 @@ describe("roles", () => {
     await manager.mutation(api.inventory.receive, { tenantId, lines: [{ stockItemId: milk, qty: 1000, unit: "base", totalCost: 11000 }] });
     await manager.mutation(api.inventory.submitCount, { tenantId, counts: [{ stockItemId: milk, counted: 900 }] });
     expect(await manager.query(api.inventory.getItem, { tenantId, stockItemId: milk })).toMatchObject({ onHand: 900, avgCost: 11 });
+  });
+
+  test("a disabled member can't change stock", async () => {
+    const { t, owner, tenantId, item } = await setup();
+    const milk = await item("Fresh milk", "ml", 11);
+    await owner.mutation(api.inventory.receive, { tenantId, lines: [{ stockItemId: milk, qty: 1000, unit: "base", totalCost: 11000 }] });
+    await t.run((ctx) => ctx.db.insert("members", { tenantId, userId: "user_gone", name: "Gone", role: "manager", status: "disabled" }));
+    const gone = t.withIdentity({ subject: "user_gone" });
+    await expect(gone.mutation(api.inventory.logWaste, { tenantId, stockItemId: milk, qty: 1 })).rejects.toThrow(/access/);
+    await expect(gone.mutation(api.inventory.receive, {
+      tenantId, lines: [{ stockItemId: milk, qty: 1, unit: "base", totalCost: 1 }],
+    })).rejects.toThrow(/access/);
+    await expect(gone.query(api.inventory.listItems, { tenantId })).rejects.toThrow(/access/);
+  });
+});
+
+describe("limits", () => {
+  test("rejects non-numbers and out-of-range amounts everywhere", async () => {
+    const { owner, tenantId, item } = await setup();
+    const milk = await item("Fresh milk", "ml", 11);
+    for (const bad of [Number.NaN, Number.POSITIVE_INFINITY, 10_000_001]) {
+      await expect(owner.mutation(api.inventory.logWaste, { tenantId, stockItemId: milk, qty: bad })).rejects.toThrow(/valid quantity/);
+      await expect(owner.mutation(api.inventory.adjust, { tenantId, stockItemId: milk, counted: bad })).rejects.toThrow(/valid quantity/);
+      await expect(owner.mutation(api.inventory.submitCount, { tenantId, counts: [{ stockItemId: milk, counted: bad }] }))
+        .rejects.toThrow(/valid quantity/);
+      await expect(owner.mutation(api.inventory.receive, {
+        tenantId, lines: [{ stockItemId: milk, qty: bad, unit: "base", totalCost: 100 }],
+      })).rejects.toThrow(/valid quantity/);
+      await expect(owner.mutation(api.products.create, {
+        tenantId, name: "Bad", kind: "recipe", price: 100, modifierGroupIds: [], recipe: [{ stockItemId: milk, qty: bad }],
+      })).rejects.toThrow(/valid quantity/);
+    }
+    for (const bad of [Number.NaN, Number.POSITIVE_INFINITY, -1, 1_000_000_001]) {
+      await expect(owner.mutation(api.inventory.createItem, { tenantId, name: "Bad", baseUnit: "g", reorderPoint: 0, avgCost: bad }))
+        .rejects.toThrow(/valid cost/);
+    }
+    // A tiny quantity with a huge total would make an unsafe cost per unit.
+    await expect(owner.mutation(api.inventory.receive, {
+      tenantId, lines: [{ stockItemId: milk, qty: 0.001, unit: "base", totalCost: 1_000_000_000 }],
+    })).rejects.toThrow(/too high/);
+    expect(await owner.query(api.inventory.getItem, { tenantId, stockItemId: milk })).toMatchObject({ onHand: 0, avgCost: 11 });
+  });
+
+  test("a recipe's cached cost never exceeds the money limit", async () => {
+    const { owner, tenantId, item } = await setup();
+    const saffron = await item("Saffron", "g", 1_000_000_000); // ₱10M a gram
+    const productId = await owner.mutation(api.products.create, {
+      tenantId, name: "Gold latte", kind: "recipe", price: 100, modifierGroupIds: [], recipe: [{ stockItemId: saffron, qty: 10_000_000 }],
+    });
+    const product = await owner.query(api.products.get, { tenantId, productId });
+    expect(product.unitCost).toBe(1_000_000_000);
+    expect(product.belowTargetMargin).toBe(true);
+  });
+
+  test("a shop can have at most 200 modifier groups, so deleting a stock item checks all of them", async () => {
+    const { t, owner, tenantId, item } = await setup();
+    const oat = await item("Oat milk", "ml", 25);
+    const option = (recipeDelta: { stockItemId: Id<"stockItems">; qty: number }[]) => ({ key: "a", name: "A", priceDelta: 0, recipeDelta });
+    await t.run(async (ctx) => {
+      for (let i = 0; i < 199; i++) {
+        await ctx.db.insert("modifierGroups", { tenantId, name: `Group ${i}`, minSelect: 0, maxSelect: 1, options: [option([])] });
+      }
+      // The last group is the one that uses the item.
+      await ctx.db.insert("modifierGroups", {
+        tenantId, name: "Milk", minSelect: 0, maxSelect: 1, options: [option([{ stockItemId: oat, qty: 150 }])],
+      });
+    });
+    await expect(owner.mutation(api.modifiers.create, {
+      tenantId, name: "One more", minSelect: 0, maxSelect: 1, options: [{ name: "X", priceDelta: 0, recipeDelta: [] }],
+    })).rejects.toThrow(/up to 200/);
+    await expect(owner.mutation(api.inventory.removeItem, { tenantId, stockItemId: oat })).rejects.toThrow(/“Milk” modifier/);
+  });
+
+  test("recosting and re-flagging work through many products, in batches", async () => {
+    const { t, owner, tenantId, item, runScheduled } = await setup();
+    const milk = await item("Fresh milk", "ml", 10);
+    const productIds = await t.run(async (ctx) => {
+      const ids: Id<"products">[] = [];
+      for (let i = 0; i < 120; i++) {
+        const productId = await ctx.db.insert("products", {
+          tenantId, name: `Drink ${i}`, kind: "recipe", price: 12000, unitCost: 1000,
+          modifierGroupIds: [], isActive: i % 10 !== 0,
+        });
+        await ctx.db.insert("recipeLines", { tenantId, productId, stockItemId: milk, qty: 100 });
+        ids.push(productId);
+      }
+      return ids;
+    });
+
+    // 100 ml at 60 c/ml → ₱60 a drink: 50% margin on ₱120 incl. VAT, under the 60% target.
+    await owner.mutation(api.inventory.receive, { tenantId, lines: [{ stockItemId: milk, qty: 1000, unit: "base", totalCost: 60000 }] });
+    await runScheduled();
+    const products = await t.run((ctx) => Promise.all(productIds.map((id) => ctx.db.get(id))));
+    expect(products.every((p) => p?.unitCost === 6000 && p.belowTargetMargin === true)).toBe(true);
+
+    await owner.mutation(api.tenants.updateSettings, { tenantId, targetMarginBps: 4000 });
+    await runScheduled();
+    const reflagged = await t.run((ctx) => Promise.all(productIds.map((id) => ctx.db.get(id))));
+    expect(reflagged.every((p) => p?.belowTargetMargin === false)).toBe(true);
   });
 });

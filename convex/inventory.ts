@@ -5,7 +5,7 @@ import { baseUnit } from "./schema";
 import { blendAvgCost, roundAvgCost } from "./lib/costing";
 import { MAX_MONEY } from "./lib/money";
 import { canSeeCost } from "./lib/products";
-import { checkQty, roundQty, stockStatus } from "./lib/quantity";
+import { checkQty, formatQty, roundQty, stockStatus } from "./lib/quantity";
 import { assertQty, cleanNote, recordMovement, scheduleCostRefresh } from "./lib/stock";
 import { getOwned, requireRole, tenantMutation, tenantQuery, type TenantQueryCtx } from "./lib/tenant";
 
@@ -181,20 +181,24 @@ export const removeItem = tenantMutation({
   handler: async (ctx, { stockItemId }) => {
     requireRole(ctx.member, "owner", "manager");
     const item = await getOwned(ctx, ctx.tenantId, stockItemId);
-    const [movement, product, line, groups] = await Promise.all([
+    const [movement, product, line] = await Promise.all([
       ctx.db.query("stockMovements")
         .withIndex("by_tenant_item", (q) => q.eq("tenantId", ctx.tenantId).eq("stockItemId", stockItemId)).first(),
       ctx.db.query("products")
         .withIndex("by_tenant_stock_item", (q) => q.eq("tenantId", ctx.tenantId).eq("stockItemId", stockItemId)).first(),
       ctx.db.query("recipeLines")
         .withIndex("by_tenant_stock_item", (q) => q.eq("tenantId", ctx.tenantId).eq("stockItemId", stockItemId)).first(),
-      ctx.db.query("modifierGroups").withIndex("by_tenant", (q) => q.eq("tenantId", ctx.tenantId)).take(200),
     ]);
     if (movement) throw new ConvexError(`“${item.name}” has stock history, so it can't be deleted.`);
     if (product) throw new ConvexError(`“${item.name}” is sold as a product. Archive the product instead.`);
     if (line) throw new ConvexError(`“${item.name}” is used in a recipe. Remove it from the recipe first.`);
-    const group = groups.find((g) => g.options.some((o) => o.recipeDelta.some((d) => d.stockItemId === stockItemId)));
-    if (group) throw new ConvexError(`“${item.name}” is used by the “${group.name}” modifier. Remove it there first.`);
+    // Every group is checked; modifiers.create caps a shop at MAX_MODIFIER_GROUPS, so this stays bounded.
+    const groups = ctx.db.query("modifierGroups").withIndex("by_tenant", (q) => q.eq("tenantId", ctx.tenantId));
+    for await (const group of groups) {
+      if (group.options.some((o) => o.recipeDelta.some((d) => d.stockItemId === stockItemId))) {
+        throw new ConvexError(`“${item.name}” is used by the “${group.name}” modifier. Remove it there first.`);
+      }
+    }
     await ctx.db.delete(stockItemId);
   },
 });
@@ -233,6 +237,9 @@ export const receive = tenantMutation({
         qty = assertQty(`The quantity of “${item.name}”`, line.qty * item.purchaseUnit.factor);
       }
       const unitCost = roundAvgCost(line.totalCost / qty);
+      if (unitCost > MAX_MONEY) {
+        throw new ConvexError(`The cost per ${item.baseUnit} of “${item.name}” is too high. Check the quantity and total.`);
+      }
       const avgCost = blendAvgCost(item.onHand, item.avgCost, qty, unitCost);
       if (avgCost !== item.avgCost) changedCost.push(item._id);
       // Re-read on each line so an item listed twice blends both deliveries.
@@ -243,12 +250,20 @@ export const receive = tenantMutation({
   },
 });
 
-/** Spilled milk, expired bread. Any member can log waste; it's costed at the current average. */
+/**
+ * Spilled milk, expired bread. Any member can log waste; it's costed at the current average.
+ * Cashiers can't waste more than is on hand, so a big write-off always goes through a manager.
+ */
 export const logWaste = tenantMutation({
   args: { stockItemId: v.id("stockItems"), qty: v.number(), note: v.optional(v.string()) },
   handler: async (ctx, { stockItemId, qty, note }) => {
     const item = await getOwned(ctx, ctx.tenantId, stockItemId);
     const amount = assertQty("The amount wasted", qty);
+    if (ctx.member.role === "cashier" && amount > Math.max(item.onHand, 0)) {
+      throw new ConvexError(
+        `That's more than the ${formatQty(Math.max(item.onHand, 0), item.baseUnit)} of “${item.name}” on hand. Ask a manager to correct the count.`,
+      );
+    }
     await recordMovement(ctx, item, { type: "waste", qty: -amount, unitCost: item.avgCost, note: cleanNote(note) });
   },
 });
