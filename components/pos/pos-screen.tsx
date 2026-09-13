@@ -127,7 +127,7 @@ export function PosScreen() {
         </h1>
 
         {loading ? (
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(14.5rem,1fr))] gap-4">
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(min(16rem,100%),1fr))] gap-4">
             {Array.from({ length: 6 }, (_, i) => <div key={i} className="h-40 animate-pulse rounded-xl bg-card" />)}
           </div>
         ) : visible.length === 0 ? (
@@ -139,7 +139,7 @@ export function PosScreen() {
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(14.5rem,1fr))] gap-4">
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(min(16rem,100%),1fr))] gap-4">
             {visible.map((product) => {
               const productGroups = groupsFor(product, groups);
               const subtitle = productGroups.length
@@ -147,11 +147,11 @@ export function PosScreen() {
                 : categories.find((c) => c._id === product.categoryId)?.name ?? "";
               const qty = quantityOf(product);
               return (
-                <article key={product._id} className={cn("flex flex-col gap-4 rounded-xl border bg-card p-3 transition-colors", qty > 0 && "border-primary/40")}>
+                <article key={product._id} className={cn("flex min-w-0 flex-col gap-4 rounded-xl border bg-card p-3 transition-colors", qty > 0 && "border-primary/40")}>
                   <button
                     type="button"
                     onClick={() => addProduct(product)}
-                    className="flex items-start gap-3 rounded-lg text-left outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+                    className="flex min-w-0 items-start gap-3 rounded-lg text-left outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
                   >
                     <ProductThumb name={product.name} imageUrl={product.imageUrl} className="size-20" />
                     <span className="grid min-w-0 gap-1 pt-1">
@@ -159,14 +159,16 @@ export function PosScreen() {
                       <span className="line-clamp-2 text-sm text-muted-foreground">{subtitle}</span>
                     </span>
                   </button>
-                  <div className="mt-auto flex items-center justify-between gap-2 px-1">
+                  <div className="mt-auto flex flex-wrap items-center justify-between gap-x-2 gap-y-3 px-1.5">
                     <Price amount={product.price} className="text-2xl" />
-                    <Stepper
-                      label={product.name}
-                      value={qty}
-                      onDecrement={() => removeOne(product)}
-                      onIncrement={() => addProduct(product)}
-                    />
+                    <div className="ml-auto shrink-0">
+                      <Stepper
+                        label={product.name}
+                        value={qty}
+                        onDecrement={() => removeOne(product)}
+                        onIncrement={() => addProduct(product)}
+                      />
+                    </div>
                   </div>
                 </article>
               );
