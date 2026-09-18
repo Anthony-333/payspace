@@ -10,6 +10,7 @@ import {
   Menu,
   Package,
   Plus,
+  Receipt,
   Search,
   ShoppingBag,
   SlidersHorizontal,
@@ -41,6 +42,7 @@ type NavItem = { href: string; label: string; icon: LucideIcon; manageOnly?: boo
 // Layout and look follow docs/design/blueprint.md.
 const NAV: NavItem[] = [
   { href: "/pos", label: "Sell", icon: ShoppingBag },
+  { href: "/receipts", label: "Receipts", icon: Receipt },
   { href: "", label: "Dashboard", icon: LayoutDashboard, manageOnly: true, exact: true },
   { href: "/analytics", label: "Analytics", icon: ChartLine, manageOnly: true },
   { href: "/products", label: "Products", icon: Package },

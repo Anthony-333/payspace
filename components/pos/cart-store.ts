@@ -11,7 +11,16 @@ export type PayMethod = "cash" | "ewallet" | "card";
  * looked up live from the catalog, and the server prices the sale again at checkout.
  */
 export type CartLine = { id: string; productId: string; options: string[]; qty: number };
-export type TenantCart = { lines: CartLine[]; method: PayMethod };
+export type TenantCart = {
+  lines: CartLine[];
+  method: PayMethod;
+  /**
+   * Made when the order is started and kept until it is paid for, so a double tap or a retry
+   * after the Wi-Fi drops can never ring the same order up twice (`sales.checkout` returns the
+   * original sale for a reference it has already seen).
+   */
+  clientRef?: string;
+};
 
 export const MAX_LINE_QTY = 999;
 export const EMPTY_CART: TenantCart = { lines: [], method: "cash" };
@@ -26,6 +35,7 @@ type CartState = {
 
 const lineId = (productId: string, options: string[]) => `${productId}|${options.join(",")}`;
 const clampQty = (qty: number) => Math.max(0, Math.min(MAX_LINE_QTY, Math.floor(qty)));
+const newRef = () => (globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`);
 
 export const useCartStore = create<CartState>()(
   persist(
@@ -42,7 +52,7 @@ export const useCartStore = create<CartState>()(
             const lines = existing
               ? cart.lines.map((line) => (line.id === id ? { ...line, qty: clampQty(line.qty + qty) } : line))
               : [...cart.lines, { id, productId, options, qty: clampQty(qty) }];
-            return { ...cart, lines };
+            return { ...cart, lines, clientRef: cart.clientRef ?? newRef() };
           }),
         setQty: (tenantId, id, qty) =>
           update(tenantId, (cart) => ({
@@ -51,7 +61,8 @@ export const useCartStore = create<CartState>()(
               .map((line) => (line.id === id ? { ...line, qty: clampQty(qty) } : line))
               .filter((line) => line.qty > 0),
           })),
-        clear: (tenantId) => update(tenantId, (cart) => ({ ...cart, lines: [] })),
+        // A cleared or paid-for order starts a fresh reference: the next order is a new sale.
+        clear: (tenantId) => update(tenantId, (cart) => ({ ...cart, lines: [], clientRef: undefined })),
         setMethod: (tenantId, method) => update(tenantId, (cart) => ({ ...cart, method })),
       };
     },

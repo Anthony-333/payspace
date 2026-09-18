@@ -4,7 +4,19 @@ Update this at the end of every session: tick what's done, note decisions and op
 
 ## Current status
 
-**Week 3 (inventory and costing) is built (2026-09-14)**, and every open follow-up from Weeks 1 and 2 that didn't need you is done (below).
+**Week 4 (checkout) is built (2026-09-18).** "Place order" now rings up a real sale: the server prices the order, deducts stock through the ledger, updates the rollups and issues a receipt that stays readable at `/r/[token]` for good.
+- **Checks:** `npm test` (122 tests, 13 of them new for checkout and 7 for the business date), `npx tsc --noEmit`, `npm run lint` and `npm run build` all pass, and the functions are deployed to the cloud dev deployment.
+- **Not yet clicked through in a browser:** local sign-in is refused because the dev deployment's `SITE_URL` is `https://www.payspace.shop`, and `convex/auth.ts` takes its only trusted origin from that. See "Needs you".
+
+**What Week 4 added:**
+- **`sales.checkout`** (`convex/sales.ts`), one transaction: it returns the original sale for a repeated `clientRef`, prices every line from the live catalog, takes the sold ingredients off the shelf through `stockMovements`, bumps `dailyStats` and `productDailyStats`, and takes the next number from `counters`.
+- **Server pricing** (`convex/lib/sale.ts`): the client sends product IDs, quantities and option refs only. Options are re-checked against the live modifier groups (offered by that product, still exists, min and max respected), a negative modifier can never take a line below zero, quantities are capped at 999 and archived products are refused.
+- **Payments:** cash, e-wallet and card, split up to 5 ways. Only cash may overpay, and the excess is the change; an e-wallet or card that overpays is a typo, so it's refused. The e-wallet provider is kept in the payment's `ref` ("GCash 8891234"), the only field the schema has for it.
+- **`clientRef`** is made when the order is started and kept in the persisted cart, so a double tap or a retry after a dropped connection returns the first sale instead of ringing it up twice.
+- **Business dates** (`convex/lib/businessDate.ts`): every sale and rollup is keyed by the shop's own calendar day, so a sale rung at 00:30 in Manila counts for that Manila date.
+- **Screens:** the payment sheet (`components/pos/pay-sheet.tsx`) with quick tender, keypad, split payments and live change, following `docs/prototypes/pos-checkout.html`; a Receipts page in the rail; and the public receipt at `/r/[token]`, with a print stylesheet for 58 mm and 80 mm rolls.
+
+**Week 3 (inventory and costing) was built (2026-09-14)**, and every open follow-up from Weeks 1 and 2 that didn't need you is done (below).
 - **Checks:** `npm test` (102 tests), `npx tsc --noEmit`, `npm run lint` and `npm run build` all pass. Everything is deployed to the cloud dev deployment.
 - **Security review of Week 3:** no critical or high findings. Both medium and both low items are fixed, and the missing negative tests were added.
 
@@ -59,10 +71,11 @@ Update this at the end of every session: tick what's done, note decisions and op
 **Dev data:** the smoke user `smoke+1789243401@example.com` owns `smokemtytcb0x` (café with opening stock, waste, a count, a milk price rise and a photo product) and `smokegrocery` (297 imported products).
 
 **Needs you:**
+- **To click through anything locally** (raised 2026-09-18, and you chose to leave it for now): the dev deployment's `SITE_URL` is `https://www.payspace.shop`. `convex/auth.ts` passes it as Better Auth's `baseURL` and sets no `trustedOrigins`, so it is the only origin trusted, and signing in or up at `http://localhost:3000` returns 403 "Invalid origin". Either set it back (`npx convex env set SITE_URL http://localhost:3000`) while developing, or add localhost to `trustedOrigins` for dev deployments only. It was left alone because production may still be served off this dev deployment, where flipping it would break sign-in. The same 403 is also what makes the recorded smoke sign-in look like a wrong password — those credentials are probably fine.
 - **Before any production deploy:** set `AUTH_PROXY_SECRET` to the same random value in Vercel and in the production Convex deployment (`openssl rand -base64 32`). Without it, sign-in limits apply to the Next.js server's address instead of each visitor. It's already set on dev and in `.env.local`.
 - **Before pilots:** a Resend API key and sending domain, so email verification can be turned on.
 
-**Next up:** Week 4, the checkout screen and `sales.checkout`. The POS UI already exists. Remember that checkout must clamp line totals at zero or above (modifier price changes can be negative) and cap quantities.
+**Next up:** Week 5, shifts and selling operations. Checkout already opens a shift for the cashier on their first sale (float ₱0) and every sale points at a real one, so Week 5 adds opening with a float and closing with a blind count on top, plus voids, refunds with the manager PIN, parked orders, and the discounts held back from Week 4.
 
 ### Open questions
 - Development runs on the **cloud dev deployment** `dev:judicious-porcupine-20` (team anthony-333, project payspace).
@@ -98,9 +111,13 @@ Update this at the end of every session: tick what's done, note decisions and op
 - [x] **Tests:** `convex/inventory.test.ts`, `convex/lib/costing.test.ts`, isolation for every new function
 
 ### Week 4: Checkout screen
-- [ ] POS page matching `docs/prototypes/pos-checkout.html`
-- [ ] `sales.checkout` mutation (server pricing, stock deduction, ledger, stats, idempotent)
-- [ ] Printed receipt stylesheet (58 mm and 80 mm)
+- [x] POS page matching `docs/prototypes/pos-checkout.html`
+- [x] `sales.checkout` mutation (server pricing, stock deduction, ledger, stats, idempotent)
+- [x] Printed receipt stylesheet (58 mm and 80 mm)
+- [x] Digital receipts, saved and readable at `/r/[token]`, with a Receipts page in the shop
+- [ ] Discounts (line and order): moved to Week 5, so they land with the manager PIN that authorises them
+- [ ] Click-through in a browser: blocked on the `SITE_URL` question below
+- [x] **Tests:** `convex/sales.test.ts`, `convex/lib/businessDate.test.ts`, isolation for every new function
 
 ### Week 5: Shifts and selling operations
 - [ ] Open and close shifts with blind count
@@ -168,3 +185,13 @@ Update this at the end of every session: tick what's done, note decisions and op
 - 2026-09-14: **Zod runs without its JIT** (`lib/zod-config.ts`), because its `new Function` probe reports a CSP violation.
 - 2026-09-14: **One account can own up to 5 shops.** Being staff elsewhere doesn't count.
 - 2026-09-16: **The auth route rebuilds the incoming request instead of cloning it.** Next hands route handlers a `Proxy` around the request to track dynamic access, and the undici that ships with Node 24 (which Vercel runs) keeps a `Request`'s internals in a private `#state` field. A Proxy can't forward private fields, so `new Request(request, { headers })` — and the component's own `request.arrayBuffer()` — threw `Cannot read private member #state` in production while Node 22 locally was fine. `app/api/auth/[...all]/route.ts` now reads `url`, `method`, `headers` and `body` off the proxy (property reads are safe) and builds a plain `Request` with `duplex: "half"`, on every request rather than only when `AUTH_PROXY_SECRET` is set.
+- 2026-09-16: **Production was running against the dev Convex deployment.** The live site's CSP was built from `judicious-porcupine-20`, whose `SITE_URL` is `http://localhost:3000`; Better Auth derives its trusted origins from `baseURL`, so every signed-in POST from `https://www.payspace.shop` was refused with `INVALID_ORIGIN` (403). `opulent-emu-504` had never been deployed to and had no environment variables. It now has `SITE_URL=https://www.payspace.shop` (the canonical host — the apex 308-redirects to www), a real `BETTER_AUTH_SECRET` and an `AUTH_PROXY_SECRET`, and the functions are deployed. Vercel still has to be repointed at it by hand.
+- 2026-09-16: **`BETTER_AUTH_SECRET` on the dev deployment is the literal string `$(openssl rand -base64 32)`** — the substitution never ran when it was first set, so a guessable placeholder has been signing sessions. Rotated on 2026-09-16 from Git Bash, where the substitution expands. Prod has its own separate secret.
+- 2026-09-18: **Checkout opens a shift for the cashier on their first sale** (float ₱0), rather than making `sales.shiftId` optional. Every sale points at a real shift from day one, so Week 5 only adds opening with a float and closing with a blind count, and nothing needs backfilling.
+- 2026-09-18: **Discounts were held back to Week 5.** The schema fields are written as 0. They need the manager PIN that authorises anything over `discountLimitBps`, and that same PIN machinery is what voids and refunds need, so they land together.
+- 2026-09-18: **Only cash may overpay.** The excess becomes `changeGiven`; an e-wallet or card payment above the amount due is refused as a typo rather than recorded as a tip.
+- 2026-09-18: **The e-wallet provider lives in the payment's `ref`** ("GCash 8891234"), because `sales.payments` has only `method`, `amount` and `ref`. If the payment mix ever needs GCash apart from Maya, that needs a schema change.
+- 2026-09-18: **Added `businessMoment`/`businessDate` (`convex/lib/businessDate.ts`)**, used for `sales.businessDate` and the `dailyStats.byHour` bucket. An unrecognised timezone falls back to UTC rather than failing the sale.
+- 2026-09-18: **Added `publicQuery` to `convex/lib/tenant.ts`** for the public receipt, so that file stays the only one importing the raw `query` (CLAUDE.md rule 1). It is only for routes where an unguessable token is the key, and `sales.byToken` returns no cost, member or internal ID.
+- 2026-09-18: **Stock is deducted once per stock item per sale**, not once per line, so three lattes on one order write one movement for the beans. Stock is still allowed to go negative, and flagged.
+- 2026-09-18: **The dev deployment's `SITE_URL` is `https://www.payspace.shop`**, not the `http://localhost:3000` the 2026-09-16 entry describes. Better Auth trusts only that origin, so local sign-in and sign-up return 403 "Invalid origin" and the POS can't be clicked through locally. It matters which way this is fixed, because production may still be pointed at this dev deployment (the 2026-09-16 entry left Vercel to be repointed by hand).

@@ -14,6 +14,7 @@ import type * as costing from "../costing.js";
 import type * as crons from "../crons.js";
 import type * as http from "../http.js";
 import type * as inventory from "../inventory.js";
+import type * as lib_businessDate from "../lib/businessDate.js";
 import type * as lib_catalog from "../lib/catalog.js";
 import type * as lib_clientIp from "../lib/clientIp.js";
 import type * as lib_costing from "../lib/costing.js";
@@ -21,6 +22,7 @@ import type * as lib_csv from "../lib/csv.js";
 import type * as lib_money from "../lib/money.js";
 import type * as lib_products from "../lib/products.js";
 import type * as lib_quantity from "../lib/quantity.js";
+import type * as lib_sale from "../lib/sale.js";
 import type * as lib_slugs from "../lib/slugs.js";
 import type * as lib_stock from "../lib/stock.js";
 import type * as lib_templateData from "../lib/templateData.js";
@@ -30,6 +32,7 @@ import type * as modifiers from "../modifiers.js";
 import type * as photos from "../photos.js";
 import type * as products from "../products.js";
 import type * as recipes from "../recipes.js";
+import type * as sales from "../sales.js";
 import type * as templates from "../templates.js";
 import type * as tenants from "../tenants.js";
 
@@ -46,6 +49,7 @@ declare const fullApi: ApiFromModules<{
   crons: typeof crons;
   http: typeof http;
   inventory: typeof inventory;
+  "lib/businessDate": typeof lib_businessDate;
   "lib/catalog": typeof lib_catalog;
   "lib/clientIp": typeof lib_clientIp;
   "lib/costing": typeof lib_costing;
@@ -53,6 +57,7 @@ declare const fullApi: ApiFromModules<{
   "lib/money": typeof lib_money;
   "lib/products": typeof lib_products;
   "lib/quantity": typeof lib_quantity;
+  "lib/sale": typeof lib_sale;
   "lib/slugs": typeof lib_slugs;
   "lib/stock": typeof lib_stock;
   "lib/templateData": typeof lib_templateData;
@@ -62,6 +67,7 @@ declare const fullApi: ApiFromModules<{
   photos: typeof photos;
   products: typeof products;
   recipes: typeof recipes;
+  sales: typeof sales;
   templates: typeof templates;
   tenants: typeof tenants;
 }>;

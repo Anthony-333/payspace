@@ -1,8 +1,10 @@
 "use client";
 
 import { Banknote, CreditCard, ShoppingBag, Smartphone, type LucideIcon } from "lucide-react";
+import { useState } from "react";
 import { EMPTY_CART, useCartStore, type PayMethod } from "@/components/pos/cart-store";
 import { Price, ProductThumb, Stepper } from "@/components/pos/parts";
+import { PaySheet } from "@/components/pos/pay-sheet";
 import { describeLine, type Group, type SaleProduct } from "@/components/pos/pricing";
 import { useShop } from "@/components/shop/shop-provider";
 import { Button } from "@/components/ui/button";
@@ -19,6 +21,8 @@ const METHODS: { value: PayMethod; label: string; icon: LucideIcon }[] = [
 export type InvoiceLine = {
   id: string;
   qty: number;
+  /** The chosen option refs, exactly as checkout will send them. */
+  options: string[];
   product: SaleProduct | undefined;
   details: { unitPrice: number; optionNames: string[] } | null;
 };
@@ -30,7 +34,13 @@ export function useInvoice(products: SaleProduct[] | undefined, groups: Map<stri
   const byId = new Map((products ?? []).map((p) => [p._id as string, p]));
   const lines: InvoiceLine[] = cart.lines.map((line) => {
     const product = byId.get(line.productId);
-    return { id: line.id, qty: line.qty, product, details: product ? describeLine(product, groups, line.options) : null };
+    return {
+      id: line.id,
+      qty: line.qty,
+      options: line.options,
+      product,
+      details: product ? describeLine(product, groups, line.options) : null,
+    };
   });
   const sellable = lines.filter((l) => l.details);
   const subtotal = sellable.reduce((sum, l) => sum + l.details!.unitPrice * l.qty, 0);
@@ -49,6 +59,7 @@ export function InvoicePanel({ invoice, tenant, className }: {
   const setMethod = useCartStore((s) => s.setMethod);
   const { cart, lines, subtotal, itemCount } = invoice;
   const tax = tenant ? taxBreakdown(subtotal, tenant.taxRateBps, tenant.pricesIncludeTax) : null;
+  const [paying, setPaying] = useState(false);
 
   return (
     <section aria-label="Invoice" className={cn("flex min-h-0 flex-col rounded-xl border bg-card", className)}>
@@ -139,13 +150,28 @@ export function InvoicePanel({ invoice, tenant, className }: {
           })}
         </div>
 
-        <Button size="lg" className="h-13 w-full text-base font-semibold" disabled>
+        <Button
+          size="lg"
+          className="h-13 w-full text-base font-semibold"
+          disabled={itemCount === 0 || invoice.hasUnavailable || !tenant}
+          onClick={() => setPaying(true)}
+        >
           Place order
         </Button>
-        <p className="-mt-2 text-center text-xs text-muted-foreground">
-          Taking payment is coming soon. This order stays saved on this device.
-        </p>
+        {invoice.hasUnavailable && (
+          <p className="-mt-2 text-center text-xs text-destructive">
+            Remove the item that is no longer available to carry on.
+          </p>
+        )}
       </div>
+
+      <PaySheet
+        open={paying}
+        onOpenChange={setPaying}
+        lines={lines.filter((line) => line.details)}
+        total={tax?.total ?? subtotal}
+        itemCount={itemCount}
+      />
     </section>
   );
 }

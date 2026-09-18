@@ -72,6 +72,16 @@ export const userMutation = customMutation(mutation, {
   },
 });
 
+/**
+ * No sign-in and no tenant: the one CLAUDE.md rule 1 exception for a page anyone with the
+ * link may open. Only ever use it where an unguessable token is the key (the public receipt
+ * at /r/[token]); never for anything a tenant ID or a slug can address.
+ */
+export const publicQuery = customQuery(query, {
+  args: {},
+  input: async () => ({ ctx: {}, args: {} }),
+});
+
 export function requireRole(member: Doc<"members">, ...allowed: Role[]) {
   if (!allowed.includes(member.role)) {
     throw new ConvexError("Your role can't do this. Ask the owner or a manager.");

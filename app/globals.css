@@ -129,3 +129,47 @@
     @apply font-sans;
   }
 }
+/*
+ * Thermal receipts (docs/mvp-plan.md "Selling"). Most counter printers are installed as a
+ * system printer and hand the browser a 58 mm or 80 mm roll of unlimited length. The page
+ * is sized in millimetres so the paper decides the width, and everything but the receipt
+ * itself is hidden. Set the paper size in the browser's print dialog the first time.
+ */
+@media print {
+  @page {
+    size: 80mm auto;
+    margin: 3mm;
+  }
+
+  html,
+  body {
+    width: auto;
+    background: #fff;
+    color: #000;
+  }
+
+  /* Ink on a thermal roll is one colour: keep the greys readable rather than faint. */
+  .receipt,
+  .receipt * {
+    color: #000 !important;
+    background: transparent !important;
+    border-color: #000 !important;
+  }
+
+  .receipt {
+    width: 100%;
+    font-size: 11px;
+  }
+}
+
+/* A 58 mm roll gives about 48 mm of printable width, so the type steps down with it. */
+@media print and (max-width: 60mm) {
+  @page {
+    size: 58mm auto;
+    margin: 2mm;
+  }
+
+  .receipt {
+    font-size: 10px;
+  }
+}
