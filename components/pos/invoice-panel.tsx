@@ -1,10 +1,8 @@
 "use client";
 
 import { Banknote, CreditCard, ShoppingBag, Smartphone, type LucideIcon } from "lucide-react";
-import { useState } from "react";
 import { EMPTY_CART, useCartStore, type PayMethod } from "@/components/pos/cart-store";
 import { Price, ProductThumb, Stepper } from "@/components/pos/parts";
-import { PaySheet } from "@/components/pos/pay-sheet";
 import { describeLine, type Group, type SaleProduct } from "@/components/pos/pricing";
 import { useShop } from "@/components/shop/shop-provider";
 import { Button } from "@/components/ui/button";
@@ -48,9 +46,11 @@ export function useInvoice(products: SaleProduct[] | undefined, groups: Map<stri
   return { cart, lines, subtotal, itemCount, hasUnavailable: sellable.length < lines.length };
 }
 
-export function InvoicePanel({ invoice, tenant, className }: {
+export function InvoicePanel({ invoice, tenant, onPlaceOrder, className }: {
   invoice: ReturnType<typeof useInvoice>;
   tenant: Pick<Doc<"tenants">, "taxRateBps" | "pricesIncludeTax"> | undefined;
+  /** The payment sheet lives once, on the POS screen, so it is never nested inside the order sheet. */
+  onPlaceOrder: () => void;
   className?: string;
 }) {
   const shop = useShop();
@@ -59,7 +59,6 @@ export function InvoicePanel({ invoice, tenant, className }: {
   const setMethod = useCartStore((s) => s.setMethod);
   const { cart, lines, subtotal, itemCount } = invoice;
   const tax = tenant ? taxBreakdown(subtotal, tenant.taxRateBps, tenant.pricesIncludeTax) : null;
-  const [paying, setPaying] = useState(false);
 
   return (
     <section aria-label="Invoice" className={cn("flex min-h-0 flex-col rounded-xl border bg-card", className)}>
@@ -154,7 +153,7 @@ export function InvoicePanel({ invoice, tenant, className }: {
           size="lg"
           className="h-13 w-full text-base font-semibold"
           disabled={itemCount === 0 || invoice.hasUnavailable || !tenant}
-          onClick={() => setPaying(true)}
+          onClick={onPlaceOrder}
         >
           Place order
         </Button>
@@ -164,14 +163,6 @@ export function InvoicePanel({ invoice, tenant, className }: {
           </p>
         )}
       </div>
-
-      <PaySheet
-        open={paying}
-        onOpenChange={setPaying}
-        lines={lines.filter((line) => line.details)}
-        total={tax?.total ?? subtotal}
-        itemCount={itemCount}
-      />
     </section>
   );
 }

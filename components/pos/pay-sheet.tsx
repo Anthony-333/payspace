@@ -1,7 +1,6 @@
 "use client";
 
 import { useMutation } from "convex/react";
-import { ConvexError } from "convex/values";
 import { Banknote, Check, CreditCard, Delete, Printer, Receipt, Smartphone, X } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
@@ -15,6 +14,7 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/compone
 import { Input } from "@/components/ui/input";
 import { api } from "@/convex/_generated/api";
 import { formatMoney, parseMoney } from "@/convex/lib/money";
+import { errorMessage } from "@/lib/errors";
 import { cn } from "@/lib/utils";
 
 // Taking payment, following docs/prototypes/pos-checkout.html: cash with quick tender and
@@ -61,7 +61,7 @@ export function PaySheet({ open, onOpenChange, lines, total, itemCount }: {
   const shop = useShop();
   const checkout = useMutation(api.sales.checkout);
   const clear = useCartStore((s) => s.clear);
-  const clientRef = useCartStore((s) => s.carts[shop.tenantId]?.clientRef);
+  const ensureRef = useCartStore((s) => s.ensureRef);
 
   const [tab, setTab] = useState<PayMethod>("cash");
   const [cash, setCash] = useState("");
@@ -116,7 +116,17 @@ export function PaySheet({ open, onOpenChange, lines, total, itemCount }: {
   }
 
   async function complete() {
-    if (!covered || busy || !clientRef) return;
+    if (busy) return;
+    if (!covered) {
+      toast.error(`${formatMoney(remaining)} still to collect.`);
+      return;
+    }
+    if (lines.length === 0) {
+      toast.error("There is nothing on this order.");
+      return;
+    }
+    // Made here if the order hasn't got one, so the same reference is reused on a retry.
+    const clientRef = ensureRef(shop.tenantId);
     const payments = [...taken];
     if (pending) {
       const label = tab === "ewallet" ? provider : "Card";
@@ -147,7 +157,10 @@ export function PaySheet({ open, onOpenChange, lines, total, itemCount }: {
       });
       clear(shop.tenantId);
     } catch (error) {
-      toast.error(error instanceof ConvexError ? String(error.data) : "That order didn't go through. Try again.");
+      // The reference is kept, so pressing Complete sale again retries the same order
+      // rather than risking a second one.
+      console.error("checkout failed", error);
+      toast.error(errorMessage(error, "That order didn't go through. Try again."));
     } finally {
       setBusy(false);
     }

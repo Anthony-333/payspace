@@ -9,13 +9,14 @@ import { EMPTY_CART, useCartStore } from "@/components/pos/cart-store";
 import { InvoicePanel, useInvoice } from "@/components/pos/invoice-panel";
 import { ModifierDialog } from "@/components/pos/modifier-dialog";
 import { Price, ProductThumb, Stepper } from "@/components/pos/parts";
+import { PaySheet } from "@/components/pos/pay-sheet";
 import { categoryIcon, defaultOptions, groupsFor, type Group, type SaleProduct } from "@/components/pos/pricing";
 import { useShellSearch } from "@/components/shop/app-shell";
 import { canManage, useShop } from "@/components/shop/shop-provider";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { api } from "@/convex/_generated/api";
-import { formatMoney } from "@/convex/lib/money";
+import { formatMoney, taxBreakdown } from "@/convex/lib/money";
 import { cn } from "@/lib/utils";
 
 const ALL = "all";
@@ -37,6 +38,7 @@ export function PosScreen() {
   const [categoryId, setCategoryId] = useState(ALL);
   const [choosing, setChoosing] = useState<SaleProduct | null>(null);
   const [orderOpen, setOrderOpen] = useState(false);
+  const [paying, setPaying] = useState(false);
 
   const groups = useMemo(() => new Map((groupList ?? []).map((g) => [g._id as string, g as Group])), [groupList]);
   const invoice = useInvoice(products, groups);
@@ -87,6 +89,16 @@ export function PosScreen() {
     });
     return () => search.setOnSubmit(null);
   });
+
+  const total = tenant
+    ? taxBreakdown(invoice.subtotal, tenant.taxRateBps, tenant.pricesIncludeTax).total
+    : invoice.subtotal;
+
+  /** Closes the order sheet first, so the payment sheet is never opened inside it. */
+  function placeOrder() {
+    setOrderOpen(false);
+    setPaying(true);
+  }
 
   const quantityOf = (product: SaleProduct) =>
     cart.lines.filter((l) => l.productId === product._id).reduce((sum, l) => sum + l.qty, 0);
@@ -179,7 +191,7 @@ export function PosScreen() {
 
       {/* Invoice: a column on large screens, a bottom bar and sheet below that */}
       <div className="hidden w-80 shrink-0 py-4 pr-4 lg:flex xl:w-[23.75rem] xl:py-6 xl:pr-6">
-        <InvoicePanel invoice={invoice} tenant={tenant} className="w-full" />
+        <InvoicePanel invoice={invoice} tenant={tenant} onPlaceOrder={placeOrder} className="w-full" />
       </div>
 
       <div className="fixed inset-x-0 bottom-0 z-30 border-t bg-card p-3 lg:hidden">
@@ -191,9 +203,17 @@ export function PosScreen() {
       <Sheet open={orderOpen} onOpenChange={setOrderOpen}>
         <SheetContent side="right" className="w-full! p-0 sm:max-w-md!" showCloseButton>
           <SheetTitle className="sr-only">Order</SheetTitle>
-          <InvoicePanel invoice={invoice} tenant={tenant} className="h-full rounded-none border-0" />
+          <InvoicePanel invoice={invoice} tenant={tenant} onPlaceOrder={placeOrder} className="h-full rounded-none border-0" />
         </SheetContent>
       </Sheet>
+
+      <PaySheet
+        open={paying}
+        onOpenChange={setPaying}
+        lines={invoice.lines.filter((line) => line.details)}
+        total={total}
+        itemCount={invoice.itemCount}
+      />
 
       <ModifierDialog
         product={choosing}

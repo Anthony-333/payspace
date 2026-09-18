@@ -31,6 +31,8 @@ type CartState = {
   setQty: (tenantId: string, lineId: string, qty: number) => void;
   clear: (tenantId: string) => void;
   setMethod: (tenantId: string, method: PayMethod) => void;
+  /** The order's reference, made and saved now if it doesn't have one yet. */
+  ensureRef: (tenantId: string) => string;
 };
 
 const lineId = (productId: string, options: string[]) => `${productId}|${options.join(",")}`;
@@ -39,7 +41,7 @@ const newRef = () => (globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math
 
 export const useCartStore = create<CartState>()(
   persist(
-    (set) => {
+    (set, get) => {
       const update = (tenantId: string, change: (cart: TenantCart) => TenantCart) =>
         set((state) => ({ carts: { ...state.carts, [tenantId]: change(state.carts[tenantId] ?? EMPTY_CART) } }));
 
@@ -63,6 +65,16 @@ export const useCartStore = create<CartState>()(
           })),
         // A cleared or paid-for order starts a fresh reference: the next order is a new sale.
         clear: (tenantId) => update(tenantId, (cart) => ({ ...cart, lines: [], clientRef: undefined })),
+        // Carts saved before checkout existed have no reference, and neither would an order
+        // restored from an older version of the app, so checkout asks for one rather than
+        // assuming `add` made it.
+        ensureRef: (tenantId) => {
+          const existing = get().carts[tenantId]?.clientRef;
+          if (existing) return existing;
+          const clientRef = newRef();
+          update(tenantId, (cart) => ({ ...cart, clientRef }));
+          return clientRef;
+        },
         setMethod: (tenantId, method) => update(tenantId, (cart) => ({ ...cart, method })),
       };
     },
