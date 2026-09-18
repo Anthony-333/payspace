@@ -5,8 +5,10 @@ import { ChartLine, FileUp, Package, ShoppingBag, SlidersHorizontal, Tags } from
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
+import { AlertsCard } from "@/components/analytics/alerts-card";
+import { KpiTiles } from "@/components/analytics/kpi-tiles";
+import { rangeFrom, useShopToday } from "@/components/analytics/range-picker";
 import { StarterTemplateCard } from "@/components/catalog/starter-template-card";
-import { KpiGrid } from "@/components/shop/analytics-page";
 import { PageHeader } from "@/components/shop/page-header";
 import { canManage, useShop } from "@/components/shop/shop-provider";
 import { api } from "@/convex/_generated/api";
@@ -25,6 +27,12 @@ export function DashboardPage() {
   const router = useRouter();
   const manage = canManage(shop.role);
   const template = useQuery(api.templates.available, manage ? { tenantId: shop.tenantId } : "skip");
+  // Today in the shop's own calendar, against the same weekday last week.
+  const today = useShopToday(shop.timezone);
+  const summary = useQuery(
+    api.analytics.summary,
+    manage && today ? { tenantId: shop.tenantId, ...rangeFrom(today, "today") } : "skip",
+  );
 
   // Cashiers work from the checkout screen; the dashboard is for owners and managers.
   useEffect(() => {
@@ -37,7 +45,25 @@ export function DashboardPage() {
       <PageHeader title="Dashboard" description={`Good to see you, ${shop.memberName.split(" ")[0]}. Here's ${shop.name} today.`} />
       <div className="grid gap-5">
         {template && shop.role === "owner" && <StarterTemplateCard template={template} />}
-        <KpiGrid />
+        <KpiTiles
+          current={summary?.current}
+          previous={summary?.previous}
+          loading={summary === undefined}
+          comparison="the same weekday last week"
+        />
+        <div className="grid gap-5 lg:grid-cols-2">
+          <AlertsCard />
+          <Link
+            href={`/${shop.slug}/analytics`}
+            className="flex flex-col justify-center gap-1 rounded-xl border border-dashed p-5 text-center outline-none transition-colors hover:border-primary/40 hover:bg-accent/30 focus-visible:ring-3 focus-visible:ring-ring/50"
+          >
+            <ChartLine className="mx-auto size-6 text-muted-foreground" />
+            <span className="font-semibold">See the full picture</span>
+            <span className="text-sm text-muted-foreground">
+              Busiest hours, payment mix, and what earns rather than just what sells.
+            </span>
+          </Link>
+        </div>
         <section>
           <h2 className="mb-3 text-lg font-semibold">Shortcuts</h2>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

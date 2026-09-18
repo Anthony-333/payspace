@@ -45,6 +45,36 @@ export function businessDate(ms: number, timezone: string) {
   return businessMoment(ms, timezone).date;
 }
 
+/** A business date is a plain calendar day, so date maths treats it as UTC and never shifts. */
+export const BUSINESS_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+
+const pad = (value: number) => String(value).padStart(2, "0");
+
+function utcOf(date: string) {
+  const [year, month, day] = date.split("-").map(Number);
+  return Date.UTC(year, month - 1, day);
+}
+
+export function isBusinessDate(date: string) {
+  return BUSINESS_DATE_PATTERN.test(date) && !Number.isNaN(utcOf(date));
+}
+
+/** The business date `days` later (or earlier, for a negative number). */
+export function addDays(date: string, days: number) {
+  const moved = new Date(utcOf(date) + days * 86_400_000);
+  return `${moved.getUTCFullYear()}-${pad(moved.getUTCMonth() + 1)}-${pad(moved.getUTCDate())}`;
+}
+
+/** Whole days from one business date to another, `to` included: same day is 1. */
+export function daysBetween(from: string, to: string) {
+  return Math.round((utcOf(to) - utcOf(from)) / 86_400_000) + 1;
+}
+
+/** 0 is Sunday, matching Date.getUTCDay, for the hour-by-weekday heatmap. */
+export function weekdayOf(date: string) {
+  return new Date(utcOf(date)).getUTCDay();
+}
+
 /** "18 Sep 2026" from a business date, without dragging the reader's timezone back in. */
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 

@@ -1,76 +1,111 @@
 "use client";
 
-import { ChartColumn, ChartPie, Clock, Coins, Receipt, ShoppingBag, TrendingUp, Trophy, type LucideIcon } from "lucide-react";
+import { useQuery } from "convex/react";
+import { useState } from "react";
+import { WeekdayHeatmap } from "@/components/analytics/heatmap";
+import { KpiTiles, MarginNote } from "@/components/analytics/kpi-tiles";
+import { rangeFrom, RangePicker, useShopToday, type Preset, type Range } from "@/components/analytics/range-picker";
+import { HourlyChart, PaymentMix, TopItems } from "@/components/analytics/sales-charts";
 import { PageHeader } from "@/components/shop/page-header";
 import { canManage, useShop } from "@/components/shop/shop-provider";
+import { api } from "@/convex/_generated/api";
+import { daysBetween, formatBusinessDate } from "@/convex/lib/businessDate";
 
-// Sales rollups (dailyStats, productDailyStats) are written by checkout, which isn't built yet,
-// so every figure shows its empty state. The layout matches the Week 6 dashboard plan.
+// Reads the rollups checkout writes, so these numbers are live: they tick up while the owner
+// watches. Charts follow the dataviz method - the form is picked by the job, colour last.
 
-const KPIS: { label: string; icon: LucideIcon; money: boolean }[] = [
-  { label: "Sales today", icon: Coins, money: true },
-  { label: "Gross profit", icon: TrendingUp, money: true },
-  { label: "Orders", icon: ShoppingBag, money: false },
-  { label: "Average ticket", icon: Receipt, money: true },
-];
-
-export function KpiGrid() {
-  return (
-    <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-      {KPIS.map((kpi) => (
-        <div key={kpi.label} className="rounded-xl border bg-card p-4">
-          <div className="flex items-center justify-between text-sm text-muted-foreground">
-            {kpi.label}
-            <span className="flex size-9 items-center justify-center rounded-lg bg-accent text-accent-foreground">
-              <kpi.icon className="size-4" />
-            </span>
-          </div>
-          <div className="mt-2 text-2xl font-semibold tabular-nums">
-            {kpi.money ? <><span className="text-muted-foreground">₱</span>0.00</> : "0"}
-          </div>
-          <div className="text-xs text-muted-foreground">No sales yet</div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function EmptyChart({ title, description, icon: Icon, className }: {
-  title: string;
-  description: string;
-  icon: LucideIcon;
-  className?: string;
-}) {
-  return (
-    <section className={`rounded-xl border bg-card p-5 ${className ?? ""}`}>
-      <h2 className="font-semibold">{title}</h2>
-      <p className="text-sm text-muted-foreground">{description}</p>
-      <div className="mt-4 flex h-48 flex-col items-center justify-center gap-2 rounded-lg bg-muted text-center text-sm text-muted-foreground">
-        <Icon className="size-6" />
-        Your numbers appear after your first sale.
-      </div>
-    </section>
-  );
-}
+/** Top items read a row per product per day, so the server caps their range at 31 days. */
+const TOP_ITEMS_MAX_DAYS = 31;
 
 export function AnalyticsPage() {
   const shop = useShop();
-  if (!canManage(shop.role)) {
+  const manage = canManage(shop.role);
+  const today = useShopToday(shop.timezone);
+  const [preset, setPreset] = useState<Preset>("7");
+  const [custom, setCustom] = useState<Range | null>(null);
+  // Derived, not stored: a preset range is just today and the preset, so nothing can drift.
+  const range = preset === "custom" ? custom : today ? rangeFrom(today, preset) : null;
+
+  const summary = useQuery(api.analytics.summary, manage && range ? { tenantId: shop.tenantId, ...range } : "skip");
+  const withinTopRange = range ? daysBetween(range.from, range.to) <= TOP_ITEMS_MAX_DAYS : true;
+  const top = useQuery(
+    api.analytics.topProducts,
+    manage && range && withinTopRange ? { tenantId: shop.tenantId, ...range } : "skip",
+  );
+
+  if (!manage) {
     return <PageHeader title="Analytics" description="Only owners and managers can see sales and profit." />;
   }
+
+  const oneDay = range?.from === range?.to;
   return (
     <>
-      <PageHeader title="Analytics" description="Sales and profit, compared with the same weekday last week." />
+      <PageHeader
+        title="Analytics"
+        description={!range
+          ? "Sales and profit, compared with the week before."
+          : oneDay
+            ? `${formatBusinessDate(range.from)}, compared with the same weekday last week.`
+            : `${formatBusinessDate(range.from)} to ${formatBusinessDate(range.to)}, compared with the week before.`}
+      />
       <div className="grid gap-5">
-        <KpiGrid />
+        {range && today && (
+          <RangePicker
+            preset={preset}
+            range={range}
+            today={today}
+            maxDays={TOP_ITEMS_MAX_DAYS * 12}
+            onChange={(nextPreset, nextRange) => {
+              setPreset(nextPreset);
+              if (nextPreset === "custom") setCustom(nextRange);
+            }}
+          />
+        )}
+
+        <KpiTiles
+          current={summary?.current}
+          previous={summary?.previous}
+          loading={summary === undefined}
+          comparison={oneDay ? "the same weekday last week" : "the week before"}
+        />
+        {summary && (
+          <MarginNote marginBps={summary.current.marginBps} targetBps={summary.targetMarginBps} />
+        )}
+
         <div className="grid gap-5 lg:grid-cols-3">
-          <EmptyChart className="lg:col-span-2" title="Sales by hour" description="When your shop is busiest." icon={Clock} />
-          <EmptyChart title="Payment mix" description="Cash, e-wallet and card." icon={ChartPie} />
+          <div className="lg:col-span-2">
+            <HourlyChart byHour={summary?.byHour ?? []} />
+          </div>
+          <PaymentMix mix={summary?.current ?? { cash: 0, ewallet: 0, card: 0 }} />
         </div>
-        <div className="grid gap-5 lg:grid-cols-2">
-          <EmptyChart title="Top items by profit" description="What actually makes you money." icon={Trophy} />
-          <EmptyChart title="Top items by revenue" description="What sells the most." icon={ChartColumn} />
-        </div>
+
+        <WeekdayHeatmap byWeekdayHour={summary?.byWeekdayHour ?? []} />
+
+        {withinTopRange ? (
+          <div className="grid gap-5 lg:grid-cols-2">
+            <TopItems
+              title="Top items by profit"
+              description="What actually makes you money."
+              items={top?.byProfit ?? []}
+              metric="profit"
+            />
+            <TopItems
+              title="Top items by revenue"
+              description="What sells the most."
+              items={top?.byRevenue ?? []}
+              metric="revenue"
+            />
+          </div>
+        ) : (
+          <p className="rounded-xl border border-dashed p-5 text-sm text-muted-foreground">
+            Top items cover up to {TOP_ITEMS_MAX_DAYS} days at a time. Narrow the range to see them.
+          </p>
+        )}
+        {top?.capped && (
+          <p className="text-sm text-muted-foreground">
+            This shop sells enough that the lists above are based on a sample of the range.
+          </p>
+        )}
       </div>
     </>
   );

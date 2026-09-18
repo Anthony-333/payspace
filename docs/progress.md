@@ -4,6 +4,14 @@ Update this at the end of every session: tick what's done, note decisions and op
 
 ## Current status
 
+**Week 6's analytics was brought forward and wired up (2026-09-18).** The Analytics page and the Dashboard KPIs were layout-only shells with hardcoded zeros; they now read the rollups checkout writes, live.
+- **Checks:** `npm test` (136 tests, 14 new for analytics), `npx tsc --noEmit`, `npm run lint`, `npm run build`, and a visual pass at 1440, 1024 and 390 px in light and dark with no console errors.
+- **`convex/analytics.ts`** (owner and manager only, every one reading rollups rather than raw sales): `summary` (KPIs, the hourly pattern, the payment mix and an hour-by-weekday grid, each against the same span a week earlier), `topProducts` (top 10 by revenue and by profit), `alerts` (stock needing attention, products under the target margin) and `forProduct`.
+- **Ranges** are today / 7 / 30 / custom, worked out in the shop's timezone. `summary` takes up to 366 days; `topProducts` is capped at 31, because it reads a row per product per day.
+- **Charts** follow the `dataviz` skill: the form is chosen by the data's job and colour comes last. Magnitude uses one hue (bars for hours and top items); categorical is used only for the payment mix, where the series are the subject; the weekday heatmap uses a sequential ramp because there colour *is* the value. Every chart has a table view, and the palette was checked with the skill's validator in both modes rather than by eye.
+- **New chart tokens** in `app/globals.css` (`--viz-*`), replacing the unused shadcn `--chart-*` defaults, which failed the lightness band.
+- Left for the rest of Week 6: the export pipeline, the Exports screen and days-of-cover.
+
 **Week 4 (checkout) is built (2026-09-18).** "Place order" now rings up a real sale: the server prices the order, deducts stock through the ledger, updates the rollups and issues a receipt that stays readable at `/r/[token]` for good.
 - **Checks:** `npm test` (122 tests, 13 of them new for checkout and 7 for the business date), `npx tsc --noEmit`, `npm run lint` and `npm run build` all pass, and the functions are deployed to the cloud dev deployment.
 - **Not yet clicked through by me:** local sign-in is refused because the dev deployment's `SITE_URL` is `https://www.payspace.shop`, and `convex/auth.ts` takes its only trusted origin from that. See "Needs you". An already-signed-in browser still works, because Convex calls carry a JWT and don't go through Better Auth's origin check — which is how the first UI bug below was found.
@@ -126,8 +134,9 @@ Update this at the end of every session: tick what's done, note decisions and op
 - [ ] Sales history, digital receipts with QR, retry queue and connection indicator
 
 ### Week 6: Dashboard and CSV export
-- [ ] KPIs vs same weekday last week, hourly heatmap, top items by revenue and profit, payment mix
-- [ ] Stock and margin alerts, date ranges
+- [x] KPIs vs same weekday last week, hourly heatmap, top items by revenue and profit, payment mix *(brought forward to 2026-09-18)*
+- [x] Stock and margin alerts, date ranges
+- [ ] Days of cover per item (moved here from Week 3)
 - [ ] Export pipeline, Exports screen, Export CSV buttons on list pages
 
 ### Week 7: Roles, settings and standout features
@@ -198,3 +207,10 @@ Update this at the end of every session: tick what's done, note decisions and op
 - 2026-09-18: **Checkout asks the cart for a `clientRef` (`ensureRef`) instead of trusting `add` to have made one.** Reported from the UI: pressing Complete sale did nothing at all. `complete()` began `if (!covered || busy || !clientRef) return;`, and a cart already saved on the device from before checkout existed has lines but no reference, so the press hit a silent return. Checkout now creates and saves the reference on demand, and every refusal says why (a toast, plus `console.error` on a failed mutation). No guard on that path fails silently any more.
 - 2026-09-18: **The payment sheet is rendered once, by `PosScreen`.** `InvoicePanel` renders twice (the desktop column and the mobile order sheet), so the sheet was mounted twice, and on narrow screens one copy was a Radix dialog nested inside the Radix sheet — a known way to lose clicks. `InvoicePanel` now takes an `onPlaceOrder` callback, and opening the payment sheet closes the order sheet first.
 - 2026-09-18: **The dev deployment's `SITE_URL` is `https://www.payspace.shop`**, not the `http://localhost:3000` the 2026-09-16 entry describes. Better Auth trusts only that origin, so local sign-in and sign-up return 403 "Invalid origin" and the POS can't be clicked through locally. It matters which way this is fixed, because production may still be pointed at this dev deployment (the 2026-09-16 entry left Vercel to be repointed by hand).
+- 2026-09-18: **Analytics reads only the rollups, never raw sales.** `summary` takes up to 366 daily rows; `topProducts` is capped at 31 days, because it reads one row per product per day (30 days x 297 products is ~9,000 rows against a "loads in under a second" target). If a longer top-items range is ever wanted, that needs a further per-product-per-month rollup rather than a bigger `take`.
+- 2026-09-18: **Week-over-week compares the same span shifted back 7 days,** so "today" is measured against the same weekday, not yesterday. `topProducts` returns `capped` so the UI can say when a busy range made the lists a sample.
+- 2026-09-18: **Added Recharts** (the stack list in CLAUDE.md always named it; it had never been installed). Only the hourly columns use it - the payment mix, top items and the heatmap are plain HTML, which is lighter and easier to get right.
+- 2026-09-18: **New `--viz-*` chart tokens in `app/globals.css`.** The shadcn `--chart-*` defaults that shipped with the install were never designed for this app and fail the validator (chart-4 sits at L 0.80, outside the light band). The new steps are anchored on the brand blue, and the dark steps are selected for the dark card rather than flipped.
+- 2026-09-18: **Alerts live on the Dashboard, not on Analytics.** The dashboard is where someone lands and acts; Analytics is for looking back.
+- 2026-09-18: **`tenants.bySlug` now returns `timezone` and `currency`,** because anything working out a business date on the client (analytics ranges, receipts) needs the shop's own calendar rather than the tablet's. `targetMarginBps` comes from the manager-only `analytics.summary` instead of the shop context.
+- 2026-09-18: **The clock is read through `useSyncExternalStore`, never during render.** React 19's compiler lint rejects both `Date.now()` in render (`react-hooks/purity`) and settling it with `setState` in an effect (`react-hooks/set-state-in-effect`). `useShopToday` reads it as external state and returns null on the server, so preset ranges are derived rather than stored and the queries skip until the browser has a date.

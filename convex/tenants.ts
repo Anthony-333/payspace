@@ -130,7 +130,17 @@ export const bySlug = userQuery({
       .withIndex("by_tenant_user", (q) => q.eq("tenantId", tenant._id).eq("userId", ctx.userId))
       .unique();
     if (!member || member.status !== "active") return null;
-    return { tenantId: tenant._id, name: tenant.name, slug: tenant.slug, role: member.role, memberName: member.name };
+    return {
+      tenantId: tenant._id,
+      name: tenant.name,
+      slug: tenant.slug,
+      // Anywhere a business date is worked out on the client (analytics ranges, receipts)
+      // needs the shop's own timezone and currency, not the tablet's.
+      timezone: tenant.timezone,
+      currency: tenant.currency,
+      role: member.role,
+      memberName: member.name,
+    };
   },
 });
 

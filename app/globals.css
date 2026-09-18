@@ -173,3 +173,44 @@
     font-size: 10px;
   }
 }
+
+/*
+ * Chart palette. Built with the dataviz method: the form is chosen before the colour, and
+ * the categorical steps below were checked with the skill's validator rather than by eye
+ * (lightness band, chroma floor, CVD separation, normal-vision floor, contrast on the card
+ * each mode actually paints). Slot 1 is the brand blue, so charts belong to the same system
+ * as the rest of the app. The dark steps are selected for the dark card, not flipped.
+ *
+ * Categorical is only ever used where the series ARE the subject (the payment mix).
+ * Everything whose job is magnitude uses one hue: the solid brand blue for bars, and the
+ * --viz-heat-* ramp where colour itself carries the value (the weekday heatmap).
+ */
+:root {
+  --viz-series-1: #3164e0; /* blue   - cash */
+  --viz-series-2: #eb6834; /* orange - e-wallet */
+  --viz-series-3: #1baf7a; /* aqua   - card */
+
+  --viz-heat-0: #eff4fc;
+  --viz-heat-1: #cfdefd;
+  --viz-heat-2: #a0bef9;
+  --viz-heat-3: #6a95f1;
+  --viz-heat-4: #3164e0;
+
+  /* The colour the 2px gaps and rings are painted in: whatever the chart sits on. */
+  --viz-surface: var(--card);
+  --viz-grid: oklch(0.93 0.004 264.5);
+}
+
+.dark {
+  --viz-series-1: #5b8bf0;
+  --viz-series-2: #d95926;
+  --viz-series-3: #199e70;
+
+  --viz-heat-0: #1d2433;
+  --viz-heat-1: #293c64;
+  --viz-heat-2: #37579e;
+  --viz-heat-3: #4874d8;
+  --viz-heat-4: #6097ff;
+
+  --viz-grid: oklch(0.31 0 0);
+}
