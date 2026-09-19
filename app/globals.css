@@ -129,6 +129,53 @@
     @apply font-sans;
   }
 }
+
+/*
+ * Navigation feedback. A tap on the rail should answer straight away, but a route that
+ * arrives in 80 ms must not flash a spinner, so both hints start invisible and fade in
+ * only after the delay below. See components/shop/app-shell.tsx.
+ */
+@keyframes nav-hint-in {
+  to {
+    opacity: 1;
+  }
+}
+
+.nav-hint {
+  opacity: 0;
+  animation: nav-hint-in 120ms linear 140ms forwards;
+}
+
+/* The top bar's progress sliver: it creeps towards the end while the route loads. */
+@keyframes route-progress {
+  0% {
+    transform: scaleX(0.05);
+  }
+  60% {
+    transform: scaleX(0.7);
+  }
+  100% {
+    transform: scaleX(0.92);
+  }
+}
+
+.route-progress {
+  opacity: 0;
+  transform-origin: left;
+  animation:
+    nav-hint-in 120ms linear 140ms forwards,
+    route-progress 2.4s cubic-bezier(0.1, 0.8, 0.2, 1) forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-hint,
+  .route-progress {
+    animation: nav-hint-in 1ms linear 140ms forwards;
+  }
+  .route-progress {
+    transform: scaleX(1);
+  }
+}
 /*
  * Thermal receipts (docs/mvp-plan.md "Selling"). Most counter printers are installed as a
  * system printer and hand the browser a 58 mm or 80 mm roll of unlimited length. The page

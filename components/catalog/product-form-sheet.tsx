@@ -319,7 +319,7 @@ function ProductForm({ product, categories, groups, tenant, onDone }: FormProps)
             {margin !== null && (
               <span className={cn(margin < tenant.targetMarginBps ? "text-destructive" : "text-muted-foreground")}>
                 Gross margin {formatBps(margin)}
-                {tenant.pricesIncludeTax ? " after VAT" : ""}
+                {tenant.pricesIncludeTax && tenant.taxRateBps > 0 ? " after VAT" : ""}
                 {margin < tenant.targetMarginBps ? `, below your ${formatBps(tenant.targetMarginBps)} target` : ""}.
               </span>
             )}

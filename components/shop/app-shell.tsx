@@ -6,19 +6,21 @@ import {
   Boxes,
   Check,
   LayoutDashboard,
+  LoaderCircle,
   LogOut,
   Menu,
   Package,
   Plus,
   Receipt,
   Search,
+  Settings,
   ShoppingBag,
   SlidersHorizontal,
   Store,
   Tags,
   type LucideIcon,
 } from "lucide-react";
-import Link from "next/link";
+import Link, { useLinkStatus } from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createContext, useContext, useRef, useState, type ReactNode } from "react";
 import { canManage, useShop, type Shop } from "@/components/shop/shop-provider";
@@ -37,7 +39,14 @@ import { api } from "@/convex/_generated/api";
 import { authClient } from "@/lib/auth-client";
 import { cn } from "@/lib/utils";
 
-type NavItem = { href: string; label: string; icon: LucideIcon; manageOnly?: boolean; exact?: boolean };
+type NavItem = {
+  href: string;
+  label: string;
+  icon: LucideIcon;
+  manageOnly?: boolean;
+  ownerOnly?: boolean;
+  exact?: boolean;
+};
 
 // Layout and look follow docs/design/blueprint.md.
 const NAV: NavItem[] = [
@@ -49,6 +58,7 @@ const NAV: NavItem[] = [
   { href: "/inventory", label: "Inventory", icon: Boxes },
   { href: "/categories", label: "Categories", icon: Tags, manageOnly: true },
   { href: "/modifiers", label: "Modifiers", icon: SlidersHorizontal, manageOnly: true },
+  { href: "/settings", label: "Settings", icon: Settings, ownerOnly: true },
 ];
 
 /** Routes that put a search field in the top bar, and what it searches. */
@@ -90,7 +100,8 @@ export function AppShell({ children }: { children: ReactNode }) {
   const setValue = (next: string) => setSearch({ section, value: next });
   const placeholder = SEARCH_PLACEHOLDER[section];
 
-  const items = NAV.filter((item) => !item.manageOnly || canManage(shop.role));
+  const items = NAV.filter((item) =>
+    (!item.manageOnly || canManage(shop.role)) && (!item.ownerOnly || shop.role === "owner"));
   const isActive = (item: NavItem) =>
     item.exact ? section === item.href : section === item.href || section.startsWith(`${item.href}/`);
 
@@ -122,7 +133,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                       isActive(item) ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
                     )}
                   >
-                    <item.icon className="size-5" />
+                    <NavIcon icon={item.icon} />
                   </Link>
                 </TooltipTrigger>
                 <TooltipContent side="right">{item.label}</TooltipContent>
@@ -155,7 +166,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                     isActive(item) ? "bg-primary text-primary-foreground" : "hover:bg-accent",
                   )}
                 >
-                  <item.icon className="size-5" />
+                  <NavIcon icon={item.icon} />
                   {item.label}
                 </Link>
               ))}
@@ -206,6 +217,29 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       </div>
     </SearchContext.Provider>
+  );
+}
+
+/**
+ * A tapped nav item answers immediately: its icon becomes a spinner and a sliver of progress
+ * runs across the top of the screen until the new route commits. Both are held back 140 ms
+ * (see .nav-hint in globals.css), so an already-prefetched route never flashes one.
+ *
+ * useLinkStatus only reports for the <Link> it sits inside, which is why this is a child
+ * component rather than shell state.
+ */
+function NavIcon({ icon: Icon }: { icon: LucideIcon }) {
+  const { pending } = useLinkStatus();
+  if (!pending) return <Icon className="size-5" />;
+  return (
+    <>
+      <LoaderCircle className="nav-hint size-5 animate-spin" />
+      <span
+        aria-hidden
+        className="route-progress fixed inset-x-0 top-0 z-50 h-0.5 bg-primary"
+      />
+      <span className="sr-only" role="status">Loading…</span>
+    </>
   );
 }
 

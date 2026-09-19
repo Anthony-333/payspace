@@ -6,7 +6,7 @@ import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import type { api } from "@/convex/_generated/api";
 import { formatBusinessDate } from "@/convex/lib/businessDate";
-import { formatBps, formatMoney } from "@/convex/lib/money";
+import { formatBps, formatMoney, taxFromTotals } from "@/convex/lib/money";
 
 // The customer's receipt, on screen and on paper. The print rules in app/globals.css size it
 // for 58 mm and 80 mm thermal paper; on screen it sits on a card the same width.
@@ -27,6 +27,9 @@ export function ReceiptView({ receipt, autoPrint = false }: { receipt: PublicRec
   }, [autoPrint]);
 
   const { shop } = receipt;
+  // Taken from the sale's own numbers, not the shop's settings today: a receipt issued while
+  // VAT was on must keep showing it after the owner switches VAT off.
+  const vat = taxFromTotals(receipt);
   return (
     <div className="mx-auto grid w-full max-w-[80mm] gap-4 print:max-w-none">
       <article className="receipt rounded-xl border bg-card p-5 font-mono text-[13px] leading-snug print:rounded-none print:border-0 print:bg-transparent print:p-0">
@@ -66,9 +69,9 @@ export function ReceiptView({ receipt, autoPrint = false }: { receipt: PublicRec
         <dl className="grid gap-1">
           <Row label="Subtotal" value={receipt.subtotal} />
           {receipt.discount > 0 && <Row label="Discount" value={-receipt.discount} />}
-          {shop.taxRateBps > 0 && (
+          {vat && (
             <Row
-              label={`VAT ${formatBps(shop.taxRateBps).replace(".0%", "%")}${shop.pricesIncludeTax ? " (incl.)" : ""}`}
+              label={`VAT ${formatBps(vat.rateBps).replace(".0%", "%")}${vat.includedInPrices ? " (incl.)" : ""}`}
               value={receipt.tax}
             />
           )}

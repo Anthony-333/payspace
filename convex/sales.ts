@@ -320,11 +320,12 @@ export const byToken = publicQuery({
     const tenant = await ctx.db.get(sale.tenantId);
     if (!tenant) return null;
     return {
+      // No tax settings here on purpose: the receipt reads the VAT it was issued with back
+      // out of its own totals (money.ts taxFromTotals), so changing the shop's rate — or
+      // switching VAT off — never rewrites a receipt that has already been handed over.
       shop: {
         name: tenant.name,
         currency: tenant.currency,
-        taxRateBps: tenant.taxRateBps,
-        pricesIncludeTax: tenant.pricesIncludeTax,
         receiptFooter: tenant.receiptFooter,
       },
       number: sale.number,

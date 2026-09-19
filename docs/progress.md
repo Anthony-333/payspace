@@ -4,6 +4,14 @@ Update this at the end of every session: tick what's done, note decisions and op
 
 ## Current status
 
+**A VAT switch and navigation feedback, asked for directly (2026-09-19).** Two things you raised: owners can now turn VAT off, and tapping a rail item answers straight away instead of looking frozen.
+- **Checks:** `npm test` (139 tests, 3 new), `npx tsc --noEmit`, `npm run lint` and `npm run build` all pass. **Not clicked through in a browser** — local sign-in is still refused by the dev deployment's `SITE_URL` (see "Needs you").
+- **Settings screen** at `/[shop]/settings` (`components/shop/settings-page.tsx`), owner-only in the rail and on the server. It holds a **Charge VAT** switch, the rate, **Prices include VAT**, and a live worked example on a ₱100 item. This is the first slice of Week 7's "tax and receipt settings".
+- **VAT off is stored as a 0% rate**, not a second flag, so there is still only one answer to what a shop charges (rule 6). Saving re-flags every product's margin in the background, and the checkout picks it up live.
+  - The cost: switching VAT off forgets the old rate. Switching it back on offers 12% in a field you have to confirm before saving, so nothing changes silently. Say the word if you'd rather it remembered.
+- **Receipts now describe their own VAT.** `sales.byToken` no longer sends the shop's current tax settings, and `taxFromTotals()` (`convex/lib/money.ts`) reads the rate and "(incl.)" back out of the sale's own subtotal, tax and total. A receipt handed over while VAT was on keeps its VAT line afterwards — before this, turning VAT off would have quietly erased the VAT line from every past receipt while the amount stayed in the total (rule 7).
+- **Navigation feedback:** `loading.tsx` for the back-office routes and a second one shaped like the checkout screen, so the new page paints a skeleton instead of the old screen sitting frozen. On top of that, the tapped rail item's icon becomes a spinner and a sliver of progress runs across the top (`useLinkStatus`, `NavIcon` in `app-shell.tsx`). Both hints are held back 140 ms (`.nav-hint` in `app/globals.css`) so a prefetched route never flashes one, and both collapse under `prefers-reduced-motion`.
+
 **Week 6's analytics was brought forward and wired up (2026-09-18).** The Analytics page and the Dashboard KPIs were layout-only shells with hardcoded zeros; they now read the rollups checkout writes, live.
 - **Checks:** `npm test` (136 tests, 14 new for analytics), `npx tsc --noEmit`, `npm run lint`, `npm run build`, and a visual pass at 1440, 1024 and 390 px in light and dark with no console errors.
 - **`convex/analytics.ts`** (owner and manager only, every one reading rollups rather than raw sales): `summary` (KPIs, the hourly pattern, the payment mix and an hour-by-weekday grid, each against the same span a week earlier), `topProducts` (top 10 by revenue and by profit), `alerts` (stock needing attention, products under the target margin) and `forProduct`.
@@ -140,7 +148,7 @@ Update this at the end of every session: tick what's done, note decisions and op
 - [ ] Export pipeline, Exports screen, Export CSV buttons on list pages
 
 ### Week 7: Roles, settings and standout features
-- [ ] Server-side permission checks everywhere; staff management; tax and receipt settings
+- [ ] Server-side permission checks everywhere; staff management; tax and receipt settings *(the Settings screen and the VAT switch are done, 2026-09-19; staff and receipt settings are still to come)*
 - [ ] Reorder list, live order board, daily low-stock email
 - [ ] Full backup ZIP, product export/re-import round trip, export log and expiry cron
 - [ ] Performance pass on a low-cost Android tablet
@@ -214,3 +222,6 @@ Update this at the end of every session: tick what's done, note decisions and op
 - 2026-09-18: **Alerts live on the Dashboard, not on Analytics.** The dashboard is where someone lands and acts; Analytics is for looking back.
 - 2026-09-18: **`tenants.bySlug` now returns `timezone` and `currency`,** because anything working out a business date on the client (analytics ranges, receipts) needs the shop's own calendar rather than the tablet's. `targetMarginBps` comes from the manager-only `analytics.summary` instead of the shop context.
 - 2026-09-18: **The clock is read through `useSyncExternalStore`, never during render.** React 19's compiler lint rejects both `Date.now()` in render (`react-hooks/purity`) and settling it with `setState` in an effect (`react-hooks/set-state-in-effect`). `useShopToday` reads it as external state and returns null on the server, so preset ranges are derived rather than stored and the queries skip until the browser has a date.
+- 2026-09-19: **Switching VAT off is a 0% rate, not a separate `vatEnabled` flag.** A second flag would mean two sources of truth for what a shop charges, and every call site that forgot it would price a sale wrong in silence (rules 5 and 6). The trade is that turning VAT off forgets the old rate; turning it back on offers 12% in a field the owner confirms before saving.
+- 2026-09-19: **A receipt reads its own VAT out of its own totals** (`taxFromTotals` in `convex/lib/money.ts`), and `sales.byToken` no longer sends the shop's current tax settings. The rate is `tax / (total - tax)` and "prices included it" is `total === subtotal`, both exact from what the sale already stores, so no schema change and no backfill. Without this, switching VAT off would have removed the VAT line from every receipt ever issued while the amount stayed inside the total.
+- 2026-09-19: **Route changes show a skeleton, not a frozen screen.** `loading.tsx` at `app/[shop]/(manage)/` (plus a checkout-shaped one under `pos/`) gives every rail destination a Suspense boundary, and `useLinkStatus` drives a spinner on the tapped icon and a progress sliver in the top bar. Both hints wait 140 ms before appearing so an already-prefetched route never flashes one.

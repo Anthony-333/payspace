@@ -2,6 +2,7 @@ import { convexTest } from "convex-test";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { api } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
+import { taxFromTotals } from "./lib/money";
 import schema from "./schema";
 import { modules } from "./test.setup";
 
@@ -99,6 +100,43 @@ describe("checkout", () => {
       unitCost: 6660,
     });
     expect(full.cogs).toBe(13320);
+  });
+
+  test("a shop with VAT switched off rings up no tax at all", async () => {
+    const { owner, tenantId, latte, option, cash } = await cafe();
+    // Switching VAT off is a 0% rate, so there is only one answer to what this shop charges.
+    await owner.mutation(api.tenants.updateSettings, { tenantId, taxRateBps: 0 });
+
+    const sale = await owner.mutation(api.sales.checkout, {
+      tenantId,
+      clientRef: "ref-no-vat",
+      lines: [{ productId: latte, qty: 2, optionKeys: [option("Oat milk")] }],
+      payments: cash(32000),
+    });
+
+    const full = await owner.query(api.sales.get, { tenantId, saleId: sale.saleId });
+    // The same ₱320 order as above: the customer pays the shelf price, and none of it is VAT.
+    expect(full).toMatchObject({ subtotal: 32000, tax: 0, total: 32000 });
+  });
+
+  test("a receipt keeps the VAT it was issued with after the shop switches VAT off", async () => {
+    const { owner, tenantId, water, cash } = await cafe();
+    const sale = await owner.mutation(api.sales.checkout, {
+      tenantId,
+      clientRef: "ref-vat-then-off",
+      lines: [{ productId: water, qty: 1, optionKeys: [] }],
+      payments: cash(6000),
+    });
+    const before = await owner.query(api.sales.get, { tenantId, saleId: sale.saleId });
+    expect(before.tax).toBeGreaterThan(0);
+
+    await owner.mutation(api.tenants.updateSettings, { tenantId, taxRateBps: 0 });
+
+    const receipt = await owner.query(api.sales.byToken, { token: before.receiptToken });
+    expect(receipt).not.toBeNull();
+    expect(receipt!.tax).toBe(before.tax);
+    // 12%, read back out of the sale's own totals rather than the shop's settings today.
+    expect(taxFromTotals(receipt!)).toEqual({ rateBps: 1200, includedInPrices: true });
   });
 
   test("a repeated clientRef returns the first sale instead of ringing it up twice", async () => {

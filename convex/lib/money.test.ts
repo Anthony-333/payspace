@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { formatMoney, grossMarginBps, moneyToInput, netOfTax, parseMoney, taxBreakdown } from "./money";
+import { formatMoney, grossMarginBps, moneyToInput, netOfTax, parseMoney, taxBreakdown, taxFromTotals } from "./money";
 
 describe("parseMoney", () => {
   test.each([
@@ -40,5 +40,16 @@ describe("tax and margin", () => {
     expect(taxBreakdown(42300, 1200, true)).toEqual({ net: 37768, tax: 4532, total: 42300 });
     expect(taxBreakdown(10000, 1200, false)).toEqual({ net: 10000, tax: 1200, total: 11200 });
     expect(taxBreakdown(0, 1200, true)).toEqual({ net: 0, tax: 0, total: 0 });
+  });
+
+  test("reads a sale's own VAT back out of its totals, whichever way it was priced", () => {
+    const included = taxBreakdown(42300, 1200, true);
+    expect(taxFromTotals({ subtotal: 42300, ...included })).toEqual({ rateBps: 1200, includedInPrices: true });
+
+    const added = taxBreakdown(10000, 1200, false);
+    expect(taxFromTotals({ subtotal: 10000, ...added })).toEqual({ rateBps: 1200, includedInPrices: false });
+
+    // A shop with VAT switched off: there is no VAT line to show on the receipt.
+    expect(taxFromTotals({ subtotal: 10000, tax: 0, total: 10000 })).toBeNull();
   });
 });

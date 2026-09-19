@@ -76,6 +76,20 @@ export function taxBreakdown(subtotal: number, taxRateBps: number, pricesInclude
   return { net: subtotal, tax, total: subtotal + tax };
 }
 
+/**
+ * Reads the VAT a sale was rung up at back out of its own totals, so a receipt keeps the
+ * rate it was issued with even after the shop changes — or switches off — its VAT
+ * (CLAUDE.md rule 7). Returns null when the sale carried no tax.
+ */
+export function taxFromTotals(sale: { subtotal: number; tax: number; total: number }) {
+  if (sale.tax <= 0) return null;
+  const net = sale.total - sale.tax; // true whether or not the prices included the tax
+  return {
+    rateBps: net > 0 ? Math.round((sale.tax * 10_000) / net) : 0,
+    includedInPrices: sale.total === sale.subtotal,
+  };
+}
+
 export function formatBps(bps: number) {
   return `${(bps / 100).toFixed(1)}%`;
 }
