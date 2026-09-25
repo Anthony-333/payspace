@@ -13,6 +13,8 @@
   "dependencies": {
     "@convex-dev/better-auth": "^0.12.5",
     "@hookform/resolvers": "^5.2.2",
+    "@vercel/analytics": "^2.0.1",
+    "@vercel/speed-insights": "^2.0.0",
     "better-auth": "~1.6.31",
     "class-variance-authority": "^0.7.1",
     "cn": "^0.2.6",
