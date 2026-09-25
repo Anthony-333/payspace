@@ -1,7 +1,7 @@
 import { ConvexError, v } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
 import { businessMoment } from "./lib/businessDate";
-import { canSeeCost } from "./lib/products";
+import { canSeeCost, IMAGE_TYPES, MAX_IMAGE_BYTES } from "./lib/products";
 import { roundQty } from "./lib/quantity";
 import {
   MAX_PAYMENTS,
@@ -69,6 +69,25 @@ async function nextSaleNumber(ctx: TenantMutationCtx) {
 /** 32 hex characters: the only thing protecting a public receipt, so it has to be unguessable. */
 function newReceiptToken() {
   return (crypto.randomUUID() + crypto.randomUUID()).replace(/-/g, "");
+}
+
+/**
+ * Ties each payment photo to this shop and this sale, after checking it's a small raster image
+ * nobody has claimed yet. A photo can prove one payment only, and never another shop's.
+ */
+async function claimPaymentPhotos(ctx: TenantMutationCtx, payments: Doc<"sales">["payments"], saleId: Id<"sales">) {
+  const photoIds = payments.flatMap((payment) => (payment.photoId ? [payment.photoId] : []));
+  if (new Set(photoIds).size !== photoIds.length) throw new ConvexError("Each payment needs its own photo.");
+  for (const photoId of photoIds) {
+    const claimed = await ctx.db.query("uploads").withIndex("by_storage", (q) => q.eq("storageId", photoId)).first();
+    if (claimed) throw new ConvexError("That photo is already in use. Take a new one.");
+    const file = await ctx.db.system.get("_storage", photoId);
+    if (!file) throw new ConvexError("A payment photo didn't upload. Take it again.");
+    if (!file.contentType || !IMAGE_TYPES.has(file.contentType) || file.size > MAX_IMAGE_BYTES) {
+      throw new ConvexError("Use a JPEG, PNG or WebP photo under 1 MB.");
+    }
+    await ctx.db.insert("uploads", { tenantId: ctx.tenantId, storageId: photoId, saleId });
+  }
 }
 
 /**
@@ -177,6 +196,7 @@ export const checkout = tenantMutation({
       method: payMethod,
       amount: v.number(),
       ref: v.optional(v.string()),
+      photoId: v.optional(v.id("_storage")),
     })),
   },
   handler: async (ctx, args) => {
@@ -238,6 +258,7 @@ export const checkout = tenantMutation({
       status: "completed",
       receiptToken,
     });
+    await claimPaymentPhotos(ctx, settled.payments, saleId);
     await deductStock(ctx, priced, saleId);
     await bumpStats(ctx, date, hour, priced, totals, settled.payments);
 
@@ -259,6 +280,7 @@ function toSummary(sale: Doc<"sales">, staffName: string) {
     total: sale.total,
     itemCount: sale.lines.reduce((sum, line) => sum + line.qty, 0),
     methods: [...new Set(sale.payments.map((payment) => payment.method))],
+    photoCount: sale.payments.filter((payment) => payment.photoId).length,
     status: sale.status,
     receiptToken: sale.receiptToken,
     staffName,
@@ -306,8 +328,42 @@ export const get = tenantQuery({
 });
 
 /**
+ * What a customer sees on a receipt: never a cost, a member, an internal ID or a payment photo.
+ * Shared by the public link and the staff receipt, so both print exactly the same thing.
+ */
+function toReceipt(sale: Doc<"sales">, tenant: Doc<"tenants">) {
+  return {
+    // No tax settings here on purpose: the receipt reads the VAT it was issued with back
+    // out of its own totals (money.ts taxFromTotals), so changing the shop's rate — or
+    // switching VAT off — never rewrites a receipt that has already been handed over.
+    shop: {
+      name: tenant.name,
+      currency: tenant.currency,
+      receiptFooter: tenant.receiptFooter,
+    },
+    number: sale.number,
+    at: sale._creationTime,
+    businessDate: sale.businessDate,
+    status: sale.status,
+    lines: sale.lines.map((line) => ({
+      name: line.name,
+      optionNames: line.optionNames,
+      qty: line.qty,
+      unitPrice: line.unitPrice,
+    })),
+    subtotal: sale.subtotal,
+    discount: sale.discount,
+    tax: sale.tax,
+    total: sale.total,
+    payments: sale.payments.map((payment) => ({ method: payment.method, amount: payment.amount, ref: payment.ref })),
+    changeGiven: sale.changeGiven,
+  };
+}
+
+/**
  * The public receipt at /r/[token]. No sign-in: the token is the key, so this returns only
- * what a customer should see, and never a cost, a member or an internal ID.
+ * what a customer should see. Payment photos stay off it: an e-wallet screenshot usually
+ * shows the customer's name and number, and anyone with the link can open this.
  */
 export const byToken = publicQuery({
   args: { token: v.string() },
@@ -319,31 +375,44 @@ export const byToken = publicQuery({
     if (!sale) return null;
     const tenant = await ctx.db.get(sale.tenantId);
     if (!tenant) return null;
+    return toReceipt(sale, tenant);
+  },
+});
+
+/**
+ * The staff copy of a receipt: the same receipt the customer gets, plus the photos taken of
+ * each payment. Only the receipt prints; the photos are for the shop's own records.
+ */
+export const receipt = tenantQuery({
+  // A string, because it comes straight from the page URL: a mistyped link finds nothing
+  // (null) rather than throwing, and so does another shop's sale or another cashier's.
+  args: { saleId: v.string() },
+  handler: async (ctx, args) => {
+    const saleId = ctx.db.normalizeId("sales", args.saleId);
+    const sale = saleId ? await ctx.db.get(saleId) : null;
+    if (!sale || sale.tenantId !== ctx.tenantId) return null;
+    if (!canSeeEverySale(ctx.member) && sale.memberId !== ctx.member._id) return null;
+    const photos = [];
+    for (const payment of sale.payments) {
+      if (!payment.photoId) continue;
+      photos.push({
+        method: payment.method,
+        amount: payment.amount,
+        ref: payment.ref,
+        url: await ctx.storage.getUrl(payment.photoId),
+      });
+    }
     return {
-      // No tax settings here on purpose: the receipt reads the VAT it was issued with back
-      // out of its own totals (money.ts taxFromTotals), so changing the shop's rate — or
-      // switching VAT off — never rewrites a receipt that has already been handed over.
-      shop: {
-        name: tenant.name,
-        currency: tenant.currency,
-        receiptFooter: tenant.receiptFooter,
-      },
-      number: sale.number,
-      at: sale._creationTime,
-      businessDate: sale.businessDate,
-      status: sale.status,
-      lines: sale.lines.map((line) => ({
-        name: line.name,
-        optionNames: line.optionNames,
-        qty: line.qty,
-        unitPrice: line.unitPrice,
-      })),
-      subtotal: sale.subtotal,
-      discount: sale.discount,
-      tax: sale.tax,
-      total: sale.total,
-      payments: sale.payments.map((payment) => ({ method: payment.method, amount: payment.amount, ref: payment.ref })),
-      changeGiven: sale.changeGiven,
+      receipt: toReceipt(sale, ctx.tenant),
+      receiptToken: sale.receiptToken,
+      staffName: await staffName(ctx, sale.memberId),
+      photos,
     };
   },
+});
+
+/** A short-lived URL the till POSTs a payment photo to. Any role can take payment. */
+export const generatePhotoUploadUrl = tenantMutation({
+  args: {},
+  handler: async (ctx) => ctx.storage.generateUploadUrl(),
 });

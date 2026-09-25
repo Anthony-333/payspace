@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { useCartStore, type PayMethod } from "@/components/pos/cart-store";
 import type { InvoiceLine } from "@/components/pos/invoice-panel";
 import { Price } from "@/components/pos/parts";
+import { PaymentPhotoButton, type PaymentPhoto } from "@/components/pos/payment-photo";
 import { useShop } from "@/components/shop/shop-provider";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
@@ -15,10 +16,12 @@ import { Input } from "@/components/ui/input";
 import { api } from "@/convex/_generated/api";
 import { formatMoney, parseMoney } from "@/convex/lib/money";
 import { errorMessage } from "@/lib/errors";
+import { resizeImage, uploadFile } from "@/lib/image";
 import { cn } from "@/lib/utils";
 
 // Taking payment, following docs/prototypes/pos-checkout.html: cash with quick tender and
-// change, e-wallet and card with a reference, and any of them split across the order.
+// change, e-wallet and card with a reference, and any of them split across the order. Any
+// payment can carry a photo for the shop's records; it shows on the staff receipt, never the printout.
 
 const TABS: { value: PayMethod; label: string; icon: typeof Banknote }[] = [
   { value: "cash", label: "Cash", icon: Banknote },
@@ -31,7 +34,12 @@ const KEYS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", ".", "0", "back"];
 /** Kept in step with MAX_PAYMENT_REF in convex/lib/sale.ts, which is what actually enforces it. */
 const MAX_PAYMENT_REF = 30;
 
-type Taken = { method: PayMethod; amount: number; ref?: string };
+/** `key` ties a payment to its photo in `photos`, which also holds the two live lines below. */
+type Taken = { key: string; method: PayMethod; amount: number; ref?: string };
+const DRAFT = "draft"; // the card or e-wallet amount being typed
+const CASH = "cash";
+/** Big enough to read a reference number off a phone screen, small enough for shop Wi-Fi. */
+const PHOTO_SIZE = 1280;
 type Done = { number: number; total: number; changeGiven: number; receiptToken: string };
 
 const amountOf = (typed: string) => (typed ? (parseMoney(typed) ?? 0) : 0);
@@ -60,6 +68,7 @@ export function PaySheet({ open, onOpenChange, lines, total, itemCount }: {
 }) {
   const shop = useShop();
   const checkout = useMutation(api.sales.checkout);
+  const generatePhotoUploadUrl = useMutation(api.sales.generatePhotoUploadUrl);
   const clear = useCartStore((s) => s.clear);
   const ensureRef = useCartStore((s) => s.ensureRef);
 
@@ -71,6 +80,7 @@ export function PaySheet({ open, onOpenChange, lines, total, itemCount }: {
   const [taken, setTaken] = useState<Taken[]>([]);
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState<Done | null>(null);
+  const [photos, setPhotos] = useState<Record<string, PaymentPhoto>>({});
 
   function reset() {
     setTab("cash");
@@ -80,7 +90,52 @@ export function PaySheet({ open, onOpenChange, lines, total, itemCount }: {
     setProvider(PROVIDERS[0]);
     setTaken([]);
     setDone(null);
+    for (const photo of Object.values(photos)) URL.revokeObjectURL(photo.preview);
+    setPhotos({});
   }
+
+  /**
+   * Shrinks and uploads a payment photo straight away. The upload finds its photo again by the
+   * preview URL, since the line it was taken on may have moved (a typed card added to the split).
+   */
+  async function pickPhoto(key: string, file: File) {
+    let preview: string | null = null;
+    try {
+      const blob = await resizeImage(file, PHOTO_SIZE);
+      const url = URL.createObjectURL(blob);
+      preview = url;
+      setPhotos((current) => {
+        if (current[key]) URL.revokeObjectURL(current[key].preview);
+        return { ...current, [key]: { preview: url, storageId: null } };
+      });
+      const storageId = await uploadFile(await generatePhotoUploadUrl({ tenantId: shop.tenantId }), blob);
+      setPhotos((current) => Object.fromEntries(Object.entries(current).map(([k, photo]) =>
+        [k, photo.preview === url ? { ...photo, storageId } : photo])));
+    } catch (error) {
+      console.error("payment photo failed", error);
+      toast.error("That photo didn't upload. Take it again.");
+      if (preview) {
+        const failed = preview;
+        setPhotos((current) => Object.fromEntries(Object.entries(current).filter(([, photo]) => photo.preview !== failed)));
+        URL.revokeObjectURL(failed);
+      }
+    }
+  }
+
+  function removePhoto(key: string) {
+    setPhotos((current) => {
+      const photo = current[key];
+      if (!photo) return current;
+      URL.revokeObjectURL(photo.preview);
+      return Object.fromEntries(Object.entries(current).filter(([k]) => k !== key));
+    });
+  }
+
+  const uploading = Object.values(photos).some((photo) => !photo.storageId);
+  const photoId = (key: string) => {
+    const storageId = photos[key]?.storageId;
+    return storageId ? { photoId: storageId } : {};
+  };
 
   const takenSum = taken.reduce((sum, payment) => sum + payment.amount, 0);
   const beforeCash = Math.max(0, total - takenSum);
@@ -109,7 +164,15 @@ export function PaySheet({ open, onOpenChange, lines, total, itemCount }: {
     const label = tab === "ewallet" ? provider : "Card";
     const trimmed = reference.trim();
     const ref = trimmed ? `${label} ${trimmed}`.slice(0, MAX_PAYMENT_REF) : undefined;
-    setTaken([...taken, { method: tab, amount: pending, ...(ref ? { ref } : {}) }]);
+    const key = crypto.randomUUID();
+    setTaken([...taken, { key, method: tab, amount: pending, ...(ref ? { ref } : {}) }]);
+    // The draft's photo moves with it, so the next card or e-wallet starts without one.
+    setPhotos((current) => {
+      const draft = current[DRAFT];
+      if (!draft) return current;
+      const rest = Object.fromEntries(Object.entries(current).filter(([k]) => k !== DRAFT));
+      return { ...rest, [key]: draft };
+    });
     setTyped("");
     setReference("");
     setTab("cash");
@@ -125,17 +188,21 @@ export function PaySheet({ open, onOpenChange, lines, total, itemCount }: {
       toast.error("There is nothing on this order.");
       return;
     }
+    if (uploading) {
+      toast.error("A payment photo is still uploading.");
+      return;
+    }
     // Made here if the order hasn't got one, so the same reference is reused on a retry.
     const clientRef = ensureRef(shop.tenantId);
-    const payments = [...taken];
+    const payments = taken.map(({ key, ...payment }) => ({ ...payment, ...photoId(key) }));
     if (pending) {
       const label = tab === "ewallet" ? provider : "Card";
       const trimmed = reference.trim();
       const ref = trimmed ? `${label} ${trimmed}`.slice(0, MAX_PAYMENT_REF) : undefined;
-      payments.push({ method: tab, amount: pending, ...(ref ? { ref } : {}) });
+      payments.push({ method: tab, amount: pending, ...(ref ? { ref } : {}), ...photoId(DRAFT) });
     }
     // Cash is last, so the change comes out of the drawer and not off a card.
-    if (cashAmount > 0) payments.push({ method: "cash", amount: cashAmount });
+    if (cashAmount > 0) payments.push({ method: "cash", amount: cashAmount, ...photoId(CASH) });
 
     setBusy(true);
     try {
@@ -201,40 +268,61 @@ export function PaySheet({ open, onOpenChange, lines, total, itemCount }: {
                   <Price amount={total} className="text-3xl" />
                 </div>
                 <ul className="grid gap-2 text-sm">
-                  {taken.map((payment, index) => (
-                    <li key={index} className="flex items-center gap-2 rounded-lg bg-card p-3">
+                  {taken.map((payment) => (
+                    <li key={payment.key} className="flex items-center gap-2 rounded-lg bg-card p-2 pl-3">
                       <span className="grid min-w-0 flex-1">
                         <strong className="font-medium capitalize">{methodLabel(payment.method)}</strong>
                         {payment.ref && <small className="truncate text-muted-foreground">Ref {payment.ref}</small>}
                       </span>
                       <Price amount={payment.amount} />
+                      <PaymentPhotoButton
+                        photo={photos[payment.key]}
+                        label={`the ${methodLabel(payment.method)} payment`}
+                        onPick={(file) => pickPhoto(payment.key, file)}
+                        onRemove={() => removePhoto(payment.key)}
+                      />
                       <Button
                         variant="ghost"
                         size="icon"
                         className="size-8 shrink-0"
                         aria-label={`Remove ${methodLabel(payment.method)} payment`}
-                        onClick={() => setTaken(taken.filter((_, i) => i !== index))}
+                        onClick={() => {
+                          setTaken(taken.filter((other) => other.key !== payment.key));
+                          removePhoto(payment.key);
+                        }}
                       >
                         <X className="size-4" />
                       </Button>
                     </li>
                   ))}
                   {pending > 0 && (
-                    <li className="flex items-center gap-2 rounded-lg border border-dashed bg-card/50 p-3">
+                    <li className="flex items-center gap-2 rounded-lg border border-dashed bg-card/50 p-2 pl-3">
                       <span className="grid min-w-0 flex-1">
                         <strong className="font-medium">{tab === "ewallet" ? provider : "Card"}</strong>
                         <small className="text-muted-foreground">Added when you complete the sale</small>
                       </span>
                       <Price amount={pending} />
+                      <PaymentPhotoButton
+                        photo={photos[DRAFT]}
+                        label={`the ${tab === "ewallet" ? provider : "card"} payment`}
+                        onPick={(file) => pickPhoto(DRAFT, file)}
+                        onRemove={() => removePhoto(DRAFT)}
+                      />
                     </li>
                   )}
                   {cashAmount > 0 && (
-                    <li className="flex items-center gap-2 rounded-lg bg-card p-3">
+                    <li className="flex items-center gap-2 rounded-lg bg-card p-2 pl-3">
                       <span className="grid min-w-0 flex-1">
                         <strong className="font-medium">Cash</strong>
                         <small className="text-muted-foreground">Received from customer</small>
                       </span>
                       <Price amount={cashAmount} />
+                      <PaymentPhotoButton
+                        photo={photos[CASH]}
+                        label="the cash"
+                        onPick={(file) => pickPhoto(CASH, file)}
+                        onRemove={() => removePhoto(CASH)}
+                      />
                     </li>
                   )}
                   {taken.length === 0 && !pending && cashAmount === 0 && (
@@ -262,7 +350,12 @@ export function PaySheet({ open, onOpenChange, lines, total, itemCount }: {
                       type="button"
                       role="tab"
                       aria-selected={tab === option.value}
-                      onClick={() => { setTab(option.value); setTyped(""); }}
+                      onClick={() => {
+                        if (option.value === tab) return;
+                        setTab(option.value);
+                        setTyped("");
+                        removePhoto(DRAFT); // a photo of one card doesn't prove the next method
+                      }}
                       className={cn(
                         "flex min-h-12 flex-col items-center justify-center gap-1 rounded-lg text-xs font-medium transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
                         tab === option.value ? "bg-card text-primary shadow-xs" : "text-muted-foreground hover:text-foreground",
@@ -374,8 +467,8 @@ export function PaySheet({ open, onOpenChange, lines, total, itemCount }: {
                   ? paid > 0 ? `${formatMoney(remaining)} more to collect` : "Enter the cash received, or choose another method"
                   : change > 0 ? `Give ${formatMoney(change)} change` : "Exact amount received"}
               </span>
-              <Button size="lg" className="h-13 px-6 text-base font-semibold" disabled={!covered || busy} onClick={complete}>
-                {busy ? "Completing…" : "Complete sale"}
+              <Button size="lg" className="h-13 px-6 text-base font-semibold" disabled={!covered || busy || uploading} onClick={complete}>
+                {busy ? "Completing…" : uploading ? "Uploading photo…" : "Complete sale"}
               </Button>
             </footer>
           </>

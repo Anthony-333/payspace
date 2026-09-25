@@ -160,7 +160,12 @@ export function computeTotals(priced: PricedLine[], tenant: Tenant) {
   return { subtotal, discount: 0, tax, total, cogs };
 }
 
-export type PaymentInput = { method: Doc<"sales">["payments"][number]["method"]; amount: number; ref?: string };
+export type PaymentInput = {
+  method: Doc<"sales">["payments"][number]["method"];
+  amount: number;
+  ref?: string;
+  photoId?: Id<"_storage">;
+};
 
 /**
  * Payments must cover the total. Only cash may overpay, and the excess is the change given;
@@ -177,7 +182,12 @@ export function settlePayments(total: number, payments: PaymentInput[]) {
     if (ref && ref.length > MAX_PAYMENT_REF) {
       throw new ConvexError(`Keep the reference under ${MAX_PAYMENT_REF} characters.`);
     }
-    return { method: payment.method, amount: payment.amount, ...(ref ? { ref } : {}) };
+    return {
+      method: payment.method,
+      amount: payment.amount,
+      ...(ref ? { ref } : {}),
+      ...(payment.photoId ? { photoId: payment.photoId } : {}),
+    };
   });
 
   const paid = cleaned.reduce((sum, payment) => sum + payment.amount, 0);

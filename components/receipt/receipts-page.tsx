@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "convex/react";
-import { Banknote, CreditCard, ExternalLink, Receipt, Smartphone, type LucideIcon } from "lucide-react";
+import { Banknote, Camera, ChevronRight, CreditCard, Receipt, Smartphone, type LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { useShop } from "@/components/shop/shop-provider";
 import { Button } from "@/components/ui/button";
@@ -51,8 +51,7 @@ export function ReceiptsPage() {
             {forDay.map((sale) => (
               <li key={sale._id}>
                 <Link
-                  href={`/r/${sale.receiptToken}`}
-                  target="_blank"
+                  href={`/${shop.slug}/receipts/${sale._id}`}
                   className="flex items-center gap-4 rounded-xl border bg-card p-4 transition-colors outline-none hover:border-primary/40 focus-visible:ring-3 focus-visible:ring-ring/50"
                 >
                   <span className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-muted">
@@ -76,8 +75,14 @@ export function ReceiptsPage() {
                       const Icon = METHOD_ICONS[method] ?? Banknote;
                       return <Icon key={method} className="size-4 text-muted-foreground" aria-label={method} />;
                     })}
+                    {sale.photoCount > 0 && (
+                      <Camera
+                        className="size-4 text-muted-foreground"
+                        aria-label={`${sale.photoCount} payment ${sale.photoCount === 1 ? "photo" : "photos"}`}
+                      />
+                    )}
                     <span className="font-semibold tabular-nums">{formatMoney(sale.total)}</span>
-                    <ExternalLink className="size-4 text-muted-foreground" />
+                    <ChevronRight className="size-4 text-muted-foreground" />
                   </span>
                 </Link>
               </li>

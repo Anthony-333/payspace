@@ -114,9 +114,9 @@ export function AppShell({ children }: { children: ReactNode }) {
         focus: () => inputRef.current?.focus(),
       }}
     >
-      <div className="flex min-h-dvh bg-background">
+      <div className="flex min-h-dvh bg-background print:block print:min-h-0 print:bg-transparent">
         {/* Rail */}
-        <aside className="sticky top-0 hidden h-dvh w-20 shrink-0 flex-col items-center gap-2 border-r bg-card py-5 md:flex">
+        <aside className="sticky top-0 hidden h-dvh w-20 shrink-0 flex-col items-center gap-2 border-r bg-card py-5 md:flex print:hidden">
           <Link href={base} aria-label={shop.name} className="mb-6 flex size-12 items-center justify-center rounded-xl bg-primary text-primary-foreground">
             <Store className="size-6" />
           </Link>
@@ -179,7 +179,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
         <div className="flex min-w-0 flex-1 flex-col">
           {/* Top bar */}
-          <header className="sticky top-0 z-20 flex h-18 shrink-0 items-center gap-3 border-b bg-card px-4 sm:px-6">
+          <header className="sticky top-0 z-20 flex h-18 shrink-0 items-center gap-3 border-b bg-card px-4 sm:px-6 print:hidden">
             <button
               type="button"
               onClick={() => setMenuOpen(true)}

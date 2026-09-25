@@ -1,6 +1,6 @@
 import { convexTest } from "convex-test";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-import { api } from "./_generated/api";
+import { api, internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { taxFromTotals } from "./lib/money";
 import schema from "./schema";
@@ -400,5 +400,105 @@ describe("tenant isolation", () => {
     expect(a.number).toBe(1);
     expect(b.number).toBe(1); // its own counter, not the next one along
     expect(b.saleId).not.toBe(a.saleId);
+  });
+});
+
+describe("payment photos", () => {
+  // convex-test doesn't record a file's content type, so an accepted photo can't pass checkout's
+  // type check here. Refusals are tested through checkout; the rest attaches a photo directly.
+  const store = (t: Awaited<ReturnType<typeof setup>>["t"], type = "image/jpeg") =>
+    t.run((ctx) => ctx.storage.store(new Blob(["photo"], { type })));
+
+  test("checkout refuses a file that isn't a photo, a missing one, and one photo for two payments", async () => {
+    const { t, owner, tenantId, water } = await cafe();
+    const text = await store(t, "text/plain");
+    const line = [{ productId: water, qty: 1, optionKeys: [] }];
+    await expect(owner.mutation(api.sales.checkout, {
+      tenantId, clientRef: "ref-photo-text", lines: line,
+      payments: [{ method: "cash", amount: 6000, photoId: text }],
+    })).rejects.toThrow(/JPEG, PNG or WebP/);
+
+    const gone = await store(t);
+    await t.run((ctx) => ctx.storage.delete(gone));
+    await expect(owner.mutation(api.sales.checkout, {
+      tenantId, clientRef: "ref-photo-gone", lines: line,
+      payments: [{ method: "cash", amount: 6000, photoId: gone }],
+    })).rejects.toThrow(/didn't upload/);
+
+    const twice = await store(t);
+    await expect(owner.mutation(api.sales.checkout, {
+      tenantId, clientRef: "ref-photo-twice", lines: line,
+      payments: [{ method: "card", amount: 3000, photoId: twice }, { method: "cash", amount: 3000, photoId: twice }],
+    })).rejects.toThrow(/its own photo/);
+
+    // Nothing was rung up, claimed or deducted by any of those.
+    expect(await owner.query(api.sales.recent, { tenantId })).toEqual([]);
+    expect(await t.run((ctx) => ctx.db.query("uploads").collect())).toEqual([]);
+  });
+
+  test("a photo another shop already claimed can't prove a payment here", async () => {
+    const { t, owner, tenantId, water } = await cafe();
+    const mallory = t.withIdentity({ subject: "user_mallory", name: "Mallory" });
+    const other = await mallory.mutation(api.tenants.create, { name: "Sari Mart", slug: "sarimart", businessType: "grocery" });
+    const theirs = await store(t);
+    await t.run((ctx) => ctx.db.insert("uploads", { tenantId: other.tenantId, storageId: theirs }));
+
+    await expect(owner.mutation(api.sales.checkout, {
+      tenantId, clientRef: "ref-photo-theirs", lines: [{ productId: water, qty: 1, optionKeys: [] }],
+      payments: [{ method: "cash", amount: 6000, photoId: theirs }],
+    })).rejects.toThrow(/already in use/);
+  });
+
+  test("the staff receipt shows the photos; the public link never does", async () => {
+    const { t, owner, tenantId, as, water, cash } = await cafe();
+    const cashier = await as("user_cashier", "cashier");
+    const sale = await cashier.mutation(api.sales.checkout, {
+      tenantId, clientRef: "ref-photo-ok", lines: [{ productId: water, qty: 1, optionKeys: [] }], payments: cash(6000),
+    });
+    const photo = await store(t);
+    await t.run(async (ctx) => {
+      const doc = (await ctx.db.get(sale.saleId))!;
+      await ctx.db.patch(sale.saleId, { payments: [{ ...doc.payments[0], photoId: photo }] });
+      await ctx.db.insert("uploads", { tenantId, storageId: photo, saleId: sale.saleId });
+    });
+
+    const staff = (await cashier.query(api.sales.receipt, { tenantId, saleId: sale.saleId }))!;
+    expect(staff.photos).toEqual([{ method: "cash", amount: 6000, ref: undefined, url: expect.any(String) }]);
+    expect(staff.receipt).toEqual(await t.query(api.sales.byToken, { token: sale.receiptToken }));
+    expect((await owner.query(api.sales.recent, { tenantId }))[0].photoCount).toBe(1);
+
+    const publicReceipt = JSON.stringify(await t.query(api.sales.byToken, { token: sale.receiptToken }));
+    expect(publicReceipt).not.toContain(photo);
+    expect(publicReceipt).not.toContain("photo");
+
+    // Another cashier, and another shop, see nothing.
+    const other = await as("user_cashier2", "cashier");
+    expect(await other.query(api.sales.receipt, { tenantId, saleId: sale.saleId })).toBeNull();
+    expect(await owner.query(api.sales.receipt, { tenantId, saleId: "not-an-id" })).toBeNull();
+    const mallory = t.withIdentity({ subject: "user_mallory", name: "Mallory" });
+    const shop2 = await mallory.mutation(api.tenants.create, { name: "Sari Mart", slug: "sarimart", businessType: "grocery" });
+    await expect(mallory.query(api.sales.receipt, { tenantId, saleId: sale.saleId })).rejects.toThrow(/access/);
+    expect(await mallory.query(api.sales.receipt, { tenantId: shop2.tenantId, saleId: sale.saleId })).toBeNull();
+    await expect(mallory.mutation(api.sales.generatePhotoUploadUrl, { tenantId })).rejects.toThrow(/access/);
+    expect(await cashier.mutation(api.sales.generatePhotoUploadUrl, { tenantId })).toEqual(expect.any(String));
+  });
+
+  test("the daily cleanup keeps a sale's photos and removes ones from orders never completed", async () => {
+    vi.setSystemTime(new Date("2026-09-01T00:00:00Z"));
+    const { t, owner, tenantId, water, cash } = await cafe();
+    const sale = await owner.mutation(api.sales.checkout, {
+      tenantId, clientRef: "ref-photo-keep", lines: [{ productId: water, qty: 1, optionKeys: [] }], payments: cash(6000),
+    });
+    const kept = await store(t);
+    const abandoned = await store(t); // taken, then the order was cancelled: never claimed
+    await t.run((ctx) => ctx.db.insert("uploads", { tenantId, storageId: kept, saleId: sale.saleId }));
+
+    vi.setSystemTime(new Date("2026-09-03T00:00:00Z"));
+    await t.mutation(internal.photos.cleanup, { cursor: null });
+    const exists = (id: Id<"_storage">) => t.run(async (ctx) => (await ctx.db.system.get("_storage", id)) !== null);
+    expect(await exists(kept)).toBe(true);
+    // convex-test records no content type, so the unclaimed file is kept like any unknown file;
+    // on a real deployment it's a JPEG or WebP and goes (see catalog.test.ts "photos").
+    expect(await exists(abandoned)).toBe(true);
   });
 });

@@ -3,7 +3,8 @@ import { internal } from "./_generated/api";
 import { internalMutation } from "./_generated/server";
 import { IMAGE_TYPES } from "./lib/products";
 
-// Product photos that were replaced, removed, or uploaded but never saved stay in file storage.
+// Product photos that were replaced, removed, or uploaded but never saved stay in file storage,
+// and so do payment photos taken for an order that was never completed.
 // A daily job (convex/crons.ts) deletes them once they're a day old.
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -24,6 +25,8 @@ export const cleanup = internalMutation({
       if (file._creationTime > cutoff) continue;
       const claim = await ctx.db.query("uploads").withIndex("by_storage", (q) => q.eq("storageId", file._id)).first();
       if (claim) {
+        // A payment photo belongs to its sale, and sales are never deleted (CLAUDE.md rule 9).
+        if (claim.saleId) continue;
         const used = await ctx.db
           .query("products")
           .withIndex("by_tenant_image", (q) => q.eq("tenantId", claim.tenantId).eq("imageId", file._id))

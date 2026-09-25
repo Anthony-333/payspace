@@ -67,8 +67,9 @@ export default defineSchema({
     .index("by_tenant_image", ["tenantId", "imageId"])
     .searchIndex("search_name", { searchField: "name", filterFields: ["tenantId", "isActive"] }),
 
-  // Which shop uploaded each photo, so one shop can never use another's file.
-  uploads: defineTable({ tenantId, storageId: v.id("_storage") })
+  // Which shop uploaded each photo, so one shop can never use another's file. A payment photo
+  // also records its sale, so the cleanup job keeps it for as long as the sale exists.
+  uploads: defineTable({ tenantId, storageId: v.id("_storage"), saleId: v.optional(v.id("sales")) })
     .index("by_tenant_storage", ["tenantId", "storageId"])
     .index("by_storage", ["storageId"]), // global: a file belongs to one shop; used by the cleanup job
 
@@ -148,7 +149,12 @@ export default defineSchema({
       discount: money,
     })),
     subtotal: money, discount: money, tax: money, total: money, cogs: money,
-    payments: v.array(v.object({ method: payMethod, amount: money, ref: v.optional(v.string()) })),
+    payments: v.array(v.object({
+      method: payMethod,
+      amount: money,
+      ref: v.optional(v.string()),
+      photoId: v.optional(v.id("_storage")), // proof of payment: staff only, never on the public receipt
+    })),
     changeGiven: money,
     status: v.union(v.literal("completed"), v.literal("voided"), v.literal("refunded")),
     receiptToken: v.string(),        // unguessable, for the public receipt link
