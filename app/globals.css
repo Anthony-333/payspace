@@ -46,6 +46,37 @@
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
+  --color-brand: var(--brand);
+  --color-tint-green: var(--tint-green);
+  --color-tint-green-foreground: var(--tint-green-foreground);
+  --color-tint-blue: var(--tint-blue);
+  --color-tint-blue-foreground: var(--tint-blue-foreground);
+  --color-tint-violet: var(--tint-violet);
+  --color-tint-violet-foreground: var(--tint-violet-foreground);
+  --color-tint-peach: var(--tint-peach);
+  --color-tint-peach-foreground: var(--tint-peach-foreground);
+}
+
+/*
+ * Pastel panels (pricing columns, testimonials, status and stat cards). Each foreground
+ * passes AA on its own tint. --brand is the decorative, full-strength brand orange for
+ * bars and icons, never for text on white.
+ */
+:root {
+  --brand: #ff6a13;
+  --tint-green: #eaf7ec;
+  --tint-green-foreground: #1f6b3a;
+  --tint-blue: #e9f2fd;
+  --tint-blue-foreground: #1d5a9e;
+  --tint-violet: #f1edfd;
+  --tint-violet-foreground: #5b3fb5;
+  --tint-peach: #fff1e8;
+  --tint-peach-foreground: #a8420c;
+}
+
+/* The landing and sign-in pages sit on white, with soft gray panels, like the reference. */
+.page-white {
+  --background: #fff;
 }
 
 /* Design blueprint tokens (docs/design/blueprint.md). */
@@ -56,32 +87,34 @@
   --card-foreground: oklch(0.216 0.009 264.5);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.216 0.009 264.5);
-  --primary: oklch(0.543 0.198 264.1);         /* #2D62EA, AA with white text */
+  /* Coca orange, darkened from #FF6A13 so white text, and orange text on the pale
+     panels, passes AA (5.2:1 on white, 4.7:1 on --accent). */
+  --primary: #c2410c;
   --primary-foreground: oklch(1 0 0);
   --secondary: oklch(0.978 0.003 264.5);       /* #F7F8FA */
   --secondary-foreground: oklch(0.216 0.009 264.5);
   --muted: oklch(0.978 0.003 264.5);           /* #F7F8FA soft panel */
   --muted-foreground: oklch(0.556 0.013 264.5); /* #7A808A, AA on white */
-  --accent: oklch(0.951 0.022 264.1);          /* #EAF0FE primary soft */
-  --accent-foreground: oklch(0.47 0.18 264.1);
+  --accent: #fff1e8;                           /* primary soft (peach) */
+  --accent-foreground: #a8420c;
   --destructive: oklch(0.577 0.215 27.3);
   --border: oklch(0.94 0.005 264.5);           /* #ECEEF2 hairline */
   --input: oklch(0.925 0.006 264.5);
-  --ring: oklch(0.543 0.198 264.1);
-  --chart-1: oklch(0.543 0.198 264.1);
+  --ring: #c2410c;
+  --chart-1: #ff6a13;
   --chart-2: oklch(0.7 0.14 250);
   --chart-3: oklch(0.72 0.15 160);
   --chart-4: oklch(0.8 0.15 80);
   --chart-5: oklch(0.65 0.2 25);
-  --radius: 0.75rem;
+  --radius: 1rem;
   --sidebar: oklch(1 0 0);
   --sidebar-foreground: oklch(0.216 0.009 264.5);
-  --sidebar-primary: oklch(0.543 0.198 264.1);
+  --sidebar-primary: #c2410c;
   --sidebar-primary-foreground: oklch(1 0 0);
-  --sidebar-accent: oklch(0.951 0.022 264.1);
-  --sidebar-accent-foreground: oklch(0.47 0.18 264.1);
+  --sidebar-accent: #fff1e8;
+  --sidebar-accent-foreground: #a8420c;
   --sidebar-border: oklch(0.94 0.005 264.5);
-  --sidebar-ring: oklch(0.543 0.198 264.1);
+  --sidebar-ring: #c2410c;
 }
 
 .dark {
@@ -225,23 +258,26 @@
  * Chart palette. Built with the dataviz method: the form is chosen before the colour, and
  * the categorical steps below were checked with the skill's validator rather than by eye
  * (lightness band, chroma floor, CVD separation, normal-vision floor, contrast on the card
- * each mode actually paints). Slot 1 is the brand blue, so charts belong to the same system
- * as the rest of the app. The dark steps are selected for the dark card, not flipped.
+ * each mode actually paints). Slot 1 is the brand orange, so charts belong to the same
+ * system as the rest of the app. The dark steps are selected for the dark card, not flipped.
+ * Aqua sits under 3:1 on white, which is why the payment mix always carries labels.
  *
  * Categorical is only ever used where the series ARE the subject (the payment mix).
- * Everything whose job is magnitude uses one hue: the solid brand blue for bars, and the
+ * Everything whose job is magnitude uses one hue: the solid brand orange for bars, and the
  * --viz-heat-* ramp where colour itself carries the value (the weekday heatmap).
  */
 :root {
-  --viz-series-1: #3164e0; /* blue   - cash */
-  --viz-series-2: #eb6834; /* orange - e-wallet */
+  --viz-series-1: #eb6834; /* orange - cash */
+  --viz-series-2: #3164e0; /* blue   - e-wallet */
   --viz-series-3: #1baf7a; /* aqua   - card */
 
-  --viz-heat-0: #eff4fc;
-  --viz-heat-1: #cfdefd;
-  --viz-heat-2: #a0bef9;
-  --viz-heat-3: #6a95f1;
-  --viz-heat-4: #3164e0;
+  /* One hue, monotone lightness, even steps (validated as a ramp). Step 0 is "no sales"
+     and deliberately fades into the card. */
+  --viz-heat-0: #fff1e8;
+  --viz-heat-1: #fdd3bb;
+  --viz-heat-2: #faa679;
+  --viz-heat-3: #f0763a;
+  --viz-heat-4: #cf4a0c;
 
   /* The colour the 2px gaps and rings are painted in: whatever the chart sits on. */
   --viz-surface: var(--card);
@@ -249,15 +285,15 @@
 }
 
 .dark {
-  --viz-series-1: #5b8bf0;
-  --viz-series-2: #d95926;
+  --viz-series-1: #d95926;
+  --viz-series-2: #5b8bf0;
   --viz-series-3: #199e70;
 
-  --viz-heat-0: #1d2433;
-  --viz-heat-1: #293c64;
-  --viz-heat-2: #37579e;
-  --viz-heat-3: #4874d8;
-  --viz-heat-4: #6097ff;
+  --viz-heat-0: #2a1c15;
+  --viz-heat-1: #55301b;
+  --viz-heat-2: #8a4520;
+  --viz-heat-3: #c55e22;
+  --viz-heat-4: #ff8a4c;
 
   --viz-grid: oklch(0.31 0 0);
 }

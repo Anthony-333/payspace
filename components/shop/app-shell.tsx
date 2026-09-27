@@ -129,8 +129,9 @@ export function AppShell({ children }: { children: ReactNode }) {
                     aria-label={item.label}
                     aria-current={isActive(item) ? "page" : undefined}
                     className={cn(
-                      "flex size-12 items-center justify-center rounded-xl transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
-                      isActive(item) ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
+                      "flex size-12 items-center justify-center rounded-full transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+                      // Navigation is a dark pill, like the landing page; orange is kept for actions.
+                      isActive(item) ? "bg-foreground text-background" : "text-muted-foreground hover:bg-muted hover:text-foreground",
                     )}
                   >
                     <NavIcon icon={item.icon} />
@@ -162,8 +163,8 @@ export function AppShell({ children }: { children: ReactNode }) {
                   onClick={() => setMenuOpen(false)}
                   aria-current={isActive(item) ? "page" : undefined}
                   className={cn(
-                    "flex h-12 items-center gap-3 rounded-xl px-3 text-sm font-medium",
-                    isActive(item) ? "bg-primary text-primary-foreground" : "hover:bg-accent",
+                    "flex h-12 items-center gap-3 rounded-full px-4 text-sm font-medium",
+                    isActive(item) ? "bg-foreground text-background" : "hover:bg-muted",
                   )}
                 >
                   <NavIcon icon={item.icon} />
@@ -184,7 +185,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               type="button"
               onClick={() => setMenuOpen(true)}
               aria-label="Open menu"
-              className="flex size-11 items-center justify-center rounded-xl text-muted-foreground hover:bg-accent md:hidden"
+              className="flex size-11 items-center justify-center rounded-full text-muted-foreground hover:bg-muted md:hidden"
             >
               <Menu className="size-5" />
             </button>
@@ -204,7 +205,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                       onSubmit.current?.();
                     }
                   }}
-                  className="h-12 rounded-xl border-transparent bg-muted pl-12 text-sm shadow-none focus-visible:border-ring"
+                  className="h-12 rounded-full border-transparent bg-muted pl-12 text-sm shadow-none focus-visible:border-ring"
                 />
               </div>
             ) : (
@@ -256,7 +257,7 @@ function ProfileMenu({ shop }: { shop: Shop }) {
   const shops = useQuery(api.tenants.mine, {});
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger className="ml-auto flex items-center gap-3 rounded-xl p-1 pr-2 text-left outline-none hover:bg-accent focus-visible:ring-3 focus-visible:ring-ring/50">
+      <DropdownMenuTrigger className="ml-auto flex items-center gap-3 rounded-full p-1 pr-4 text-left outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50">
         <span className="flex size-11 items-center justify-center rounded-full bg-accent text-sm font-semibold text-accent-foreground">
           {initials(shop.memberName)}
         </span>
@@ -293,7 +294,7 @@ function SignOutButton({ compact = false }: { compact?: boolean }) {
   }
   if (!compact) {
     return (
-      <button type="button" onClick={signOut} className="flex h-12 w-full items-center gap-3 rounded-xl px-3 text-sm font-medium text-destructive hover:bg-destructive/10">
+      <button type="button" onClick={signOut} className="flex h-12 w-full items-center gap-3 rounded-full px-4 text-sm font-medium text-destructive hover:bg-destructive/10">
         <LogOut className="size-5" /> Sign out
       </button>
     );
@@ -305,7 +306,7 @@ function SignOutButton({ compact = false }: { compact?: boolean }) {
           type="button"
           onClick={signOut}
           aria-label="Sign out"
-          className="flex size-12 items-center justify-center rounded-xl text-destructive hover:bg-destructive/10"
+          className="flex size-12 items-center justify-center rounded-full text-destructive hover:bg-destructive/10"
         >
           <LogOut className="size-5" />
         </button>

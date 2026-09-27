@@ -15,12 +15,23 @@ type Totals = {
   marginBps: number | null;
 };
 
-const TILES: { label: string; icon: LucideIcon; value: (t: Totals) => number; money: boolean }[] = [
-  { label: "Sales", icon: Coins, value: (t) => t.revenue, money: true },
-  { label: "Gross profit", icon: TrendingUp, value: (t) => t.profit, money: true },
-  { label: "Orders", icon: ShoppingBag, value: (t) => t.orders, money: false },
-  { label: "Average ticket", icon: Receipt, value: (t) => t.averageTicket, money: true },
+type Tone = "dark" | "violet" | "green" | "blue";
+
+const TILES: { label: string; icon: LucideIcon; value: (t: Totals) => number; money: boolean; tone: Tone }[] = [
+  { label: "Sales", icon: Coins, value: (t) => t.revenue, money: true, tone: "dark" },
+  { label: "Gross profit", icon: TrendingUp, value: (t) => t.profit, money: true, tone: "violet" },
+  { label: "Orders", icon: ShoppingBag, value: (t) => t.orders, money: false, tone: "green" },
+  { label: "Average ticket", icon: Receipt, value: (t) => t.averageTicket, money: true, tone: "blue" },
 ];
+
+// Bento tiles, like the landing page: the lead number on a dark card, the rest on pastels.
+// Every text colour here passes AA on its own background.
+const TONES: Record<Tone, { card: string; chip: string; well: string; soft: string }> = {
+  dark: { card: "bg-foreground text-background", chip: "bg-background/10", well: "bg-background text-foreground", soft: "text-background/75" },
+  violet: { card: "bg-tint-violet text-tint-violet-foreground", chip: "bg-card", well: "bg-foreground text-background", soft: "" },
+  green: { card: "bg-tint-green text-tint-green-foreground", chip: "bg-card", well: "bg-foreground text-background", soft: "" },
+  blue: { card: "bg-tint-blue text-tint-blue-foreground", chip: "bg-card", well: "bg-foreground text-background", soft: "" },
+};
 
 /** Percent change, or null when last week had nothing to compare against. */
 function change(now: number, before: number) {
@@ -41,19 +52,20 @@ export function KpiTiles({ current, previous, loading, comparison = "the same da
         const delta = current && previous ? change(value, tile.value(previous)) : null;
         const Trend = delta === null || delta === 0 ? Minus : delta > 0 ? TrendingUp : TrendingDown;
         return (
-          <div key={tile.label} className="rounded-xl border bg-card p-4">
-            <div className="flex items-center justify-between gap-2 text-sm text-muted-foreground">
-              {tile.label}
-              <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-accent text-accent-foreground">
-                <tile.icon className="size-4" />
+          <div key={tile.label} className={cn("flex flex-col gap-4 rounded-xl p-4 sm:p-5", TONES[tile.tone].card)}>
+            <span className={cn("inline-flex w-fit max-w-full items-center gap-2 rounded-full py-1 pr-3 pl-1 text-sm font-semibold", TONES[tile.tone].chip, tile.tone !== "dark" && "text-foreground")}>
+              <span className={cn("flex size-7 shrink-0 items-center justify-center rounded-full", TONES[tile.tone].well)}>
+                <tile.icon className="size-3.5" />
               </span>
-            </div>
-            <div className={cn("mt-2 text-2xl font-semibold tabular-nums", loading && "animate-pulse text-muted-foreground")}>
+              <span className="truncate">{tile.label}</span>
+            </span>
+            <div>
+            <div className={cn("text-2xl font-semibold tracking-tight tabular-nums sm:text-3xl", tile.tone !== "dark" && "text-foreground", loading && "animate-pulse opacity-60")}>
               {loading ? "—" : tile.money ? (
-                <><span className="text-muted-foreground">₱</span>{formatMoney(value, "")}</>
+                <><span className="font-normal opacity-60">₱</span>{formatMoney(value, "")}</>
               ) : value.toLocaleString("en-PH")}
             </div>
-            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+            <div className={cn("mt-1 flex items-center gap-1 text-xs", TONES[tile.tone].soft)}>
               {loading ? (
                 "Loading"
               ) : delta === null ? (
@@ -69,6 +81,7 @@ export function KpiTiles({ current, previous, loading, comparison = "the same da
                   <span className="sr-only">compared with {comparison}</span>
                 </>
               )}
+            </div>
             </div>
           </div>
         );

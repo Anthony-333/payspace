@@ -251,7 +251,7 @@ function CategoryTile({ name, count, icon: Icon, active, onClick }: {
       </span>
       <span className="grid min-w-0">
         <span className="truncate font-semibold">{name}</span>
-        <span className={cn("text-sm", active ? "text-primary-foreground/80" : "text-muted-foreground")}>
+        <span className={cn("text-sm", active ? "text-primary-foreground" : "text-muted-foreground")}>
           {count} {count === 1 ? "item" : "items"}
         </span>
       </span>

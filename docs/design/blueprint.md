@@ -1,16 +1,15 @@
 # Design blueprint
 
-The visual reference for every screen is `docs/design/pos-reference.png`, a "front cashier" menu screen. Open it before designing or reviewing UI.
-
-The two references cover different things:
-- **The image sets how the app looks:** layout, spacing, type, color and components.
+There are three references. Open them before designing or reviewing UI:
+- **`docs/design/coca-reference-1.png` to `-5.png`** (the Dribbble "Coca POS" landing page, adopted 2026-09-27) set the brand: the orange, dark hero cards, pastel panels, pill buttons, icon chips and large rounded corners. The landing page (`app/(marketing)`) follows them closely.
+- **`docs/design/pos-reference.png`**, a "front cashier" menu screen, sets the **layout** of the app screens: the rail, top bar, category tiles, product cards and invoice panel. Its blue is superseded by the Coca orange.
 - **`docs/prototypes/pos-checkout.html` sets how checkout behaves:** quick-tender buttons, change, split payments and pricing logic.
 
-When they disagree, the image wins on looks and the prototype wins on behaviour.
+When they disagree, Coca wins on colour and component style, the cashier image wins on screen layout, and the prototype wins on behaviour.
 
 ## Overall feel
 
-Calm and bright. Everything sits on white cards over a light gray page. One saturated blue marks what's active or primary, and everything else is neutral. Food photos add the color. Corners are generous, shadows are barely there, and there are no heavy borders or gradients.
+Calm and bright, with a warm accent. In the app, everything sits on white cards over a light gray page; the landing and sign-in pages sit on white with soft gray panels (`.page-white`). One orange marks actions and selection, near-black marks where you are (the active nav pill, dark hero and lead stat cards), and pastel tints carry status and secondary stats. Food photos add the rest of the colour. Corners are large, shadows are barely there, and there are no heavy borders or gradients.
 
 ## Tokens
 
@@ -20,17 +19,22 @@ The tokens live in `app/globals.css`. Use them through Tailwind classes such as 
 |---|---|---|
 | Page background (`--background`) | #F4F5F7 | Everything behind the cards |
 | Card (`--card`) | #FFFFFF | Tiles, product cards, invoice panel, top bar, rail |
-| Primary (`--primary`) | #2D62EA | Active tile, active rail item, + button, Place order, selected payment method |
-| Primary soft (`--accent`) | #EAF0FE | Selected payment tab, hovered tile, icon wells |
+| Primary (`--primary`) | #C2410C | Buttons, active category tile, + button, Place order, selected payment method |
+| Brand (`--brand`) | #FF6A13 | Decoration only: chart bars, glows, the logo tile on dark. Never text on white |
+| Primary soft (`--accent`) | #FFF1E8 | Selected payment tab, hovered tile, icon wells, with #A8420C text |
+| Dark card | `bg-foreground text-background` | Dashboard welcome card, the lead KPI tile, the sign-in side panel, the active nav pill |
+| Tints (`--tint-green/blue/violet/peach`) | pastels, each with a `-foreground` that passes AA on it | Stat tiles, pricing columns, testimonials, callouts |
 | Text (`--foreground`) | #1A1D23 | Titles, prices |
 | Secondary text (`--muted-foreground`) | #858B95 | Descriptions, "12 items", labels, currency sign |
 | Hairline (`--border`) | #ECEEF2 | Card outlines, the dashed divider in the summary |
 | Soft panel (`--muted`) | #F7F8FA | Payment summary box, search field, stepper buttons |
 | Danger (`--destructive`) | red | Sign out icon, errors |
 
-The primary is a touch darker than the image's blue so white text on it passes WCAG AA (4.5:1).
+The primary is darker than Coca's #FF6A13 so white text on it passes WCAG AA (5.2:1), and orange text still passes on the pale panels (4.7:1 on the accent).
 
-- **Radius:** 12px for cards and tiles (`rounded-xl`), 10px for inputs and buttons, and full circles for the stepper buttons.
+- **Radius:** `--radius` is 16px, so cards and tiles (`rounded-xl`) are about 22px, inputs (`rounded-lg`) 16px, and hero cards (`rounded-2xl`) about 29px. Every button, nav item, search field and chip is a full pill (`rounded-full`).
+- **Icon chips:** a card title can be a pill holding a 28px dark circle with the icon, then the label (see the KPI tiles), as in Coca's "Sales Statistics".
+- **Charts:** slot 1 is the brand orange, then blue and aqua; the heatmap is an orange ramp. Both were validated with the dataviz method (see the comment in `app/globals.css`).
 - **Shadow:** at most `shadow-xs` on cards; the active tile has none. Depth comes from white on gray.
 - **Type:** Plus Jakarta Sans (via `next/font`) for everything.
 
@@ -52,12 +56,12 @@ The screen is split like this:
 
 The rail runs the full height. The top bar spans both the content and the invoice columns.
 
-- **Rail:** white and 80px wide, with the logo (a blue rounded square) at the top.
-  - Nav items are 48px icon buttons. The active item is a blue square with a white icon; the others are muted icons. Each has a tooltip with its label.
+- **Rail:** white and 80px wide, with the logo (an orange rounded square) at the top.
+  - Nav items are 48px round icon buttons. The active item is a near-black circle with a white icon; the others are muted icons. Each has a tooltip with its label.
   - The bottom holds the shop switcher and sign out (in red).
   - On phones, the rail becomes a slide-out sheet with labels, opened from a menu button in the top bar.
 - **Top bar:** white and 72px tall.
-  - A wide soft-gray search field with a leading search icon on the left.
+  - A wide soft-gray pill search field with a leading search icon on the left.
   - On the right, a round avatar, the person's name (semibold) and a caption line (role and shop).
   - It shows search only on screens that use it (POS, products).
 - **Content:** 24px padding, with a 16–20px gap between cards.
