@@ -2,8 +2,8 @@ import { ConvexError } from "convex/values";
 
 // Top-level app routes a shop slug must never shadow (app/[shop] sits next to them).
 export const RESERVED_SLUGS = new Set([
-  "_next", "admin", "api", "app", "auth", "dashboard", "help", "login", "logout",
-  "onboarding", "r", "settings", "sign-in", "sign-out", "sign-up", "static", "support",
+  "_next", "admin", "api", "app", "auth", "blog", "dashboard", "help", "login", "logout",
+  "onboarding", "pos", "privacy", "r", "settings", "sign-in", "sign-out", "sign-up", "static", "support", "terms",
 ]);
 
 const SLUG_PATTERN = /^[a-z0-9](?:[a-z0-9-]{1,38}[a-z0-9])$/;

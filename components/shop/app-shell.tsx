@@ -16,10 +16,10 @@ import {
   Settings,
   ShoppingBag,
   SlidersHorizontal,
-  Store,
   Tags,
   type LucideIcon,
 } from "lucide-react";
+import Image from "next/image";
 import Link, { useLinkStatus } from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createContext, useContext, useRef, useState, type ReactNode } from "react";
@@ -117,8 +117,8 @@ export function AppShell({ children }: { children: ReactNode }) {
       <div className="flex min-h-dvh bg-background print:block print:min-h-0 print:bg-transparent">
         {/* Rail */}
         <aside className="sticky top-0 hidden h-dvh w-20 shrink-0 flex-col items-center gap-2 border-r bg-card py-5 md:flex print:hidden">
-          <Link href={base} aria-label={shop.name} className="mb-6 flex size-12 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-            <Store className="size-6" />
+          <Link href={base} aria-label={shop.name} className="mb-6 flex size-12 items-center justify-center">
+            <Image src="/brand/payspace-mark.png" alt="" width={152} height={152} loading="eager" className="size-11" />
           </Link>
           <nav aria-label="Main" className="flex flex-col gap-2">
             {items.map((item) => (
@@ -150,9 +150,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
           <SheetContent side="left" className="w-72 p-4">
             <SheetTitle className="mb-4 flex items-center gap-3 text-base">
-              <span className="flex size-10 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-                <Store className="size-5" />
-              </span>
+              <Image src="/brand/payspace-mark.png" alt="" width={152} height={152} className="size-10" />
               {shop.name}
             </SheetTitle>
             <nav aria-label="Main" className="grid gap-1">

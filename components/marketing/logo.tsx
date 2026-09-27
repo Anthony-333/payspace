@@ -1,13 +1,16 @@
-import { Store } from "lucide-react";
+import Image from "next/image";
 import { cn } from "cn";
 
-export function Logo({ className }: { className?: string }) {
+/** The Payspace wordmark. Pass `eager` when it sits above the fold. */
+export function Logo({ className, eager }: { className?: string; eager?: boolean }) {
   return (
-    <span className={cn("flex items-center gap-2 text-lg font-bold tracking-tight", className)}>
-      <span className="grid size-8 place-items-center rounded-[10px] bg-primary text-primary-foreground">
-        <Store className="size-4.5" strokeWidth={2.4} />
-      </span>
-      Payspace
-    </span>
+    <Image
+      src="/brand/payspace-logo.png"
+      alt="Payspace"
+      width={602}
+      height={100}
+      loading={eager ? "eager" : undefined}
+      className={cn("h-7 w-auto", className)}
+    />
   );
 }

@@ -18,12 +18,12 @@ const schema = z.object({
   password: z.string().min(8, "Use at least 8 characters.").max(128),
 });
 
-export function SignUpForm() {
+export function SignUpForm({ defaultEmail = "" }: { defaultEmail?: string }) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const form = useForm<z.infer<typeof schema>>({
     resolver: zodResolver(schema),
-    defaultValues: { name: "", email: "", password: "" },
+    defaultValues: { name: "", email: defaultEmail, password: "" },
   });
   const { errors, isSubmitting } = form.formState;
 
@@ -59,6 +59,17 @@ export function SignUpForm() {
       <Button type="submit" size="lg" disabled={isSubmitting}>
         {isSubmitting ? "Creating account…" : "Create account"}
       </Button>
+      <p className="text-center text-xs text-muted-foreground">
+        By creating an account, you agree to our{" "}
+        <Link href="/terms" className="underline underline-offset-4 hover:text-foreground">
+          Terms &amp; Conditions
+        </Link>{" "}
+        and{" "}
+        <Link href="/privacy" className="underline underline-offset-4 hover:text-foreground">
+          Privacy Policy
+        </Link>
+        .
+      </p>
       <p className="text-center text-sm text-muted-foreground">
         Already have an account?{" "}
         <Link href="/sign-in" className="font-medium text-foreground underline underline-offset-4">

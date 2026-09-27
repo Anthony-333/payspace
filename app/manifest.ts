@@ -4,7 +4,10 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "Payspace POS",
     short_name: "Payspace",
-    description: "Point of sale with true profit per item.",
+    description: "Point of sale for coffee shops, bakeries and small stores, with true profit per item.",
+    id: "/",
+    lang: "en-PH",
+    categories: ["business", "finance", "productivity"],
     start_url: "/",
     display: "standalone",
     orientation: "any",

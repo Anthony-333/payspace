@@ -21,7 +21,7 @@ export function AuthCard({
     <div className="page-white grid min-h-dvh flex-1 grid-cols-1 gap-4 bg-background p-4 lg:grid-cols-[1fr_1.1fr]">
       <main className="flex flex-col px-2 py-4 sm:px-6">
         <Link href="/" aria-label="Payspace home" className="w-fit">
-          <Logo />
+          <Logo eager />
         </Link>
         <div className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center py-10">
           <h1 className="text-3xl font-semibold tracking-tight">{title}</h1>
