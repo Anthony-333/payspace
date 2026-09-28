@@ -48,7 +48,7 @@ export type PlanRow = { label: string; free: string | boolean; pro: string | boo
 
 // Free-tier limits are a first proposal; adjust once billing is built.
 export const PLAN_ROWS: PlanRow[] = [
-  { label: "Checkout with cash, GCash, Maya and card", free: true, pro: true },
+  { label: "Record cash, GCash, Maya and card sales", free: true, pro: true },
   { label: "Split payments and e-wallet reference numbers", free: true, pro: true },
   { label: "Printed and digital receipts", free: true, pro: true },
   { label: "Products", free: "Up to 50", pro: "Unlimited" },

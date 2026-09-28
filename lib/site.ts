@@ -10,7 +10,7 @@ export const SUPPORT_EMAIL = "support@payspace.shop";
 export const SITE_TITLE = "Payspace POS: point of sale with real profit per item";
 
 export const SITE_DESCRIPTION =
-  "Free POS system for coffee shops, bakeries, milk tea stands, groceries and sari-sari stores in the Philippines. Recipe costing shows the profit on every item, with stock tracking, GCash and Maya payments, VAT and receipts. Runs in the browser.";
+  "Free POS system for coffee shops, bakeries, milk tea stands, groceries and sari-sari stores in the Philippines. Recipe costing shows the profit on every item, with stock tracking, a record of every cash, GCash and Maya sale, VAT and receipts. Runs in the browser.";
 
 export const SITE_KEYWORDS = [
   "POS system Philippines",
@@ -37,7 +37,7 @@ export const SITE_KEYWORDS = [
   "profit margin tracking",
   "GCash POS",
   "Maya POS",
-  "split payments",
+  "split bill tracking",
   "VAT receipts",
   "thermal receipt printing",
   "sales dashboard",

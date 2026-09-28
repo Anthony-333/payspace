@@ -45,7 +45,7 @@ export const INDUSTRIES: Industry[] = [
     features: [
       { title: "Recipe costing per drink", body: "Build each drink from beans, milk, syrups and cups in grams, millilitres and pieces. Costs update on their own when you receive stock at new prices." },
       { title: "Modifiers with recipes", body: "Options like extra shot, oat milk or large size carry both a price change and an ingredient change, so every variant is costed correctly." },
-      { title: "Fast, touch-first checkout", body: "Big tiles for a tablet at the counter. Take cash, GCash, Maya or card, and split one bill across methods." },
+      { title: "Fast, touch-first checkout", body: "Big tiles for a tablet at the counter. Record cash, GCash, Maya or card, and split one bill across methods." },
       { title: "Best sellers by profit", body: "The dashboard ranks drinks by profit, not just by sales, and shows your busiest hours, updated live." },
       { title: "Low-stock and margin alerts", body: "Get a warning when beans or milk run low, and when a drink falls below your target margin." },
       { title: "Café template", body: "Start from a ready café menu or import your products from a spreadsheet, then adjust prices and recipes." },
@@ -74,7 +74,7 @@ export const INDUSTRIES: Industry[] = [
     name: "Milk tea shops",
     metaTitle: "Milk Tea Shop POS System in the Philippines",
     metaDescription:
-      "A POS for milk tea shops: cost every cup from tea, creamer, syrup, pearls and packaging, handle sizes and sinkers as add-ons, and take GCash and Maya. See the profit per cup. Free to start.",
+      "A POS for milk tea shops: cost every cup from tea, creamer, syrup, pearls and packaging, handle sizes and sinkers as add-ons, and record GCash and Maya sales. See the profit per cup. Free to start.",
     keywords: ["milk tea POS", "milk tea shop POS system", "milk tea costing", "milk tea business Philippines", "bubble tea POS"],
     headline: "A milk tea POS that knows what every cup costs you",
     intro:

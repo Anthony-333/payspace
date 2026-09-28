@@ -11,7 +11,7 @@ const FEATURES = [
   },
   {
     title: "A checkout your cashiers learn in minutes",
-    body: "Big, touch-first tiles for tablets and phones. Take cash, GCash, Maya or card, split a bill across methods, and print a receipt or share a digital one. VAT is worked out for you.",
+    body: "Big, touch-first tiles for tablets and phones. Record cash, GCash, Maya or card, split a bill across methods, and print a receipt or share a digital one. VAT is worked out for you.",
     screen: <PosMockup />,
     label: "Checkout screen with an order and payment methods",
   },

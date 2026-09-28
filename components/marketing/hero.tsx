@@ -31,6 +31,9 @@ export function Hero({ ctaHref, ctaLabel }: { ctaHref: string; ctaLabel: string 
         <h1 className="mt-4 max-w-2xl text-4xl leading-[1.08] font-semibold tracking-tight text-balance sm:text-[3.5rem]">
           Know the real profit on everything you sell
         </h1>
+        <p className="mt-4 max-w-md text-sm text-background/70 sm:text-base">
+          Payspace records your sales. Your customers pay you directly, and we never touch the money.
+        </p>
         <Link
           href={ctaHref}
           className="mt-8 inline-flex w-fit items-center gap-3 rounded-full bg-primary py-2 pr-2 pl-6 text-sm font-semibold text-primary-foreground transition-transform hover:-translate-y-0.5"
@@ -50,7 +53,7 @@ export function Hero({ ctaHref, ctaLabel }: { ctaHref: string; ctaLabel: string 
             <StockMockup />
           </TabletFrame>
           <TabletFrame
-            label="Payspace checkout screen with an order being charged"
+            label="Payspace checkout screen with an order at the counter"
             className="absolute -bottom-20 left-0 h-[300px] w-[520px] sm:left-8 md:left-auto md:right-[-40px] md:h-[360px] md:w-[600px]"
           >
             <PosMockup />

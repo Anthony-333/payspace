@@ -8,7 +8,7 @@ import { SITE_URL } from "@/lib/site";
 
 const TITLE = "POS System for Small Businesses in the Philippines";
 const DESCRIPTION =
-  "Payspace is a free-to-start POS system for coffee shops, milk tea shops, bakeries, sari-sari stores and groceries in the Philippines, with recipe costing, stock tracking and GCash and Maya payments.";
+  "Payspace is a free-to-start POS system for coffee shops, milk tea shops, bakeries, sari-sari stores and groceries in the Philippines, with recipe costing, stock tracking and GCash and Maya sales records.";
 
 export const metadata: Metadata = {
   title: TITLE,
