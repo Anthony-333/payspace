@@ -1,7 +1,10 @@
 // Public facts about the site, shared by metadata, robots, sitemap, JSON-LD and llms.txt.
-// NEXT_PUBLIC_SITE_URL is localhost in development; production falls back to the real domain
-// so canonical URLs never point at a preview deployment.
-export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.payspace.shop").replace(/\/$/, "");
+// NEXT_PUBLIC_SITE_URL is localhost in development. The Vercel production build always uses the
+// real domain, so a stray env value can never leak localhost or a preview URL into canonicals,
+// robots.txt or the sitemap.
+const PRODUCTION_URL = "https://www.payspace.shop";
+const isVercelProduction = (process.env.NEXT_PUBLIC_VERCEL_ENV ?? process.env.VERCEL_ENV) === "production";
+export const SITE_URL = (isVercelProduction ? PRODUCTION_URL : (process.env.NEXT_PUBLIC_SITE_URL ?? PRODUCTION_URL)).replace(/\/$/, "");
 
 export const SITE_NAME = "Payspace POS";
 
