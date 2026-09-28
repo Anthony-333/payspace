@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { api } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import schema from "./schema";
-import { modules } from "./test.setup";
+import { makePro, modules } from "./test.setup";
 
 const page = { numItems: 100, cursor: null };
 
@@ -18,6 +18,7 @@ async function setup() {
   const t = convexTest(schema, modules);
   const owner = t.withIdentity({ subject: "user_owner", name: "Owner" });
   const { tenantId } = await owner.mutation(api.tenants.create, { name: "Brew Lab", slug: "brewlab", businessType: "cafe" });
+  await makePro(t, tenantId);
   const as = async (userId: string, role: "manager" | "cashier") => {
     await t.run((ctx) => ctx.db.insert("members", { tenantId, userId, name: userId, role, status: "active" }));
     return t.withIdentity({ subject: userId, name: userId });

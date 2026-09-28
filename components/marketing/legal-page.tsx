@@ -1,7 +1,6 @@
 import type { ReactNode } from "react";
+import { SUPPORT_EMAIL } from "@/lib/site";
 import { MarketingShell } from "./marketing-shell";
-
-export const LEGAL_CONTACT_EMAIL = "anthonyoling333@gmail.com";
 
 // Shared layout for /terms and /privacy.
 export function LegalPage({
@@ -39,5 +38,5 @@ export function LegalSection({ id, title, children }: { id: string; title: strin
 }
 
 export function ContactLink() {
-  return <a href={`mailto:${LEGAL_CONTACT_EMAIL}`}>{LEGAL_CONTACT_EMAIL}</a>;
+  return <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>;
 }

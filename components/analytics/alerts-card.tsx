@@ -3,6 +3,7 @@
 import { useQuery } from "convex/react";
 import { AlertTriangle, CheckCircle2, PackageX, TrendingDown } from "lucide-react";
 import Link from "next/link";
+import { UpgradeNote } from "@/components/shop/plan";
 import { useShop } from "@/components/shop/shop-provider";
 import { api } from "@/convex/_generated/api";
 import { formatBps, formatMoney } from "@/convex/lib/money";
@@ -23,6 +24,15 @@ export function AlertsCard() {
   const alerts = useQuery(api.analytics.alerts, { tenantId: shop.tenantId });
 
   if (alerts === undefined) return <div className="h-48 animate-pulse rounded-xl border bg-card" />;
+
+  if (alerts.locked) {
+    return (
+      <section className="rounded-xl border bg-card p-5">
+        <h2 className="mb-4 font-semibold">Needs attention</h2>
+        <UpgradeNote>Get warned before you run out of stock, and when an item earns less than your target margin.</UpgradeNote>
+      </section>
+    );
+  }
 
   const nothingWrong = alerts.stock.length === 0 && alerts.margin.length === 0;
 

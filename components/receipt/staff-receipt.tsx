@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "convex/react";
-import { ArrowLeft, Camera, ExternalLink, ReceiptIcon } from "lucide-react";
+import { ArrowLeft, Camera, ExternalLink, ReceiptIcon, Stamp } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { ReceiptView } from "@/components/receipt/receipt-view";
@@ -55,11 +55,20 @@ export function StaffReceipt({ saleId }: { saleId: string }) {
     <div className="grid gap-4">
       <div className="flex flex-wrap items-center justify-between gap-2 print:hidden">
         {back}
-        <Button asChild variant="outline" className="h-11">
-          <Link href={`/r/${data.receiptToken}`} target="_blank">
-            <ExternalLink className="size-4" /> Customer link
-          </Link>
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          {receipt.status === "completed" && (
+            <Button asChild variant="outline" className="h-11">
+              <Link href={`/${shop.slug}/loyalty?sale=${receipt.number}`}>
+                <Stamp className="size-4" /> Loyalty stamp
+              </Link>
+            </Button>
+          )}
+          <Button asChild variant="outline" className="h-11">
+            <Link href={`/r/${data.receiptToken}`} target="_blank">
+              <ExternalLink className="size-4" /> Customer link
+            </Link>
+          </Button>
+        </div>
       </div>
 
       <div className="grid items-start gap-6 md:grid-cols-[80mm_minmax(0,1fr)] print:block">

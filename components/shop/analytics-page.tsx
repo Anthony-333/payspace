@@ -7,9 +7,10 @@ import { KpiTiles, MarginNote } from "@/components/analytics/kpi-tiles";
 import { rangeFrom, RangePicker, useShopToday, type Preset, type Range } from "@/components/analytics/range-picker";
 import { HourlyChart, PaymentMix, TopItems } from "@/components/analytics/sales-charts";
 import { PageHeader } from "@/components/shop/page-header";
+import { UpgradeNote, usePlan } from "@/components/shop/plan";
 import { canManage, useShop } from "@/components/shop/shop-provider";
 import { api } from "@/convex/_generated/api";
-import { daysBetween, formatBusinessDate } from "@/convex/lib/businessDate";
+import { addDays, daysBetween, formatBusinessDate } from "@/convex/lib/businessDate";
 
 // Reads the rollups checkout writes, so these numbers are live: they tick up while the owner
 // watches. Charts follow the dataviz method - the form is picked by the job, colour last.
@@ -25,6 +26,9 @@ export function AnalyticsPage() {
   const [custom, setCustom] = useState<Range | null>(null);
   // Derived, not stored: a preset range is just today and the preset, so nothing can drift.
   const range = preset === "custom" ? custom : today ? rangeFrom(today, preset) : null;
+  // Free shops see the last week; the server enforces it (convex/lib/plan.ts assertHistory).
+  const plan = usePlan();
+  const earliest = plan?.plan === "free" && today ? addDays(today, -(plan.limits.historyDays - 1)) : undefined;
 
   const summary = useQuery(api.analytics.summary, manage && range ? { tenantId: shop.tenantId, ...range } : "skip");
   const withinTopRange = range ? daysBetween(range.from, range.to) <= TOP_ITEMS_MAX_DAYS : true;
@@ -55,11 +59,15 @@ export function AnalyticsPage() {
             range={range}
             today={today}
             maxDays={TOP_ITEMS_MAX_DAYS * 12}
+            earliest={earliest}
             onChange={(nextPreset, nextRange) => {
               setPreset(nextPreset);
               if (nextPreset === "custom") setCustom(nextRange);
             }}
           />
+        )}
+        {earliest && (
+          <UpgradeNote>The Free plan shows the last {plan?.limits.historyDays} days. Pro keeps your full sales history.</UpgradeNote>
         )}
 
         <KpiTiles

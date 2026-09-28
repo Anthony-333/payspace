@@ -10,6 +10,7 @@
 
 import type * as analytics from "../analytics.js";
 import type * as auth from "../auth.js";
+import type * as billing from "../billing.js";
 import type * as categories from "../categories.js";
 import type * as costing from "../costing.js";
 import type * as crons from "../crons.js";
@@ -20,14 +21,21 @@ import type * as lib_catalog from "../lib/catalog.js";
 import type * as lib_clientIp from "../lib/clientIp.js";
 import type * as lib_costing from "../lib/costing.js";
 import type * as lib_csv from "../lib/csv.js";
+import type * as lib_loyalty from "../lib/loyalty.js";
 import type * as lib_money from "../lib/money.js";
+import type * as lib_password from "../lib/password.js";
+import type * as lib_plan from "../lib/plan.js";
+import type * as lib_polarWebhook from "../lib/polarWebhook.js";
 import type * as lib_products from "../lib/products.js";
 import type * as lib_quantity from "../lib/quantity.js";
 import type * as lib_sale from "../lib/sale.js";
+import type * as lib_signature from "../lib/signature.js";
 import type * as lib_slugs from "../lib/slugs.js";
 import type * as lib_stock from "../lib/stock.js";
 import type * as lib_templateData from "../lib/templateData.js";
 import type * as lib_tenant from "../lib/tenant.js";
+import type * as loyalty from "../loyalty.js";
+import type * as loyaltyCustomer from "../loyaltyCustomer.js";
 import type * as members from "../members.js";
 import type * as modifiers from "../modifiers.js";
 import type * as photos from "../photos.js";
@@ -46,6 +54,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   analytics: typeof analytics;
   auth: typeof auth;
+  billing: typeof billing;
   categories: typeof categories;
   costing: typeof costing;
   crons: typeof crons;
@@ -56,14 +65,21 @@ declare const fullApi: ApiFromModules<{
   "lib/clientIp": typeof lib_clientIp;
   "lib/costing": typeof lib_costing;
   "lib/csv": typeof lib_csv;
+  "lib/loyalty": typeof lib_loyalty;
   "lib/money": typeof lib_money;
+  "lib/password": typeof lib_password;
+  "lib/plan": typeof lib_plan;
+  "lib/polarWebhook": typeof lib_polarWebhook;
   "lib/products": typeof lib_products;
   "lib/quantity": typeof lib_quantity;
   "lib/sale": typeof lib_sale;
+  "lib/signature": typeof lib_signature;
   "lib/slugs": typeof lib_slugs;
   "lib/stock": typeof lib_stock;
   "lib/templateData": typeof lib_templateData;
   "lib/tenant": typeof lib_tenant;
+  loyalty: typeof loyalty;
+  loyaltyCustomer: typeof loyaltyCustomer;
   members: typeof members;
   modifiers: typeof modifiers;
   photos: typeof photos;
@@ -102,4 +118,5 @@ export declare const internal: FilterApi<
 
 export declare const components: {
   betterAuth: import("../betterAuth/_generated/component.js").ComponentApi<"betterAuth">;
+  polar: import("@convex-dev/polar/_generated/component.js").ComponentApi<"polar">;
 };

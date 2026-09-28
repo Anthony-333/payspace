@@ -38,6 +38,12 @@ export const TESTIMONIALS: Testimonial[] = [
   },
 ];
 
+// Pro is charged in US dollars through Polar (convex/billing.ts). The peso figure is a guide
+// for Filipino shop owners; update it if the exchange rate moves a lot.
+// Must match the Pro product's price in Polar (POLAR_PRO_PRODUCT_ID); Polar charges what it has.
+export const PRO_PRICE = { usd: 10, phpApprox: 580, trialDays: 14 } as const;
+export const PRO_PRICE_TEXT = `${PRO_PRICE.usd} (about ₱${PRO_PRICE.phpApprox}) a month per shop`;
+
 export type PlanRow = { label: string; free: string | boolean; pro: string | boolean };
 
 // Free-tier limits are a first proposal; adjust once billing is built.
@@ -80,7 +86,7 @@ export const FAQ: { category: FaqCategory; q: string; a: string }[] = [
   {
     category: "Pricing",
     q: "What does Pro cost?",
-    a: "$5 a month per shop. You pay per location, not per cashier, so adding part-time staff never raises your bill.",
+    a: `${PRO_PRICE_TEXT}, charged in US dollars, and it starts with a ${PRO_PRICE.trialDays}-day free trial. You pay per location, not per cashier, so adding part-time staff never raises your bill.`,
   },
   {
     category: "Pricing",

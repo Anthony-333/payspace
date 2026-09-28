@@ -1,5 +1,5 @@
-import { SITE_DESCRIPTION, SITE_KEYWORDS, SITE_NAME, SITE_URL } from "@/lib/site";
-import { FAQ, PLAN_ROWS } from "./content";
+import { SITE_DESCRIPTION, SITE_KEYWORDS, SITE_NAME, SITE_URL, SUPPORT_EMAIL } from "@/lib/site";
+import { FAQ, PLAN_ROWS, PRO_PRICE } from "./content";
 import { JsonLd, ORG_ID } from "./json-ld";
 
 // Schema.org JSON-LD for the landing page, read by Google rich results and AI answer engines.
@@ -16,6 +16,8 @@ const graph = [
     name: "Payspace",
     url: SITE_URL,
     logo: `${SITE_URL}/icons/icon-512.png`,
+    email: SUPPORT_EMAIL,
+    contactPoint: { "@type": "ContactPoint", contactType: "customer support", email: SUPPORT_EMAIL, areaServed: "PH" },
     areaServed: { "@type": "Country", name: "Philippines" },
   },
   {
@@ -60,12 +62,12 @@ const graph = [
       {
         "@type": "Offer",
         name: "Pro",
-        price: "5",
+        price: `${PRO_PRICE.usd}`,
         priceCurrency: "USD",
         description: "Unlimited products, recipe costing, profit per item and margin alerts. Billed per shop, not per cashier.",
         priceSpecification: {
           "@type": "UnitPriceSpecification",
-          price: "5",
+          price: `${PRO_PRICE.usd}`,
           priceCurrency: "USD",
           billingDuration: "P1M",
           unitText: "shop per month",

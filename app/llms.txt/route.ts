@@ -1,7 +1,7 @@
-import { FAQ, PLAN_ROWS } from "@/components/marketing/content";
+import { FAQ, PLAN_ROWS, PRO_PRICE } from "@/components/marketing/content";
 import { POSTS } from "@/content/blog";
 import { INDUSTRIES } from "@/content/industries";
-import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/site";
+import { SITE_DESCRIPTION, SITE_NAME, SITE_URL, SUPPORT_EMAIL } from "@/lib/site";
 
 // /llms.txt (llmstxt.org): a plain Markdown summary that AI assistants and answer engines
 // read instead of parsing the landing page. Built from the landing page copy.
@@ -33,7 +33,7 @@ ${SITE_NAME} is a web-based point of sale (POS) system for small businesses in t
 ## Pricing
 
 - Free: $0, no card needed.
-- Pro: $5 per shop per month. Billed per location, not per cashier.
+- Pro: US${PRO_PRICE.usd} (about ₱${PRO_PRICE.phpApprox}) per shop per month, with a ${PRO_PRICE.trialDays}-day free trial. Billed per location, not per cashier.
 
 | Feature | Free | Pro |
 | --- | --- | --- |
@@ -57,6 +57,10 @@ ${POSTS.map((p) => `- [${p.title}](${SITE_URL}/blog/${p.slug}): ${p.description}
 - [Blog](${SITE_URL}/blog)
 - [Create a free account](${SITE_URL}/sign-up)
 - [Sign in](${SITE_URL}/sign-in)
+
+## Contact
+
+Support: ${SUPPORT_EMAIL}
 `;
   return new Response(body, {
     headers: { "Content-Type": "text/markdown; charset=utf-8" },

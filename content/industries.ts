@@ -1,3 +1,4 @@
+import { PRO_PRICE_TEXT } from "@/components/marketing/content";
 import type { CostExample } from "@/lib/costing-example";
 
 // Copy for the industry landing pages at /pos/[industry]. Same rule as the home page: claim
@@ -64,7 +65,7 @@ export const INDUSTRIES: Industry[] = [
     faqs: [
       { q: "Can Payspace handle drink sizes and add-ons?", a: "Yes. Sizes and add-ons are modifier options. Each option can change the price and the recipe, so a large oat latte uses more milk and the right kind, and its cost is worked out correctly." },
       { q: "Does it work on an iPad or Android tablet?", a: "Yes. Payspace runs in the browser on any tablet, phone or laptop, so there's nothing to install. USB barcode scanners and 58 mm or 80 mm thermal printers work through the browser." },
-      { q: "Is recipe costing on the free plan?", a: "Recipe costing and profit per item are part of Pro, at $5 a month per shop. The free plan covers checkout, receipts and stock for up to 50 products." },
+      { q: "Is recipe costing on the free plan?", a: `Recipe costing and profit per item are part of Pro, at ${PRO_PRICE_TEXT}, with a 14-day free trial. The free plan covers checkout, receipts and stock for up to 50 products.` },
     ],
     guides: ["how-to-compute-food-cost-per-drink", "markup-vs-margin-pricing", "gcash-maya-payments-end-of-day"],
   },
@@ -108,7 +109,7 @@ export const INDUSTRIES: Industry[] = [
     faqs: [
       { q: "Can I set sugar levels without changing the price?", a: "Yes. A modifier option can have no price change, so sugar and ice levels are recorded on the order without changing the total." },
       { q: "Can customers pay with GCash or Maya?", a: "Yes. Record GCash, Maya, cash or card, split one order across methods, and keep the e-wallet reference number with the sale. Card payments are recorded, not processed." },
-      { q: "How much does it cost?", a: "The free plan covers checkout, receipts and stock for up to 50 products. Pro, with recipe costing and margin alerts, is $5 a month per shop, not per cashier." },
+      { q: "How much does it cost?", a: `The free plan covers checkout, receipts and stock for up to 50 products. Pro, with recipe costing and margin alerts, is ${PRO_PRICE_TEXT}, not per cashier.` },
     ],
     guides: ["how-to-compute-food-cost-per-drink", "markup-vs-margin-pricing", "gcash-maya-payments-end-of-day"],
   },
@@ -189,7 +190,7 @@ export const INDUSTRIES: Industry[] = [
     },
     exampleNote: "This example has VAT switched off. If your supplier's case price goes up, the cost per pack and the margin update when you record the delivery.",
     faqs: [
-      { q: "Is Payspace free for a sari-sari store?", a: "The free plan covers checkout, receipts and stock for up to 50 products, with no card needed. Pro, with unlimited products and margin alerts, is $5 a month per store." },
+      { q: "Is Payspace free for a sari-sari store?", a: `The free plan covers checkout, receipts and stock for up to 50 products, with no card needed. Pro, with unlimited products and margin alerts, is ${PRO_PRICE_TEXT}.` },
       { q: "Can I use it on my phone?", a: "Yes. Payspace runs in the browser on Android and iPhone, as well as tablets and laptops. You can add it to your home screen." },
       { q: "Can I add my products from a list?", a: "Yes. Import products from a spreadsheet (CSV), with a preview that shows any rows that need fixing before anything is saved." },
     ],
@@ -228,7 +229,7 @@ export const INDUSTRIES: Industry[] = [
     exampleNote: "If the next case arrives at a higher price, Payspace blends it into the average cost, and the margin updates on its own.",
     faqs: [
       { q: "Do barcode scanners work?", a: "Yes. USB barcode scanners work out of the box in the browser. Each product can have its own barcode, unique within your shop." },
-      { q: "How many products can I have?", a: "Up to 50 on the free plan and unlimited on Pro, which is $5 a month per shop." },
+      { q: "How many products can I have?", a: `Up to 50 on the free plan and unlimited on Pro, which is ${PRO_PRICE_TEXT}.` },
       { q: "Can I do a stock count?", a: "Yes. Count what's on the shelf and Payspace records the difference in the stock ledger, so you can see what went missing." },
     ],
     guides: ["sari-sari-store-inventory-count", "vat-inclusive-pricing-philippines", "markup-vs-margin-pricing"],

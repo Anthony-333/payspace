@@ -3,6 +3,7 @@ import { ConvexError, v } from "convex/values";
 import { productKind } from "./schema";
 import { checkImportRow, LIMITS, optionalText } from "./lib/catalog";
 import { assertMoney, roundMinor } from "./lib/money";
+import { assertProductRoom, PRODUCT_LIMIT_MESSAGE, productRoom, requirePro } from "./lib/plan";
 import { IMAGE_TYPES, MAX_IMAGE_BYTES, insertProduct, prepareProduct, toClientProduct } from "./lib/products";
 import { prepareRecipe, refreshProductCost, scheduleCostRefresh, writeRecipe } from "./lib/stock";
 import { getOwned, requireRole, tenantMutation, tenantQuery } from "./lib/tenant";
@@ -132,6 +133,8 @@ export const create = tenantMutation({
   args: { ...productFields, kind: productKind },
   handler: async (ctx, { kind, cost, recipe, ...input }) => {
     requireRole(ctx.member, "owner", "manager");
+    await assertProductRoom(ctx);
+    if (kind === "recipe") requirePro(ctx.tenant, "Recipe costing");
     const fields = await prepareProduct(ctx, input);
     if (kind !== "recipe") return insertProduct(ctx, kind, fields, cost);
 
@@ -153,6 +156,9 @@ export const update = tenantMutation({
     if (recipe !== undefined && product.kind !== "recipe") {
       throw new ConvexError("Only products made from ingredients have a recipe.");
     }
+    // The form sends a recipe only when it changed, so Free shops can still edit a starter
+    // menu item's name and price.
+    if (recipe !== undefined) requirePro(ctx.tenant, "Editing recipes");
 
     let unitCost = product.unitCost;
     if (product.kind === "stocked" && product.stockItemId) {
@@ -185,7 +191,8 @@ export const setArchived = tenantMutation({
   args: { productId: v.id("products"), archived: v.boolean() },
   handler: async (ctx, { productId, archived }) => {
     requireRole(ctx.member, "owner", "manager");
-    await getOwned(ctx, ctx.tenantId, productId);
+    const product = await getOwned(ctx, ctx.tenantId, productId);
+    if (!archived && !product.isActive) await assertProductRoom(ctx);
     await ctx.db.patch(productId, { isActive: !archived });
   },
 });
@@ -222,6 +229,7 @@ export const importBatch = tenantMutation({
 
     const errors: { row: number; message: string }[] = [];
     let created = 0;
+    let room = await productRoom(ctx);
     for (const { row, cost, category, ...raw } of rows) {
       const problems = checkImportRow({ ...raw, cost, category });
       if (problems.length) {
@@ -234,6 +242,10 @@ export const importBatch = tenantMutation({
       } catch (err) {
         if (!(err instanceof ConvexError)) throw err;
         errors.push({ row, message: String(err.data) });
+        continue;
+      }
+      if (room < 1) {
+        errors.push({ row, message: PRODUCT_LIMIT_MESSAGE });
         continue;
       }
 
@@ -250,6 +262,7 @@ export const importBatch = tenantMutation({
       }
       await insertProduct(ctx, raw.kind, fields, cost);
       created++;
+      room--;
     }
     return { created, errors };
   },

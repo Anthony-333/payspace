@@ -3,7 +3,7 @@ import { describe, expect, test, vi } from "vitest";
 import { api, internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import schema from "./schema";
-import { modules } from "./test.setup";
+import { makePro, modules } from "./test.setup";
 
 const page = { numItems: 500, cursor: null };
 
@@ -11,6 +11,7 @@ async function setup(businessType: "cafe" | "grocery" | "bakery" | "retail" = "c
   const t = convexTest(schema, modules);
   const owner = t.withIdentity({ subject: "user_owner", name: "Owner" });
   const { tenantId } = await owner.mutation(api.tenants.create, { name: "Test shop", slug: "testshop", businessType });
+  await makePro(t, tenantId);
   const as = async (userId: string, role: "manager" | "cashier") => {
     await t.run((ctx) => ctx.db.insert("members", { tenantId, userId, name: userId, role, status: "active" }));
     return t.withIdentity({ subject: userId, name: userId });
@@ -49,6 +50,7 @@ describe("products", () => {
 
     const other = t.withIdentity({ subject: "user_other" });
     const shop2 = await other.mutation(api.tenants.create, { name: "Other shop", slug: "othershop", businessType: "grocery" });
+    await makePro(t, shop2.tenantId);
     await other.mutation(api.products.create, { tenantId: shop2.tenantId, ...soda, barcode: "123" });
   });
 
@@ -120,6 +122,7 @@ describe("photos", () => {
 
     const other = t.withIdentity({ subject: "user_other" });
     const shop2 = await other.mutation(api.tenants.create, { name: "Other shop", slug: "othershop", businessType: "grocery" });
+    await makePro(t, shop2.tenantId);
     await expect(other.mutation(api.products.claimUpload, { tenantId: shop2.tenantId, storageId: photo })).rejects.toThrow(/Not found/);
     await expect(other.mutation(api.products.create, { tenantId: shop2.tenantId, ...soda, imageId: photo })).rejects.toThrow(/didn't upload/);
   });

@@ -4,7 +4,7 @@ import { api, internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { taxFromTotals } from "./lib/money";
 import schema from "./schema";
-import { modules } from "./test.setup";
+import { makePro, modules } from "./test.setup";
 
 // Checkout: server pricing, idempotency, the stock ledger and the rollups the dashboard reads.
 
@@ -21,6 +21,7 @@ async function setup() {
   const { tenantId } = await owner.mutation(api.tenants.create, {
     name: "Brew Lab", slug: "brewlab", businessType: "cafe",
   });
+  await makePro(t, tenantId);
 
   const as = async (userId: string, role: "manager" | "cashier") => {
     await t.run((ctx) => ctx.db.insert("members", { tenantId, userId, name: userId, role, status: "active" }));
@@ -364,6 +365,7 @@ describe("tenant isolation", () => {
     const other = await mallory.mutation(api.tenants.create, {
       name: "Sari Mart", slug: "sarimart", businessType: "grocery",
     });
+    await makePro(t, other.tenantId);
 
     await expect(mallory.mutation(api.sales.checkout, {
       tenantId, clientRef: "ref-theft", lines: [{ productId: water, qty: 1, optionKeys: [] }], payments: cash(6000),
@@ -386,6 +388,7 @@ describe("tenant isolation", () => {
     const other = await mallory.mutation(api.tenants.create, {
       name: "Sari Mart", slug: "sarimart", businessType: "grocery",
     });
+    await makePro(t, other.tenantId);
     const theirs = await mallory.mutation(api.products.create, {
       tenantId: other.tenantId, name: "Rice 1 kg", kind: "stocked", price: 6500, cost: 5000, modifierGroupIds: [],
     });
@@ -440,6 +443,7 @@ describe("payment photos", () => {
     const { t, owner, tenantId, water } = await cafe();
     const mallory = t.withIdentity({ subject: "user_mallory", name: "Mallory" });
     const other = await mallory.mutation(api.tenants.create, { name: "Sari Mart", slug: "sarimart", businessType: "grocery" });
+    await makePro(t, other.tenantId);
     const theirs = await store(t);
     await t.run((ctx) => ctx.db.insert("uploads", { tenantId: other.tenantId, storageId: theirs }));
 
@@ -477,6 +481,7 @@ describe("payment photos", () => {
     expect(await owner.query(api.sales.receipt, { tenantId, saleId: "not-an-id" })).toBeNull();
     const mallory = t.withIdentity({ subject: "user_mallory", name: "Mallory" });
     const shop2 = await mallory.mutation(api.tenants.create, { name: "Sari Mart", slug: "sarimart", businessType: "grocery" });
+    await makePro(t, shop2.tenantId);
     await expect(mallory.query(api.sales.receipt, { tenantId, saleId: sale.saleId })).rejects.toThrow(/access/);
     expect(await mallory.query(api.sales.receipt, { tenantId: shop2.tenantId, saleId: sale.saleId })).toBeNull();
     await expect(mallory.mutation(api.sales.generatePhotoUploadUrl, { tenantId })).rejects.toThrow(/access/);

@@ -2,6 +2,7 @@ import { ConvexError, v } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
 import { addDays, daysBetween, isBusinessDate, weekdayOf } from "./lib/businessDate";
 import { grossMarginBps } from "./lib/money";
+import { assertHistory, isPro } from "./lib/plan";
 import { stockStatus } from "./lib/quantity";
 import { getOwned, requireRole, tenantQuery, type TenantQueryCtx } from "./lib/tenant";
 
@@ -63,6 +64,7 @@ export const summary = tenantQuery({
   handler: async (ctx, { from, to }) => {
     requireRole(ctx.member, "owner", "manager");
     assertRange(from, to);
+    await assertHistory(ctx, from);
 
     const [days, weekBefore] = await Promise.all([
       readDays(ctx, from, to),
@@ -116,6 +118,7 @@ export const topProducts = tenantQuery({
   handler: async (ctx, { from, to }) => {
     requireRole(ctx.member, "owner", "manager");
     assertRange(from, to, MAX_TOP_DAYS);
+    await assertHistory(ctx, from);
 
     const rows = await ctx.db
       .query("productDailyStats")
@@ -157,11 +160,14 @@ export const topProducts = tenantQuery({
   },
 });
 
-/** What needs attention now: stock that has run down or gone negative, and thin margins. */
+/** What needs attention now: stock that has run down or gone negative, and thin margins. Pro only. */
 export const alerts = tenantQuery({
   args: {},
   handler: async (ctx) => {
     requireRole(ctx.member, "owner", "manager");
+    if (!isPro(ctx.tenant)) {
+      return { locked: true as const, stock: [], stockCount: 0, margin: [], targetMarginBps: ctx.tenant.targetMarginBps };
+    }
 
     const items = await ctx.db
       .query("stockItems")
@@ -179,6 +185,7 @@ export const alerts = tenantQuery({
       .take(MAX_ALERTS + 1);
 
     return {
+      locked: false as const,
       stock: flagged.slice(0, MAX_ALERTS).map(({ item, status }) => ({
         _id: item._id,
         name: item.name,
@@ -206,6 +213,7 @@ export const forProduct = tenantQuery({
   handler: async (ctx, { productId, from, to }) => {
     requireRole(ctx.member, "owner", "manager");
     assertRange(from, to, MAX_TOP_DAYS);
+    await assertHistory(ctx, from);
     await getOwned(ctx, ctx.tenantId, productId);
 
     const rows = await ctx.db

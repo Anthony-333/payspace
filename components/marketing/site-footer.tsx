@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { INDUSTRIES } from "@/content/industries";
+import { SUPPORT_EMAIL } from "@/lib/site";
 import { Logo } from "./logo";
 
 const LINKS = [
@@ -88,9 +89,12 @@ export function SiteFooter({ appHref }: { appHref: string | null }) {
               </Link>
             ))}
           </nav>
-          <p className="mt-8 text-sm text-background/60">
-            © {new Date().getFullYear()} Payspace. All rights reserved.
-          </p>
+          <div className="mt-8 flex flex-wrap items-center justify-between gap-x-6 gap-y-2 text-sm">
+            <p className="text-background/60">© {new Date().getFullYear()} Payspace. All rights reserved.</p>
+            <a href={`mailto:${SUPPORT_EMAIL}`} className="text-background/80 hover:text-background">
+              {SUPPORT_EMAIL}
+            </a>
+          </div>
         </div>
       </div>
     </footer>

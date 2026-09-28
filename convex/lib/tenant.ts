@@ -1,9 +1,10 @@
+import { makeFunctionReference } from "convex/server";
 import { ConvexError, v } from "convex/values";
-import { customMutation, customQuery } from "convex-helpers/server/customFunctions";
-import { mutation, query, type MutationCtx, type QueryCtx } from "../_generated/server";
+import { customAction, customMutation, customQuery } from "convex-helpers/server/customFunctions";
+import { action, internalQuery, mutation, query, type ActionCtx, type MutationCtx, type QueryCtx } from "../_generated/server";
 import type { Doc, Id, TableNames } from "../_generated/dataModel";
 
-// The only file allowed to import the raw `query` and `mutation` (see eslint.config.mjs).
+// The only file allowed to import the raw `query`, `mutation` and `action` (see eslint.config.mjs).
 
 export type Role = Doc<"members">["role"];
 
@@ -11,6 +12,7 @@ type TenantExtras = { tenantId: Id<"tenants">; tenant: Doc<"tenants">; member: D
 /** The ctx a tenantQuery/tenantMutation handler receives, for helpers outside the handler. */
 export type TenantQueryCtx = QueryCtx & TenantExtras;
 export type TenantMutationCtx = MutationCtx & TenantExtras;
+export type TenantActionCtx = ActionCtx & TenantExtras;
 
 async function requireIdentity(ctx: QueryCtx) {
   const identity = await ctx.auth.getUserIdentity();
@@ -55,6 +57,33 @@ export const tenantMutation = customMutation(mutation, {
   }),
 });
 
+/** For tenantAction: actions have no database, so the membership check runs as a query. */
+export const membershipForAction = internalQuery({
+  args: tenantArgs,
+  handler: (ctx, { tenantId }) => loadMembership(ctx, tenantId),
+});
+
+// Named rather than taken from _generated/api: that type includes every action built with
+// tenantAction, so referencing it here would make the wrapper's own type circular.
+const membershipRef = makeFunctionReference<
+  "query",
+  { tenantId: Id<"tenants"> },
+  { tenant: Doc<"tenants">; member: Doc<"members"> }
+>("lib/tenant:membershipForAction");
+
+/**
+ * Tenant-scoped action, for calls to outside services (Polar). Same check as tenantQuery,
+ * made through membershipForAction, which runs with the caller's identity. `ctx.tenant` is a
+ * snapshot from the start of the action; write through an internal mutation, never from it.
+ */
+export const tenantAction = customAction(action, {
+  args: tenantArgs,
+  input: async (ctx, { tenantId }) => {
+    const { tenant, member } = await ctx.runQuery(membershipRef, { tenantId });
+    return { ctx: { tenantId, tenant, member }, args: {} };
+  },
+});
+
 /** Signed-in but not tied to a shop yet: listing my shops, creating a shop. */
 export const userQuery = customQuery(query, {
   args: {},
@@ -78,6 +107,16 @@ export const userMutation = customMutation(mutation, {
  * at /r/[token]); never for anything a tenant ID or a slug can address.
  */
 export const publicQuery = customQuery(query, {
+  args: {},
+  input: async () => ({ ctx: {}, args: {} }),
+});
+
+/**
+ * No sign-in and no tenant, for the loyalty card sign-in at /loyalty/[shop]/[username] (convex/loyaltyCustomer.ts):
+ * a customer proves who they are with their card's username and password, then holds an
+ * unguessable session token. Never use it for anything a tenant ID alone can address.
+ */
+export const publicMutation = customMutation(mutation, {
   args: {},
   input: async () => ({ ctx: {}, args: {} }),
 });

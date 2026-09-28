@@ -5,6 +5,8 @@ export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.payspa
 
 export const SITE_NAME = "Payspace POS";
 
+export const SUPPORT_EMAIL = "support@payspace.shop";
+
 export const SITE_TITLE = "Payspace POS: point of sale with real profit per item";
 
 export const SITE_DESCRIPTION =

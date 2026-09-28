@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Check, Minus } from "lucide-react";
 import { cn } from "cn";
-import { PLAN_ROWS } from "./content";
+import { PLAN_ROWS, PRO_PRICE } from "./content";
 
 export function Pricing({ ctaHref }: { ctaHref: string }) {
   return (
@@ -39,7 +39,7 @@ export function Pricing({ ctaHref }: { ctaHref: string }) {
             <tr>
               <th scope="row" className="border-b py-6 font-medium">Price</th>
               <PriceCell tint="green" amount="$0" note="forever" />
-              <PriceCell tint="peach" amount="$5" note="/month per shop" />
+              <PriceCell tint="peach" amount={`${PRO_PRICE.usd}`} note="/month per shop" sub={`about ₱${PRO_PRICE.phpApprox} · ${PRO_PRICE.trialDays}-day free trial`} />
             </tr>
             {PLAN_ROWS.map((row) => (
               <tr key={row.label}>
@@ -73,11 +73,12 @@ const TINT = {
   peach: { cell: "bg-tint-peach/60", icon: "bg-primary" },
 };
 
-function PriceCell({ tint, amount, note }: { tint: keyof typeof TINT; amount: string; note: string }) {
+function PriceCell({ tint, amount, note, sub }: { tint: keyof typeof TINT; amount: string; note: string; sub?: string }) {
   return (
     <td className={cn("border-b px-2 py-6 text-center sm:px-4", TINT[tint].cell)}>
       <span className="text-3xl font-bold tracking-tight sm:text-4xl">{amount}</span>
       <span className="block text-sm font-medium text-muted-foreground sm:inline"> {note}</span>
+      {sub && <span className="mt-1 block text-xs text-muted-foreground">{sub}</span>}
     </td>
   );
 }

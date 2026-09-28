@@ -8,6 +8,7 @@ import { useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 import { FieldError } from "@/components/auth/auth-card";
+import { BillingCard } from "@/components/shop/billing-card";
 import { PageHeader } from "@/components/shop/page-header";
 import { useShop } from "@/components/shop/shop-provider";
 import { Button } from "@/components/ui/button";
@@ -93,122 +94,125 @@ export function SettingsPage() {
 
   return (
     <>
-      <PageHeader title="Settings" description={`How ${shop.name} charges tax.`} />
+      <PageHeader title="Settings" description={`${shop.name}'s plan and how it charges tax.`} />
 
       {tenant === undefined ? (
         <Skeleton className="h-96 rounded-xl" />
       ) : (
-        <form onSubmit={onSubmit} className="grid max-w-2xl gap-5" noValidate>
-          <section className="grid gap-5 rounded-xl border bg-card p-5">
-            <header>
-              <h2 className="font-semibold">VAT</h2>
+        <div className="grid gap-5">
+          <BillingCard timezone={tenant.timezone} />
+          <form onSubmit={onSubmit} className="grid max-w-2xl gap-5" noValidate>
+            <section className="grid gap-5 rounded-xl border bg-card p-5">
+              <header>
+                <h2 className="font-semibold">VAT</h2>
+                <p className="text-sm text-muted-foreground">
+                  Switch this off if your shop isn&apos;t VAT-registered. Past sales keep the VAT they were rung up with.
+                </p>
+              </header>
+
+              <div className="flex items-center justify-between gap-4">
+                <div className="grid gap-0.5">
+                  <span id="vat-enabled-label" className="text-sm font-medium">Charge VAT</span>
+                  <span className="text-sm text-muted-foreground">
+                    {vatEnabled ? "The checkout and receipts show a VAT line." : "No VAT is added, and receipts show no VAT line."}
+                  </span>
+                </div>
+                <Switch
+                  checked={vatEnabled}
+                  onCheckedChange={(on) => {
+                    form.setValue("vatEnabled", on, { shouldDirty: true });
+                    // Coming back from off, offer the usual rate rather than saving 0% by accident.
+                    if (on && !form.getValues("taxRate")) form.setValue("taxRate", DEFAULT_RATE);
+                    void form.trigger("taxRate");
+                  }}
+                  aria-labelledby="vat-enabled-label"
+                />
+              </div>
+
+              <div className="grid gap-2 sm:max-w-48">
+                <Label htmlFor="taxRate">VAT rate (%)</Label>
+                <Input
+                  id="taxRate"
+                  type="number"
+                  inputMode="decimal"
+                  step="0.01"
+                  min="0"
+                  max="100"
+                  disabled={!vatEnabled}
+                  className="h-11 tabular-nums"
+                  aria-invalid={errors.taxRate ? true : undefined}
+                  {...form.register("taxRate", { valueAsNumber: true })}
+                />
+                <FieldError message={errors.taxRate?.message} />
+              </div>
+
+              <div className="flex items-center justify-between gap-4">
+                <div className="grid gap-0.5">
+                  <span id="prices-include-vat-label" className="text-sm font-medium">Prices include VAT</span>
+                  <span className="text-sm text-muted-foreground">
+                    {(values.pricesIncludeTax ?? true)
+                      ? "The price on the tag is what the customer pays."
+                      : "VAT is added on top of the price at checkout."}
+                  </span>
+                </div>
+                <Switch
+                  checked={values.pricesIncludeTax ?? true}
+                  onCheckedChange={(on) => form.setValue("pricesIncludeTax", on, { shouldDirty: true })}
+                  aria-labelledby="prices-include-vat-label"
+                />
+              </div>
+
+              <div className="rounded-xl bg-muted p-4 text-sm">
+                <p className="mb-1 font-medium">An item priced {formatMoney(SAMPLE)}</p>
+                <dl className="grid gap-1">
+                  <div className="flex justify-between text-muted-foreground">
+                    <dt>Net</dt>
+                    <dd className="tabular-nums text-foreground">{formatMoney(preview.net)}</dd>
+                  </div>
+                  <div className="flex justify-between text-muted-foreground">
+                    <dt>VAT</dt>
+                    <dd className="tabular-nums text-foreground">{formatMoney(preview.tax)}</dd>
+                  </div>
+                  <div className="flex justify-between font-medium">
+                    <dt>Customer pays</dt>
+                    <dd className="tabular-nums">{formatMoney(preview.total)}</dd>
+                  </div>
+                </dl>
+              </div>
+
               <p className="text-sm text-muted-foreground">
-                Switch this off if your shop isn&apos;t VAT-registered. Past sales keep the VAT they were rung up with.
+                Changing this re-checks every product&apos;s margin in the background, and applies to the checkout right away.
               </p>
-            </header>
+            </section>
 
-            <div className="flex items-center justify-between gap-4">
-              <div className="grid gap-0.5">
-                <span id="vat-enabled-label" className="text-sm font-medium">Charge VAT</span>
-                <span className="text-sm text-muted-foreground">
-                  {vatEnabled ? "The checkout and receipts show a VAT line." : "No VAT is added, and receipts show no VAT line."}
-                </span>
-              </div>
-              <Switch
-                checked={vatEnabled}
-                onCheckedChange={(on) => {
-                  form.setValue("vatEnabled", on, { shouldDirty: true });
-                  // Coming back from off, offer the usual rate rather than saving 0% by accident.
-                  if (on && !form.getValues("taxRate")) form.setValue("taxRate", DEFAULT_RATE);
-                  void form.trigger("taxRate");
-                }}
-                aria-labelledby="vat-enabled-label"
-              />
-            </div>
-
-            <div className="grid gap-2 sm:max-w-48">
-              <Label htmlFor="taxRate">VAT rate (%)</Label>
-              <Input
-                id="taxRate"
-                type="number"
-                inputMode="decimal"
-                step="0.01"
-                min="0"
-                max="100"
-                disabled={!vatEnabled}
-                className="h-11 tabular-nums"
-                aria-invalid={errors.taxRate ? true : undefined}
-                {...form.register("taxRate", { valueAsNumber: true })}
-              />
-              <FieldError message={errors.taxRate?.message} />
-            </div>
-
-            <div className="flex items-center justify-between gap-4">
-              <div className="grid gap-0.5">
-                <span id="prices-include-vat-label" className="text-sm font-medium">Prices include VAT</span>
-                <span className="text-sm text-muted-foreground">
-                  {(values.pricesIncludeTax ?? true)
-                    ? "The price on the tag is what the customer pays."
-                    : "VAT is added on top of the price at checkout."}
-                </span>
-              </div>
-              <Switch
-                checked={values.pricesIncludeTax ?? true}
-                onCheckedChange={(on) => form.setValue("pricesIncludeTax", on, { shouldDirty: true })}
-                aria-labelledby="prices-include-vat-label"
-              />
-            </div>
-
-            <div className="rounded-xl bg-muted p-4 text-sm">
-              <p className="mb-1 font-medium">An item priced {formatMoney(SAMPLE)}</p>
-              <dl className="grid gap-1">
-                <div className="flex justify-between text-muted-foreground">
-                  <dt>Net</dt>
-                  <dd className="tabular-nums text-foreground">{formatMoney(preview.net)}</dd>
-                </div>
-                <div className="flex justify-between text-muted-foreground">
-                  <dt>VAT</dt>
-                  <dd className="tabular-nums text-foreground">{formatMoney(preview.tax)}</dd>
-                </div>
-                <div className="flex justify-between font-medium">
-                  <dt>Customer pays</dt>
-                  <dd className="tabular-nums">{formatMoney(preview.total)}</dd>
-                </div>
-              </dl>
-            </div>
-
-            <p className="text-sm text-muted-foreground">
-              Changing this re-checks every product&apos;s margin in the background, and applies to the checkout right away.
-            </p>
-          </section>
-
-          <FieldError message={error ?? undefined} />
-          <div className="flex gap-2">
-            <Button type="submit" size="lg" className="h-11 px-5" disabled={isSubmitting || !isDirty}>
-              {isSubmitting ? "Saving…" : "Save changes"}
-            </Button>
-            {isDirty && (
-              <Button
-                type="button"
-                variant="ghost"
-                size="lg"
-                className="h-11"
-                onClick={() => {
-                  setError(null);
-                  if (tenant) {
-                    form.reset({
-                      vatEnabled: tenant.taxRateBps > 0,
-                      taxRate: tenant.taxRateBps / 100,
-                      pricesIncludeTax: tenant.pricesIncludeTax,
-                    });
-                  }
-                }}
-              >
-                Discard
+            <FieldError message={error ?? undefined} />
+            <div className="flex gap-2">
+              <Button type="submit" size="lg" className="h-11 px-5" disabled={isSubmitting || !isDirty}>
+                {isSubmitting ? "Saving…" : "Save changes"}
               </Button>
-            )}
-          </div>
-        </form>
+              {isDirty && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="lg"
+                  className="h-11"
+                  onClick={() => {
+                    setError(null);
+                    if (tenant) {
+                      form.reset({
+                        vatEnabled: tenant.taxRateBps > 0,
+                        taxRate: tenant.taxRateBps / 100,
+                        pricesIncludeTax: tenant.pricesIncludeTax,
+                      });
+                    }
+                  }}
+                >
+                  Discard
+                </Button>
+              )}
+            </div>
+          </form>
+        </div>
       )}
     </>
   );

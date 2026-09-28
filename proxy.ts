@@ -12,6 +12,7 @@ function isPublic(pathname: string) {
   return (
     PUBLIC_PATHS.has(pathname) ||
     pathname.startsWith("/r/") ||
+    pathname.startsWith("/loyalty/") || // loyalty cards: customers sign in with their card, not an account
     PUBLIC_SECTIONS.some((s) => pathname === s || pathname.startsWith(`${s}/`))
   );
 }

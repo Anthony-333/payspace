@@ -146,7 +146,12 @@ export const bySlug = userQuery({
 
 export const get = tenantQuery({
   args: {},
-  handler: async (ctx) => ({ ...ctx.tenant, role: ctx.member.role }),
+  handler: async (ctx) => {
+    // Billing ids stay server-side; billing.status says what the UI needs.
+    const tenant = { ...ctx.tenant, role: ctx.member.role };
+    delete tenant.billing;
+    return tenant;
+  },
 });
 
 export const updateSettings = tenantMutation({

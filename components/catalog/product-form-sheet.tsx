@@ -22,6 +22,7 @@ import type { Doc, Id } from "@/convex/_generated/dataModel";
 import { checkBarcode, LIMITS } from "@/convex/lib/catalog";
 import { recipeCost, suggestedPrice } from "@/convex/lib/costing";
 import { formatBps, formatMoney, grossMarginBps, moneyToInput, parseMoney, roundMinor } from "@/convex/lib/money";
+import { ProBadge, UpgradeNote, useFreePlan } from "@/components/shop/plan";
 import { errorMessage } from "@/lib/errors";
 import { resizeImage, uploadFile } from "@/lib/image";
 import { cn } from "@/lib/utils";
@@ -102,6 +103,8 @@ function ProductForm({ product, categories, groups, tenant, onDone }: FormProps)
   const form = useForm<Values>({ resolver: zodResolver(schema), defaultValues: defaults(product) });
   const { errors, isSubmitting } = form.formState;
   const [kind, price, cost] = useWatch({ control: form.control, name: ["kind", "price", "cost"] });
+  // Recipe costing is Pro (the server refuses it on Free); starter-menu recipes stay as they are.
+  const free = useFreePlan();
 
   useEffect(() => () => {
     if (photo?.file) URL.revokeObjectURL(photo.previewUrl);
@@ -243,21 +246,31 @@ function ProductForm({ product, categories, groups, tenant, onDone }: FormProps)
               name="kind"
               render={({ field }) => (
                 <div className="grid gap-2">
-                  {KINDS.map((k) => (
-                    <button
-                      key={k.value}
-                      type="button"
-                      aria-pressed={field.value === k.value}
-                      onClick={() => field.onChange(k.value)}
-                      className={cn(
-                        "rounded-lg border p-3 text-left transition-colors",
-                        field.value === k.value ? "border-primary ring-1 ring-primary" : "hover:bg-muted",
-                      )}
-                    >
-                      <span className="block text-sm font-medium">{k.label}</span>
-                      <span className="block text-xs text-muted-foreground">{k.hint}</span>
-                    </button>
-                  ))}
+                  {KINDS.map((k) => {
+                    const locked = free && k.value === "recipe";
+                    return (
+                      <button
+                        key={k.value}
+                        type="button"
+                        disabled={locked}
+                        aria-pressed={field.value === k.value}
+                        onClick={() => field.onChange(k.value)}
+                        className={cn(
+                          "rounded-lg border p-3 text-left transition-colors",
+                          field.value === k.value ? "border-primary ring-1 ring-primary" : "hover:bg-muted",
+                          locked && "cursor-not-allowed opacity-60 hover:bg-transparent",
+                        )}
+                      >
+                        <span className="flex items-center gap-2 text-sm font-medium">
+                          {k.label}
+                          {locked && <ProBadge />}
+                        </span>
+                        <span className="block text-xs text-muted-foreground">
+                          {locked ? "Recipe costing, with the real cost of every drink or pastry, is part of Pro." : k.hint}
+                        </span>
+                      </button>
+                    );
+                  })}
                 </div>
               )}
             />
@@ -341,7 +354,9 @@ function ProductForm({ product, categories, groups, tenant, onDone }: FormProps)
             <legend className="mb-2 text-sm font-medium">
               Recipe <span className="font-normal text-muted-foreground">(for one sold, before modifiers)</span>
             </legend>
-            {recipeReady ? (
+            {free && product ? (
+              <UpgradeNote>Changing a recipe is part of Pro. You can still edit the name, price and everything else.</UpgradeNote>
+            ) : recipeReady ? (
               <IngredientLines
                 items={items}
                 rows={recipeRows}

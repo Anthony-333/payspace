@@ -16,6 +16,7 @@ import {
   Settings,
   ShoppingBag,
   SlidersHorizontal,
+  Stamp,
   Tags,
   type LucideIcon,
 } from "lucide-react";
@@ -52,6 +53,7 @@ type NavItem = {
 const NAV: NavItem[] = [
   { href: "/pos", label: "Sell", icon: ShoppingBag },
   { href: "/receipts", label: "Receipts", icon: Receipt },
+  { href: "/loyalty", label: "Loyalty", icon: Stamp },
   { href: "", label: "Dashboard", icon: LayoutDashboard, manageOnly: true, exact: true },
   { href: "/analytics", label: "Analytics", icon: ChartLine, manageOnly: true },
   { href: "/products", label: "Products", icon: Package },

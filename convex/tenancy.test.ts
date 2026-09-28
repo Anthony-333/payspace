@@ -3,7 +3,7 @@ import { describe, expect, test } from "vitest";
 import { api } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import schema from "./schema";
-import { modules } from "./test.setup";
+import { makePro, modules } from "./test.setup";
 
 async function setup() {
   const t = convexTest(schema, modules);
@@ -12,9 +12,11 @@ async function setup() {
   const shopA = await alice.mutation(api.tenants.create, {
     name: "Brew Lab", slug: "brewlab", businessType: "cafe",
   });
+  await makePro(t, shopA.tenantId);
   const shopB = await bob.mutation(api.tenants.create, {
     name: "Sari Mart", slug: "sarimart", businessType: "grocery",
   });
+  await makePro(t, shopB.tenantId);
   const categoryA = await alice.mutation(api.categories.create, {
     tenantId: shopA.tenantId, name: "Coffee",
   });

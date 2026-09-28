@@ -28,6 +28,24 @@ export default defineSchema({
     targetMarginBps: v.number(),     // 6000 = 60%, drives margin alerts
     discountLimitBps: v.number(),    // max cashier discount without a manager PIN
     receiptFooter: v.optional(v.string()),
+    // The shop's Pro subscription, copied from Polar webhooks (convex/billing.ts) so every
+    // plan check reads the tenant it already has. Absent: never started billing.
+    billing: v.optional(v.object({
+      /** The owner's Polar customer; an owner's shops share it. */
+      polarCustomerId: v.string(),
+      /** Set once any subscription has existed, so a shop gets one free trial. */
+      trialUsed: v.boolean(),
+      subscription: v.optional(v.object({
+        id: v.string(),
+        status: v.string(),               // Polar's: active, trialing, past_due, canceled, …
+        currentPeriodEnd: v.optional(v.number()), // ms
+        trialEnd: v.optional(v.number()),         // ms
+        /** ms. Set when the subscription is cancelled but runs until this date. */
+        cancelAt: v.optional(v.number()),
+        /** The webhook's timestamp (ms) of the last applied update; older events are ignored. */
+        eventAt: v.number(),
+      })),
+    })),
   }).index("by_slug", ["slug"]),
 
   members: defineTable({
@@ -161,6 +179,7 @@ export default defineSchema({
   })
     .index("by_tenant_date", ["tenantId", "businessDate"])
     .index("by_tenant_clientRef", ["tenantId", "clientRef"])
+    .index("by_tenant_number", ["tenantId", "number"])
     .index("by_receipt_token", ["receiptToken"]),
 
   dailyStats: defineTable({
@@ -198,4 +217,59 @@ export default defineSchema({
 
   counters: defineTable({ tenantId, name: v.string(), value: v.number() })
     .index("by_tenant_name", ["tenantId", "name"]),
+
+  // Loyalty cards (convex/loyalty.ts). One program per shop; a customer signs in to their card
+  // at /loyalty/[shop]/[username] with the username and password staff gave them.
+  loyaltyPrograms: defineTable({
+    tenantId,
+    name: v.string(),                // "Coffee card"
+    stampsRequired: v.number(),      // stamps to fill a card
+    reward: v.string(),              // "A free drink of your choice"
+    terms: v.optional(v.string()),
+    color: v.string(),               // one of LOYALTY_COLORS
+    isActive: v.boolean(),           // off: no new cards or stamps; customers can still look
+  }).index("by_tenant", ["tenantId"]),
+
+  loyaltyCards: defineTable({
+    tenantId,
+    name: v.string(),                // the customer, as staff know them
+    username: v.string(),            // lowercase, unique per shop
+    passwordHash: v.string(),        // "pbkdf2-sha256$<iterations>$<salt>$<hash>"
+    status: v.union(v.literal("active"), v.literal("archived")),
+    round: v.number(),               // 1 for the first card, +1 after each reward
+    stamps: v.number(),              // stamps on the current round
+    stampsRequired: v.number(),      // copied from the program when the round starts
+    failedLogins: v.number(),
+    lockedUntil: v.optional(v.number()),
+    createdBy: v.id("members"),
+  })
+    .index("by_tenant_username", ["tenantId", "username"])
+    .index("by_tenant_status", ["tenantId", "status"]),
+
+  // The card's ledger: every stamp and every reward, with who gave it and their signature.
+  loyaltyStamps: defineTable({
+    tenantId,
+    cardId: v.id("loyaltyCards"),
+    kind: v.union(v.literal("stamp"), v.literal("redeem")),
+    round: v.number(),
+    saleId: v.optional(v.id("sales")), // every stamp has one; a sale earns one stamp
+    saleNumber: v.optional(v.number()),
+    memberId: v.id("members"),
+    memberName: v.string(),          // snapshots, so the log stays true if staff change
+    memberRole: role,
+    signature: v.array(v.array(v.number())), // strokes of [x, y, width, ...] (convex/lib/signature.ts)
+    note: v.optional(v.string()),
+  })
+    .index("by_tenant_card", ["tenantId", "cardId"])
+    .index("by_tenant_sale", ["tenantId", "saleId"]),
+
+  loyaltySessions: defineTable({
+    tenantId,
+    cardId: v.id("loyaltyCards"),
+    tokenHash: v.string(),           // SHA-256 of the token; the token itself is never stored
+    expiresAt: v.number(),
+  })
+    .index("by_token_hash", ["tokenHash"]) // global: the token is the key, like a receipt
+    .index("by_tenant_card", ["tenantId", "cardId"])
+    .index("by_expires", ["expiresAt"]),
 });

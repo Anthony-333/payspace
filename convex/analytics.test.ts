@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { api } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import schema from "./schema";
-import { modules } from "./test.setup";
+import { makePro, modules } from "./test.setup";
 
 // Analytics reads only the rollups checkout writes, so the thing worth proving is that the
 // numbers it shows reconcile exactly with the sales that produced them.
@@ -24,6 +24,7 @@ async function setup() {
   const { tenantId } = await owner.mutation(api.tenants.create, {
     name: "Brew Lab", slug: "brewlab", businessType: "cafe",
   });
+  await makePro(t, tenantId);
 
   const water = await owner.mutation(api.products.create, {
     tenantId, name: "Bottled water", kind: "stocked", price: 6000, cost: 2500, modifierGroupIds: [],
@@ -236,6 +237,7 @@ describe("permissions and isolation", () => {
     const other = await mallory.mutation(api.tenants.create, {
       name: "Sari Mart", slug: "sarimart", businessType: "grocery",
     });
+    await makePro(t, other.tenantId);
     const theirs = await mallory.mutation(api.products.create, {
       tenantId: other.tenantId, name: "Rice 1 kg", kind: "stocked", price: 6500, cost: 5000, modifierGroupIds: [],
     });
