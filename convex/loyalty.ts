@@ -269,6 +269,45 @@ export const saleForStamp = tenantQuery({
   },
 });
 
+const RECENT_SCAN = 40;
+const RECENT_MAX = 8;
+
+/**
+ * The newest receipts that can still earn a stamp (completed, under 14 days old, not stamped),
+ * so staff can tap one instead of typing its number. Only the latest few sales are looked at.
+ */
+export const recentSalesForStamp = tenantQuery({
+  args: {},
+  handler: async (ctx) => {
+    const sales = await ctx.db
+      .query("sales")
+      .withIndex("by_tenant_number", (q) => q.eq("tenantId", ctx.tenantId))
+      .order("desc")
+      .take(RECENT_SCAN);
+    const now = Date.now();
+    const out = [];
+    for (const sale of sales) {
+      // Numbers rise with time, so every sale after this one is older still.
+      if (now - sale._creationTime > STAMP_SALE_MAX_AGE_MS) break;
+      if (sale.status !== "completed") continue;
+      const stamp = await ctx.db
+        .query("loyaltyStamps")
+        .withIndex("by_tenant_sale", (q) => q.eq("tenantId", ctx.tenantId).eq("saleId", sale._id))
+        .first();
+      if (stamp) continue;
+      const names = sale.lines.map((l) => (l.qty === 1 ? l.name : `${l.qty}× ${l.name}`));
+      out.push({
+        number: sale.number,
+        total: sale.total,
+        at: sale._creationTime,
+        items: names.slice(0, 2).join(", ") + (names.length > 2 ? ` +${names.length - 2} more` : ""),
+      });
+      if (out.length === RECENT_MAX) break;
+    }
+    return out;
+  },
+});
+
 function signer(ctx: TenantMutationCtx, sig: number[][], note: string | undefined) {
   validateSignature(sig);
   const trimmed = note === undefined ? "" : text(note, "The note", 0, 120);

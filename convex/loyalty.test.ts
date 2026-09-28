@@ -146,6 +146,18 @@ describe("stamps", () => {
     expect(await owner.query(api.loyalty.saleForStamp, { tenantId, saleNumber })).toMatchObject({ stampedOn: "ana.reyes" });
   });
 
+  test("recent receipts list only stampable sales, newest first", async () => {
+    const { owner, tenantId, cardId, sell } = await withCard();
+    const old = await sell();
+    vi.advanceTimersByTime(15 * 24 * 60 * 60 * 1000);
+    const stamped = await sell();
+    const fresh = await sell();
+    await owner.mutation(api.loyalty.addStamp, { tenantId, cardId, saleNumber: stamped, signature: sig });
+    const recent = await owner.query(api.loyalty.recentSalesForStamp, { tenantId });
+    expect(recent.map((r) => r.number)).toEqual([fresh]);
+    expect(recent.map((r) => r.number)).not.toContain(old);
+  });
+
   test("a sale older than 14 days can't earn a stamp", async () => {
     const { owner, tenantId, cardId, sell } = await withCard();
     const saleNumber = await sell();

@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery } from "convex/react";
-import { BadgeCheck, CircleAlert, PenLine } from "lucide-react";
+import { BadgeCheck, Check, CircleAlert, PenLine } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { SignaturePad } from "@/components/loyalty/signature-pad";
@@ -15,6 +15,7 @@ import type { Id } from "@/convex/_generated/dataModel";
 import { formatMoney } from "@/convex/lib/money";
 import type { Signature } from "@/convex/lib/signature";
 import { errorMessage } from "@/lib/errors";
+import { cn } from "@/lib/utils";
 
 const ROLE_NAMES = { owner: "Owner", manager: "Manager", cashier: "Cashier" } as const;
 
@@ -54,6 +55,7 @@ function SignForm({ mode, card, saleNumber, onClose, onDone }: Props) {
   const [busy, setBusy] = useState(false);
 
   const number = /^\d{1,9}$/.test(receipt.trim().replace(/^#/, "")) ? Number(receipt.trim().replace(/^#/, "")) : null;
+  const recent = useQuery(api.loyalty.recentSalesForStamp, mode === "stamp" ? { tenantId: shop.tenantId } : "skip");
   const sale = useQuery(
     api.loyalty.saleForStamp,
     mode === "stamp" && number !== null ? { tenantId: shop.tenantId, saleNumber: number } : "skip",
@@ -67,6 +69,7 @@ function SignForm({ mode, card, saleNumber, onClose, onDone }: Props) {
     else if (sale.stampedOn) saleProblem = `Receipt #${sale.number} already earned a stamp (@${sale.stampedOn}).`;
     else if (sale.tooOld) saleProblem = `Receipt #${sale.number} is more than 14 days old.`;
   }
+  const time = (at: number) => new Date(at).toLocaleString("en-PH", { timeZone: shop.timezone, dateStyle: "medium", timeStyle: "short" });
   const ready = signature.length > 0 && (mode === "redeem" || (sale && !saleProblem));
 
   const submit = async () => {
@@ -116,7 +119,7 @@ function SignForm({ mode, card, saleNumber, onClose, onDone }: Props) {
             {sale && !saleProblem && (
               <p className="flex items-center gap-1.5 text-sm text-tint-green-foreground">
                 <BadgeCheck className="size-4" />
-                Receipt #{sale.number}: {formatMoney(sale.total)}, {new Date(sale.at).toLocaleString("en-PH", { timeZone: shop.timezone, dateStyle: "medium", timeStyle: "short" })}
+                Receipt #{sale.number}: {formatMoney(sale.total)}, {time(sale.at)}
               </p>
             )}
             {saleProblem && (
@@ -124,6 +127,41 @@ function SignForm({ mode, card, saleNumber, onClose, onDone }: Props) {
                 <CircleAlert className="size-4" />
                 {saleProblem}
               </p>
+            )}
+            {recent === undefined ? (
+              <div className="h-24 animate-pulse rounded-lg bg-muted" />
+            ) : recent.length === 0 ? (
+              <p className="text-xs text-muted-foreground">No recent receipts waiting for a stamp. Type the number from the receipt.</p>
+            ) : (
+              <div className="grid gap-1.5">
+                <p className="text-xs text-muted-foreground">Recent receipts without a stamp. Tap one to pick it.</p>
+                <ul className="grid max-h-56 divide-y overflow-y-auto rounded-lg border">
+                  {recent.map((r) => {
+                    const picked = number === r.number;
+                    return (
+                      <li key={r.number}>
+                        <button
+                          type="button"
+                          aria-pressed={picked}
+                          onClick={() => setReceipt(String(r.number))}
+                          className={cn(
+                            "flex min-h-12 w-full items-center gap-3 px-3 py-2 text-left text-sm hover:bg-muted",
+                            picked && "bg-primary/10 hover:bg-primary/10",
+                          )}
+                        >
+                          <span className="w-14 shrink-0 font-medium tabular-nums">#{r.number}</span>
+                          <span className="min-w-0 flex-1">
+                            <span className="block truncate">{r.items || "—"}</span>
+                            <span className="block text-xs text-muted-foreground">{time(r.at)}</span>
+                          </span>
+                          <span className="shrink-0 font-medium tabular-nums">{formatMoney(r.total)}</span>
+                          {picked && <Check className="size-4 shrink-0 text-primary" />}
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
             )}
           </div>
         )}
