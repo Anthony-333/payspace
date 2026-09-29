@@ -113,9 +113,9 @@ function Body() {
 
 const post: BlogPost = {
   slug: "markup-vs-margin-pricing",
-  title: "Markup vs margin: how to price drinks and pastries for profit",
+  title: "Markup vs margin: formula and examples",
   description:
-    "The difference between markup and margin, a conversion table, and a simple formula to price any item from a target margin, with VAT done correctly.",
+    "Markup vs margin explained: the difference, a conversion table, and a simple formula to price any item from a target margin, with 12% VAT done right.",
   category: "Costing and pricing",
   keywords: ["markup vs margin", "how to price products", "pricing formula", "profit margin calculator", "menu pricing"],
   published: "2026-09-27",

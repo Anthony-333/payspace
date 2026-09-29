@@ -83,9 +83,9 @@ function Body() {
 
 const post: BlogPost = {
   slug: "bakery-batch-costing-per-piece",
-  title: "How to cost a bakery recipe per piece (batch costing made simple)",
+  title: "How to cost bakery recipes per piece",
   description:
-    "Cost a whole batch, divide by the pieces you can sell, and check the margin: a worked ensaymada example for bakeries, with waste and price changes included.",
+    "Learn how to cost bakery recipes per piece: price the whole batch, divide by sellable pieces, and allow for waste. Worked ensaymada example in pesos.",
   category: "Costing and pricing",
   keywords: ["bakery costing", "cost per piece bakery", "batch recipe costing", "how to price baked goods", "bakery business Philippines"],
   published: "2026-09-27",

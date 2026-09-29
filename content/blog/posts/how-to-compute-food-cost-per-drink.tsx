@@ -100,9 +100,9 @@ function Body() {
 
 const post: BlogPost = {
   slug: "how-to-compute-food-cost-per-drink",
-  title: "How to compute food cost per drink (with a latte example)",
+  title: "How to compute food cost per drink",
   description:
-    "A step-by-step guide to costing coffee and milk tea drinks from their ingredients, with a worked latte example, VAT, and the mistakes that hide lost profit.",
+    "Compute the food cost of any coffee or milk tea drink in 3 steps, with a worked latte example, correct VAT, and the mistakes that hide lost profit.",
   category: "Costing and pricing",
   keywords: ["food cost per drink", "coffee cost calculation", "latte cost breakdown", "beverage costing", "recipe costing Philippines"],
   published: "2026-09-27",

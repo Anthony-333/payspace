@@ -92,9 +92,9 @@ function Body() {
 
 const post: BlogPost = {
   slug: "sari-sari-store-inventory-count",
-  title: "A simple weekly inventory count for sari-sari stores and small groceries",
+  title: "Sari-sari store inventory: a weekly count",
   description:
-    "How to count stock in a small store without closing for a day: what to count and when, how to spot missing stock, and when to reorder.",
+    "Do a sari-sari store inventory count without closing for a day: what to count each week, how to find missing stock, and when to reorder.",
   category: "Inventory",
   keywords: ["sari-sari store inventory", "how to do inventory in a store", "stock count", "inventory shrinkage", "reorder point"],
   published: "2026-09-27",

@@ -90,9 +90,9 @@ function Body() {
 
 const post: BlogPost = {
   slug: "gcash-maya-payments-end-of-day",
-  title: "How to record and check GCash and Maya payments at closing time",
+  title: "How to reconcile GCash and Maya payments",
   description:
-    "A simple routine for e-wallet payments in a small shop: what to check at the counter, how to reconcile GCash and Maya at closing, and how to spot fake receipts.",
+    "Reconcile GCash and Maya payments at closing in a few minutes: what to check at the counter, how to match reference numbers, and how to spot fake receipts.",
   category: "Payments",
   keywords: ["GCash payments for business", "Maya business payments", "GCash reference number", "fake GCash receipt", "end of day cash count"],
   published: "2026-09-27",

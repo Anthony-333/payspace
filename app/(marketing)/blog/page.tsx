@@ -6,13 +6,13 @@ import { POSTS } from "@/content/blog";
 import { SITE_URL } from "@/lib/site";
 
 const DESCRIPTION =
-  "Practical guides for coffee shops, bakeries, milk tea shops and sari-sari stores in the Philippines: recipe costing, pricing, VAT, inventory and e-wallet payments.";
+  "Practical guides for Philippine coffee shops, bakeries, milk tea shops and sari-sari stores: recipe costing, pricing, VAT, inventory and GCash payments.";
 
 export const metadata: Metadata = {
-  title: "Blog: guides for running a profitable small shop",
+  title: "Small shop guides: costing, pricing and VAT",
   description: DESCRIPTION,
   alternates: { canonical: "/blog", types: { "application/rss+xml": `${SITE_URL}/blog/rss.xml` } },
-  openGraph: { url: "/blog", title: "The Payspace blog", description: DESCRIPTION },
+  openGraph: { url: "/blog", title: "Small shop guides: costing, pricing and VAT", description: DESCRIPTION },
 };
 
 export default function BlogIndexPage() {

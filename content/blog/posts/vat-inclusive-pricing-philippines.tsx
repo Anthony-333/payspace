@@ -101,9 +101,9 @@ function Body() {
 
 const post: BlogPost = {
   slug: "vat-inclusive-pricing-philippines",
-  title: "How to compute 12% VAT from a VAT-inclusive price",
+  title: "How to compute 12% VAT in the Philippines",
   description:
-    "The formula for taking 12% VAT out of a Philippine retail price, a ready reference table, the common 12% mistake, rounding, and why margins must exclude VAT.",
+    "How to compute 12% VAT from a VAT-inclusive price in the Philippines: the formula, a quick reference table, and the common mistake that overstates VAT.",
   category: "Tax",
   keywords: ["how to compute VAT Philippines", "VAT inclusive formula", "12% VAT computation", "VAT exclusive price", "VAT for small business Philippines"],
   published: "2026-09-27",
