@@ -7,8 +7,10 @@ import {
   Donut,
   Gift,
   Home,
+  Link2,
   Milk,
   Package,
+  Printer,
   Receipt,
   Sandwich,
   Search,
@@ -385,6 +387,90 @@ export function LoyaltyMockup() {
           <div className="mt-1.5 rounded-[6px] bg-primary py-1 text-center font-bold text-primary-foreground">
             Give stamp
           </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function ReceiptsMockup() {
+  const days: [string, [string, string, string, boolean][]][] = [
+    [
+      "Today · ₱6,840.00",
+      [
+        ["#0142", "9:41 AM · Ana", "₱390.00", true],
+        ["#0141", "9:36 AM · Ana", "₱155.00", false],
+        ["#0140", "9:28 AM · Joey", "₱285.00", false],
+      ],
+    ],
+    ["Yesterday · ₱21,470.00", [["#0139", "6:52 PM · Joey", "₱120.00", false]]],
+  ];
+  return (
+    <div className="flex h-full text-[9px] leading-tight">
+      <Rail active={1} />
+      <div className="flex min-w-0 flex-1 flex-col gap-1.5 p-2.5">
+        <div className="text-[11px] font-bold">Receipts</div>
+        {days.map(([day, sales]) => (
+          <div key={day} className="space-y-1">
+            <div className="font-semibold text-muted-foreground">{day}</div>
+            {sales.map(([n, meta, total, active]) => (
+              <div
+                key={n}
+                className={cn(
+                  "flex items-center gap-1.5 rounded-[6px] bg-card px-1.5 py-1",
+                  active && "ring-1 ring-primary/50",
+                )}
+              >
+                <span className="grid size-4 shrink-0 place-items-center rounded-[4px] bg-muted">
+                  <Receipt className="size-2.5" />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block font-semibold">{n}</span>
+                  <span className="block truncate text-muted-foreground">{meta}</span>
+                </span>
+                <span className="font-semibold">{total}</span>
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
+      <div className="flex w-[42%] shrink-0 flex-col gap-1.5 border-l bg-card/60 p-2.5">
+        <div className="min-h-0 flex-1 overflow-hidden rounded-[6px] bg-card p-2 font-mono text-[7.5px] whitespace-nowrap shadow-sm">
+          <div className="truncate text-center font-sans text-[9px] font-bold">Kapehan sa Kanto</div>
+          <div className="truncate text-center text-muted-foreground">Receipt #0142 · 9:41 AM</div>
+          <div className="my-1 border-t border-dashed" />
+          {[
+            ["2 × Spanish latte", "₱280.00"],
+            ["1 × Ensaymada", "₱65.00"],
+            ["1 × Choco cookie", "₱45.00"],
+          ].map(([n, p]) => (
+            <div key={n} className="flex justify-between gap-1">
+              <span className="min-w-0 truncate">{n}</span>
+              <span>{p}</span>
+            </div>
+          ))}
+          <div className="my-1 border-t border-dashed" />
+          <div className="flex justify-between gap-1 text-muted-foreground">
+            <span className="min-w-0 truncate">VAT 12% (incl.)</span>
+            <span>₱41.79</span>
+          </div>
+          <div className="flex justify-between font-bold">
+            <span>Total</span>
+            <span>₱390.00</span>
+          </div>
+          <div className="flex justify-between gap-1 text-muted-foreground">
+            <span className="min-w-0 truncate">GCash · 8891234</span>
+            <span>₱390.00</span>
+          </div>
+          <div className="mt-1 truncate text-center text-muted-foreground">Salamat, see you again!</div>
+        </div>
+        <div className="grid shrink-0 grid-cols-2 gap-1 whitespace-nowrap">
+          <span className="flex items-center justify-center gap-1 rounded-[6px] bg-primary py-1 font-bold text-primary-foreground">
+            <Printer className="size-2.5" /> Print
+          </span>
+          <span className="flex items-center justify-center gap-1 rounded-[6px] border bg-card py-1 font-semibold">
+            <Link2 className="size-2.5" /> <span className="hidden sm:inline">Customer</span> link
+          </span>
         </div>
       </div>
     </div>
