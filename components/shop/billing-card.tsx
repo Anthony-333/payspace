@@ -4,7 +4,6 @@ import { useAction } from "convex/react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Check, CreditCard } from "lucide-react";
-import { toast } from "sonner";
 import { FieldError } from "@/components/auth/auth-card";
 import { PRO_PRICE } from "@/components/marketing/content";
 import { ProBadge, usePlan } from "@/components/shop/plan";
@@ -35,14 +34,13 @@ export function BillingCard({ timezone }: { timezone: string }) {
   const [busy, setBusy] = useState<"checkout" | "portal" | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Coming back from Polar: say what happened once, then tidy the URL.
+  // Back from a canceled Polar checkout: tidy the URL. A paid checkout lands on /billing/success.
   const params = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
   const returned = params.get("billing");
   useEffect(() => {
     if (!returned) return;
-    if (returned === "success") toast.success("Thanks! Your Pro plan is being confirmed. This takes a few seconds.");
     router.replace(`${pathname}#billing`, { scroll: false });
   }, [returned, router, pathname]);
 

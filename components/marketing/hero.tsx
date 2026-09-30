@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { ArrowRight, ChartColumn, Sparkles, Store } from "lucide-react";
+import { ArrowRight, ChartColumn, Gift, Sparkles, Store } from "lucide-react";
 import { cn } from "cn";
+import { Chip } from "./chip";
 import { PosMockup, StockMockup, TabletFrame } from "./mockups";
 import { QuoteCarousel } from "./quote-carousel";
 
@@ -25,6 +26,16 @@ export function Hero({ ctaHref, ctaLabel }: { ctaHref: string; ctaLabel: string 
       {/* Dark lead card */}
       <div className="relative isolate flex min-h-[560px] flex-col overflow-hidden rounded-[32px] bg-foreground p-7 text-background sm:min-h-[640px] sm:p-10">
         <Rings />
+        <a
+          href="#loyalty"
+          className="mb-5 inline-flex w-fit items-center gap-2 rounded-full bg-background/10 py-1 pr-3 pl-1 text-xs font-semibold transition-colors hover:bg-background/15"
+        >
+          <span className="inline-flex items-center gap-1 rounded-full bg-primary px-2 py-0.5 text-primary-foreground">
+            <Gift className="size-3" /> New
+          </span>
+          Loyalty stamp cards<span className="hidden sm:inline">, signed at the counter</span>
+          <ArrowRight className="size-3 shrink-0" />
+        </a>
         <p className="max-w-xs text-sm text-background/70">
           The point of sale for coffee shops, bakeries and small stores 🚀
         </p>
@@ -45,7 +56,7 @@ export function Hero({ ctaHref, ctaLabel }: { ctaHref: string; ctaLabel: string 
         </Link>
 
         {/* Tablets, cropped by the card's bottom edge like the reference */}
-        <div className="relative mt-10 flex-1">
+        <div className="relative mt-10 min-h-[230px] flex-1">
           <TabletFrame
             label="Stock screen with a low-stock warning"
             className="absolute -bottom-16 -left-20 hidden h-[330px] w-[440px] -rotate-6 opacity-90 md:block"
@@ -116,35 +127,6 @@ export function Hero({ ctaHref, ctaLabel }: { ctaHref: string; ctaLabel: string 
         </div>
       </div>
     </section>
-  );
-}
-
-function Chip({
-  icon: Icon,
-  dark,
-  children,
-}: {
-  icon: React.ComponentType<{ className?: string }>;
-  dark?: boolean;
-  children: React.ReactNode;
-}) {
-  return (
-    <span
-      className={cn(
-        "inline-flex items-center gap-2 rounded-full py-1.5 pr-4 pl-1.5 text-sm font-semibold",
-        dark ? "bg-background/10" : "bg-card",
-      )}
-    >
-      <span
-        className={cn(
-          "grid size-7 place-items-center rounded-full",
-          dark ? "bg-background text-foreground" : "bg-foreground text-background",
-        )}
-      >
-        <Icon className="size-3.5" />
-      </span>
-      {children}
-    </span>
   );
 }
 

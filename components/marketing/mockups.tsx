@@ -5,6 +5,7 @@ import {
   Croissant,
   CupSoda,
   Donut,
+  Gift,
   Home,
   Milk,
   Package,
@@ -43,7 +44,7 @@ export function TabletFrame({
 }
 
 function Rail({ active }: { active: number }) {
-  const items: LucideIcon[] = [Home, Receipt, Package, ChartColumn, Settings];
+  const items: LucideIcon[] = [Home, Receipt, Package, ChartColumn, Gift, Settings];
   return (
     <div className="flex w-9 shrink-0 flex-col items-center gap-2 border-r bg-card py-3">
       <span className="mb-1 grid size-5 place-items-center rounded-[6px] bg-primary text-[8px] font-bold text-primary-foreground">
@@ -279,6 +280,111 @@ export function StockMockup() {
               <span className="text-right">{c}</span>
             </div>
           ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Hand-drawn-looking signatures for the loyalty mockups, in a 100 × 40 box.
+const SIGNATURES = [
+  "M6 28c6-14 10-20 13-16s-5 18 1 14 9-16 14-12-2 12 4 10 8-10 12-8 3 8 8 6 10-8 16-7 8 4 14 2",
+  "M8 24c4-10 12-16 12-8s-6 14 0 10 10-18 16-10-4 12 2 10c8-3 12-14 18-12s-2 10 6 9 14-6 26-4",
+  "M10 30c10-4 8-22 16-18s-8 16 2 14 6-12 12-10 2 8 8 6 6-10 12-8-2 10 6 8 10-4 18-6",
+  "M6 22c8 0 10-12 18-10s-10 14 0 14 14-14 20-12-6 10 2 10 12-8 18-8 6 6 12 4 8-4 16-6",
+];
+
+function Squiggle({ i, className }: { i: number; className?: string }) {
+  return (
+    <svg viewBox="0 0 100 40" className={className} fill="none" stroke="currentColor" strokeWidth={3.2} strokeLinecap="round" strokeLinejoin="round">
+      <path d={SIGNATURES[i % SIGNATURES.length]} />
+    </svg>
+  );
+}
+
+// The loyalty card face (matches components/loyalty/stamp-card.tsx, teal).
+export function StampCardMockup({ filled, total = 10, className }: { filled: number; total?: number; className?: string }) {
+  return (
+    <div className={cn("relative overflow-hidden rounded-[10px] bg-[#16625f] p-2.5 text-white", className)}>
+      <div className="pointer-events-none absolute -top-8 -right-8 size-24 rounded-full bg-white/10" />
+      <div className="relative flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <div className="truncate text-[7px] font-medium tracking-wide text-white/80 uppercase">Kapehan sa Kanto</div>
+          <div className="truncate text-[11px] font-semibold">Coffee card</div>
+        </div>
+        <span className="shrink-0 rounded-full bg-white/15 px-1.5 py-0.5 font-semibold tabular-nums">
+          {filled} / {total}
+        </span>
+      </div>
+      <div className="relative mt-2 grid grid-cols-5 gap-1.5">
+        {Array.from({ length: total }, (_, i) => (
+          <div
+            key={i}
+            className={cn(
+              "grid aspect-square place-items-center rounded-full",
+              i < filled ? "bg-white text-[#0f4644]" : "border border-dashed border-white/40",
+            )}
+          >
+            {i < filled ? (
+              <span className="grid size-[86%] -rotate-6 place-items-center rounded-full border border-current/60 p-[10%]">
+                <Squiggle i={i} className="w-full" />
+              </span>
+            ) : i === total - 1 ? (
+              <Gift className="size-1/3 text-white/70" />
+            ) : (
+              <span className="text-[7px] font-semibold text-white/50">{i + 1}</span>
+            )}
+          </div>
+        ))}
+      </div>
+      <div className="relative mt-2 text-white/90">
+        <span className="font-semibold">Reward: </span>Free drink of your choice
+      </div>
+    </div>
+  );
+}
+
+export function LoyaltyMockup() {
+  const cards: [string, string, boolean][] = [
+    ["Ana Reyes", "7 / 10", false],
+    ["Bea Lim", "10 / 10", true],
+    ["Mark Tan", "3 / 10", false],
+    ["Joey Cruz", "5 / 10", false],
+  ];
+  return (
+    <div className="flex h-full text-[9px] leading-tight">
+      <Rail active={4} />
+      <div className="flex w-[34%] shrink-0 flex-col gap-1.5 border-r bg-card p-2.5">
+        <div className="text-[11px] font-bold">Loyalty cards</div>
+        <div className="flex items-center gap-1.5 rounded-[6px] bg-muted px-2 py-1 text-muted-foreground">
+          <Search className="size-2.5" /> Username
+        </div>
+        {cards.map(([n, s, ready], i) => (
+          <div
+            key={n}
+            className={cn("flex items-center justify-between gap-1 rounded-[6px] px-1.5 py-1", i === 0 && "bg-accent")}
+          >
+            <span className="truncate font-semibold">{n}</span>
+            <span className={cn("shrink-0 tabular-nums", ready ? "font-semibold text-primary" : "text-muted-foreground")}>
+              {ready ? "Reward" : s}
+            </span>
+          </div>
+        ))}
+      </div>
+      <div className="flex min-w-0 flex-1 flex-col gap-2 p-2.5">
+        <StampCardMockup filled={7} />
+        <div className="flex flex-1 flex-col rounded-[8px] bg-card p-2">
+          <div className="flex justify-between text-muted-foreground">
+            <span>Receipt #0142 · ₱390.00</span>
+            <span className="text-tint-green-foreground">Paid</span>
+          </div>
+          <div className="relative mt-1 grid flex-1 place-items-center rounded-[6px] border border-dashed">
+            <Squiggle i={1} className="h-8 text-foreground" />
+            <span className="absolute bottom-1 left-2 text-muted-foreground">Customer signs here</span>
+          </div>
+          <div className="mt-1.5 rounded-[6px] bg-primary py-1 text-center font-bold text-primary-foreground">
+            Give stamp
+          </div>
         </div>
       </div>
     </div>

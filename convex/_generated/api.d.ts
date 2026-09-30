@@ -14,8 +14,10 @@ import type * as billing from "../billing.js";
 import type * as categories from "../categories.js";
 import type * as costing from "../costing.js";
 import type * as crons from "../crons.js";
+import type * as emails from "../emails.js";
 import type * as http from "../http.js";
 import type * as inventory from "../inventory.js";
+import type * as lib_authEmails from "../lib/authEmails.js";
 import type * as lib_businessDate from "../lib/businessDate.js";
 import type * as lib_catalog from "../lib/catalog.js";
 import type * as lib_clientIp from "../lib/clientIp.js";
@@ -58,8 +60,10 @@ declare const fullApi: ApiFromModules<{
   categories: typeof categories;
   costing: typeof costing;
   crons: typeof crons;
+  emails: typeof emails;
   http: typeof http;
   inventory: typeof inventory;
+  "lib/authEmails": typeof lib_authEmails;
   "lib/businessDate": typeof lib_businessDate;
   "lib/catalog": typeof lib_catalog;
   "lib/clientIp": typeof lib_clientIp;
@@ -119,4 +123,5 @@ export declare const internal: FilterApi<
 export declare const components: {
   betterAuth: import("../betterAuth/_generated/component.js").ComponentApi<"betterAuth">;
   polar: import("@convex-dev/polar/_generated/component.js").ComponentApi<"polar">;
+  resend: import("@convex-dev/resend/_generated/component.js").ComponentApi<"resend">;
 };

@@ -8,4 +8,6 @@ crons.cron("delete unused product photos", "0 19 * * *", internal.photos.cleanup
 
 crons.cron("delete expired loyalty sessions", "15 19 * * *", internal.loyalty.cleanupSessions, {});
 
+crons.cron("delete sent emails", "30 19 * * *", internal.emails.cleanup, {});
+
 export default crons;

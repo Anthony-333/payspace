@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { cn } from "cn";
-import { DashboardMockup, PosMockup, RecipeMockup, StockMockup, TabletFrame } from "./mockups";
+import { DashboardMockup, LoyaltyMockup, PosMockup, RecipeMockup, StockMockup, TabletFrame } from "./mockups";
 
 const FEATURES = [
   {
@@ -11,9 +11,17 @@ const FEATURES = [
   },
   {
     title: "A checkout your cashiers learn in minutes",
-    body: "Big, touch-first tiles for tablets and phones. Record cash, GCash, Maya or card, split a bill across methods, and print a receipt or share a digital one. VAT is worked out for you.",
+    body: "Big, touch-first tiles for tablets and phones. Record cash, GCash, Maya or card, split a bill across methods, and snap a photo of the payment as proof. Print a receipt or share a digital one. VAT is worked out for you.",
     screen: <PosMockup />,
     label: "Checkout screen with an order and payment methods",
+  },
+  {
+    id: "loyalty",
+    badge: "New · Pro",
+    title: "Loyalty cards that can't be faked",
+    body: "Give regulars a digital stamp card they open on their own phone, no app needed. Each stamp is tied to a paid receipt and signed on screen by the customer, so every stamp is earned. When the card fills, give the reward with a signature and the next round starts.",
+    screen: <LoyaltyMockup />,
+    label: "Loyalty screen with a stamp card, a paid receipt and a signature pad",
   },
   {
     title: "Stock you can trust",
@@ -23,7 +31,7 @@ const FEATURES = [
   },
   {
     title: "A dashboard that shows what you made",
-    body: "Sales, profit and margin for today against the same day last week, your best sellers by profit, busy hours and payment mix. It updates live as sales come in.",
+    body: "Sales, profit and margin for today against the same day last week, your best sellers by profit, busy hours by weekday and payment mix. It updates live as sales come in.",
     screen: <DashboardMockup />,
     label: "Dashboard with sales, profit and top items by profit",
   },
@@ -39,12 +47,18 @@ export function Features({ ctaHref }: { ctaHref: string }) {
         {FEATURES.map((f, i) => (
           <article
             key={f.title}
-            className="grid grid-cols-1 items-center gap-8 rounded-[32px] bg-muted p-6 sm:p-10 lg:grid-cols-2 lg:gap-14"
+            id={f.id}
+            className="grid scroll-mt-6 grid-cols-1 items-center gap-8 rounded-[32px] bg-muted p-6 sm:p-10 lg:grid-cols-2 lg:gap-14"
           >
             <TabletFrame label={f.label} className={cn("aspect-[16/10] w-full", i % 2 === 1 && "lg:order-2")}>
               {f.screen}
             </TabletFrame>
             <div>
+              {f.badge && (
+                <span className="mb-4 inline-block rounded-full bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground">
+                  {f.badge}
+                </span>
+              )}
               <h3 className="text-2xl leading-snug font-semibold tracking-tight sm:text-3xl">{f.title}</h3>
               <p className="mt-4 max-w-lg text-muted-foreground">{f.body}</p>
               <div className="mt-8 flex flex-wrap gap-3">

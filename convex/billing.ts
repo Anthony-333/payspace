@@ -66,13 +66,13 @@ export const startCheckout = tenantAction({
     if (isPro(ctx.tenant)) throw new ConvexError("This shop is already on Pro. Use Manage billing to change it.");
     const { client, productId, siteUrl } = billingConfig();
     const customerId = await ensureCustomer(ctx, client);
-    const settings = `${siteUrl}/${ctx.tenant.slug}/settings`;
+    const shopUrl = `${siteUrl}/${ctx.tenant.slug}`;
 
     const checkout = await checkoutsCreate(client, {
       products: [productId],
       customerId,
-      successUrl: `${settings}?billing=success`,
-      returnUrl: `${settings}?billing=canceled`,
+      successUrl: `${shopUrl}/billing/success`,
+      returnUrl: `${shopUrl}/settings?billing=canceled`,
       // Copied onto the subscription, which is how its webhooks find the shop.
       metadata: { orgId: ctx.tenantId },
       allowDiscountCodes: true,

@@ -2,11 +2,11 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { FieldError } from "@/components/auth/auth-card";
+import { CheckInbox, VERIFY_CALLBACK_URL } from "@/components/auth/check-inbox";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,8 +19,9 @@ const schema = z.object({
 });
 
 export function SignUpForm({ defaultEmail = "" }: { defaultEmail?: string }) {
-  const router = useRouter();
   const [error, setError] = useState<string | null>(null);
+  const [sentTo, setSentTo] = useState<string | null>(null);
+  const [exists, setExists] = useState(false);
   const form = useForm<z.infer<typeof schema>>({
     resolver: zodResolver(schema),
     defaultValues: { name: "", email: defaultEmail, password: "" },
@@ -29,14 +30,23 @@ export function SignUpForm({ defaultEmail = "" }: { defaultEmail?: string }) {
 
   const onSubmit = form.handleSubmit(async (values) => {
     setError(null);
-    const { error } = await authClient.signUp.email(values);
+    const { error } = await authClient.signUp.email({ ...values, callbackURL: VERIFY_CALLBACK_URL });
     if (error) {
-      setError(error.message ?? "We couldn't create your account. Try again.");
+      if (error.code === "USER_ALREADY_EXISTS") {
+        form.setError("email", { message: "That email is already registered." });
+        setExists(true);
+        return;
+      }
+      setError(error.status === 429
+        ? "Too many attempts. Try again in an hour."
+        : error.message ?? "We couldn't create your account. Try again.");
       return;
     }
-    router.replace("/onboarding");
-    router.refresh();
+    // No session until the email is confirmed; the link in the email signs them in.
+    setSentTo(values.email);
   });
+
+  if (sentTo) return <CheckInbox email={sentTo} />;
 
   return (
     <form onSubmit={onSubmit} className="grid gap-4" noValidate>
@@ -49,6 +59,16 @@ export function SignUpForm({ defaultEmail = "" }: { defaultEmail?: string }) {
         <Label htmlFor="email">Email</Label>
         <Input id="email" type="email" autoComplete="email" {...form.register("email")} />
         <FieldError message={errors.email?.message} />
+        {exists && errors.email && (
+          <p className="text-sm text-muted-foreground">
+            <Link href="/sign-in" className="font-medium text-foreground underline underline-offset-4">Sign in</Link>
+            {" "}or{" "}
+            <Link href="/forgot-password" className="font-medium text-foreground underline underline-offset-4">
+              reset your password
+            </Link>
+            .
+          </p>
+        )}
       </div>
       <div className="grid gap-2">
         <Label htmlFor="password">Password</Label>

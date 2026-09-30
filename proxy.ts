@@ -4,7 +4,9 @@ import { NextResponse, type NextRequest } from "next/server";
 // Optimistic redirect only: it checks that a session cookie exists, not that it's valid.
 // Real authorization happens in every Convex function (convex/lib/tenant.ts).
 // /opengraph-image has no file extension, so the matcher below does not skip it.
-const PUBLIC_PATHS = new Set(["/", "/sign-in", "/sign-up", "/privacy", "/terms", "/opengraph-image"]);
+const PUBLIC_PATHS = new Set([
+  "/", "/sign-in", "/sign-up", "/forgot-password", "/reset-password", "/privacy", "/terms", "/opengraph-image",
+]);
 // The blog and the industry pages, with everything under them (articles, share images, RSS).
 const PUBLIC_SECTIONS = ["/blog", "/pos"];
 

@@ -50,12 +50,16 @@ export type PlanRow = { label: string; free: string | boolean; pro: string | boo
 export const PLAN_ROWS: PlanRow[] = [
   { label: "Record cash, GCash, Maya and card sales", free: true, pro: true },
   { label: "Split payments and e-wallet reference numbers", free: true, pro: true },
+  { label: "Payment photos saved with each sale", free: true, pro: true },
   { label: "Printed and digital receipts", free: true, pro: true },
+  { label: "VAT on or off, at your rate", free: true, pro: true },
+  { label: "Starter menus and CSV import", free: true, pro: true },
   { label: "Products", free: "Up to 50", pro: "Unlimited" },
   { label: "Stock tracking and ledger", free: true, pro: true },
   { label: "Dashboard history", free: "Last 7 days", pro: "All time" },
   { label: "Recipe costing and profit per item", free: false, pro: true },
   { label: "Margin and low-stock alerts", free: false, pro: true },
+  { label: "Loyalty stamp cards with signed stamps", free: false, pro: true },
   { label: "Staff accounts and roles", free: false, pro: "Soon" },
   { label: "CSV exports and full backup", free: false, pro: "Soon" },
 ];
@@ -77,6 +81,16 @@ export const FAQ: { category: FaqCategory; q: string; a: string }[] = [
     category: "General",
     q: "What devices do I need?",
     a: "Any tablet, phone or laptop with a modern browser. USB barcode scanners work out of the box, and receipts print on 58 mm or 80 mm thermal printers through the browser's print dialog.",
+  },
+  {
+    category: "General",
+    q: "How do loyalty cards work?",
+    a: "On Pro, you set up one stamp card for your shop: how many stamps fill it (3 to 20), the reward and the colour. Each customer gets a username and password and opens their card on their own phone, with no app to install. Your staff give a stamp against a paid receipt from the last 14 days, and the customer signs for it on screen. One stamp per sale, so stamps can't be copied or given twice.",
+  },
+  {
+    category: "General",
+    q: "Do I have to type in my whole menu?",
+    a: "No. Start from a café, bakery or grocery starter menu, or import your products from a CSV spreadsheet. If a row has a problem, Payspace tells you its row number so you can fix it in your sheet and import again.",
   },
   {
     category: "Pricing",

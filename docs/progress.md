@@ -4,6 +4,21 @@ Update this at the end of every session: tick what's done, note decisions and op
 
 ## Current status
 
+**Email verification and password reset, brought forward from Week 8 (2026-09-30).** Asked for directly; plan approved with `@convex-dev/resend`.
+- **Server (`convex/auth.ts`):** `requireEmailVerification: true`. Sign-up gives no session. Signing in unverified is refused with `EMAIL_NOT_VERIFIED` and sends a fresh link (`sendOnSignIn`). The link lasts 24 h and signs the user in (`autoSignInAfterVerification`), landing on `/sign-in`, which forwards to onboarding or their shop, or explains an expired/bad link. Password reset: 1 h links, and every session is revoked on reset. New rate limits: `/send-verification-email` 5/h, `/reset-password` 10/h.
+- **Email:** `@convex-dev/resend` mounted (`convex/emails.ts`, `testMode: false`), templates in `convex/lib/authEmails.ts` (inline-styled HTML plus text, names escaped). A daily cron (`internal.emails.cleanup`, 19:30 UTC) clears sent emails after 7 days, since they hold one-time links.
+- **UI:** sign-up ends on a "check your inbox" panel with a resend button (60 s cooldown, `components/auth/check-inbox.tsx`). Sign-in has "Forgot password?" and handles unverified accounts. New public pages `/forgot-password` (same answer whether or not the account exists) and `/reset-password`, both `noindex`.
+- **Existing accounts:** `convex/betterAuth/migrations.ts` (`markExistingUsersVerified`, takes a `before` cutoff) marked both dev accounts verified on 2026-09-30. **Run it once on production right after deploying** (command in the file).
+- **Checks:** 189 tests (4 new: templates and the migration cutoff), `tsc` and lint pass; deployed to dev. **No real email sent yet**: `RESEND_API_KEY` and `EMAIL_FROM` aren't set (see "Needs you"), and the flow wasn't clicked through in a browser.
+
+**Landing page updated with the recent features, asked for directly (2026-09-30).** Same Coca design, new content:
+- **Hero:** a "New · Loyalty stamp cards" pill linking to `#loyalty`. The tablet area now reserves 230 px, so on phones the tablet no longer covers the "Get started" button (it did before, too).
+- **Features:** a fifth row, "Loyalty cards that can't be faked" (`LoyaltyMockup` and `StampCardMockup` in `mockups.tsx`, badged "New · Pro"). Checkout copy mentions payment photos, and dashboard copy mentions busy hours.
+- **New section `components/marketing/whats-new.tsx`** ("New at the counter", `#new`), a bento between Features and Pricing: payment photos, busy-hours heatmap, starter menus and CSV import, and VAT on/off. All four are on both plans. The CSV illustration stays under the Free limit of 50 products.
+- **Plans table:** new rows for payment photos, VAT settings, starter menus and CSV import (both plans), and loyalty cards (Pro). Two new FAQ entries (loyalty, importing a menu). `llms.txt` lists loyalty and setup. The hero's `Chip` moved to `components/marketing/chip.tsx`.
+- **Fixed:** the Pro price showed "10" without the "$".
+- **Checks:** `tsc`, lint and `npm run build` pass. Checked in headless Chrome at 1440 px and at 390 px (mobile emulation, page exactly 390 px wide).
+
 **Loyalty cards, asked for directly (2026-09-28, Pro only).** Loyalty was "out of scope" in the MVP plan; built on request. Staff screen at `/[shop]/loyalty` (new rail item), customer page at `/loyalty/[shop]/[username]` (username from the link, password only), with `/loyalty/[shop]` as the shop-wide sign-in.
 - **Owner** sets up the card (`loyalty.saveProgram`): name, stamps to fill (3–20), reward, terms, colour, on/off.
 - **Any role** opens a card with a username and password and gives stamps; **owner and manager** reset passwords and archive cards. Customers can't change their own password.
@@ -124,14 +139,14 @@ Update this at the end of every session: tick what's done, note decisions and op
 **Needs you:**
 - **To click through anything locally** (raised 2026-09-18, and you chose to leave it for now): the dev deployment's `SITE_URL` is `https://www.payspace.shop`. `convex/auth.ts` passes it as Better Auth's `baseURL` and sets no `trustedOrigins`, so it is the only origin trusted, and signing in or up at `http://localhost:3000` returns 403 "Invalid origin". Either set it back (`npx convex env set SITE_URL http://localhost:3000`) while developing, or add localhost to `trustedOrigins` for dev deployments only. It was left alone because production may still be served off this dev deployment, where flipping it would break sign-in. The same 403 is also what makes the recorded smoke sign-in look like a wrong password — those credentials are probably fine.
 - **Before any production deploy:** set `AUTH_PROXY_SECRET` to the same random value in Vercel and in the production Convex deployment (`openssl rand -base64 32`). Without it, sign-in limits apply to the Next.js server's address instead of each visitor. It's already set on dev and in `.env.local`.
-- **Before pilots:** a Resend API key and sending domain, so email verification can be turned on.
+- **Now (verification is already on, on dev):** verify a sending domain in Resend, then `npx convex env set RESEND_API_KEY re_...` and `npx convex env set EMAIL_FROM "Payspace <no-reply@your-domain>"`. Until both are set, new sign-ups fail and nobody can get a reset link. Do the same on the production deployment.
 
 **Next up:** Week 5, shifts and selling operations. Checkout already opens a shift for the cashier on their first sale (float ₱0) and every sale points at a real one, so Week 5 adds opening with a float and closing with a blind count on top, plus voids, refunds with the manager PIN, parked orders, and the discounts held back from Week 4.
 
 ### Open questions
 - Development runs on the **cloud dev deployment** `dev:judicious-porcupine-20` (team anthony-333, project payspace).
 - `components/convex-client-provider.tsx` casts `authClient`: `@convex-dev/better-auth` 0.12.5 is typed against `better-auth` 1.6.15, and 1.6.31's session type no longer matches. Remove the cast when the component updates.
-- Email verification is off (`requireEmailVerification: false`) until Resend is wired up. It must be on before pilots.
+- Resend delivery webhooks (bounces, complaints) aren't set up; the component works without them. Add `/resend-webhook` and `RESEND_WEBHOOK_SECRET` if bounce tracking matters.
 - `modifiers.list` returns option recipe amounts to cashiers (the POS needs the options). They're quantities, not costs; revisit if recipes become sensitive.
 - Sign-in is limited per visitor, not per account, so a guesser spread across many IPs isn't slowed. Consider a per-email limit before launch.
 - The CSP allows `'unsafe-inline'` scripts because Next.js needs them without nonces. Nonces would make every page dynamic; revisit if a stricter policy is needed.
@@ -188,14 +203,14 @@ Update this at the end of every session: tick what's done, note decisions and op
 - [ ] Performance pass on a low-cost Android tablet
 
 ### Week 8: Pilot and launch
-- [ ] Production Convex, Vercel, Sentry, PostHog, scheduled backups; email verification on
+- [ ] Production Convex, Vercel, Sentry, PostHog, scheduled backups *(email verification and password reset built 2026-09-30; set the Resend variables on production and run the migration there)*
 - [ ] Onboard 3 to 5 pilot shops
 
 ## Backlog (before a real launch)
 - [ ] Landing page: replace the three **fictional testimonials** in `components/marketing/content.ts` with real pilot quotes (asked for as placeholders, 2026-09-27)
 - [x] Landing page: Free plan limits enforced and billing built (2026-09-28; Stripe, then switched to Polar the same day). "Go Pro" still goes to sign-up; upgrading happens in Settings
 - [ ] Polar: confirm payouts to a Philippine bank; in the sandbox create "Payspace Pro" ($10/month; created 2026-09-28, sandbox id `e41749b3-1247-4aa9-857d-998b3ed3a18c` set on dev with `POLAR_SERVER=sandbox`; the live product is `ef763ffb-ad15-414e-a3ce-1340c05d5bc5`, for production), an organization token and a webhook to `<convex site>/polar/events`; set `POLAR_ORGANIZATION_TOKEN`, `POLAR_WEBHOOK_SECRET`, `POLAR_PRO_PRODUCT_ID`, `POLAR_SERVER=sandbox`; then test checkout, portal and cancel end to end. Repeat on polar.sh with `POLAR_SERVER=production` for launch
-- [ ] Billing trusts the owner's sign-in, not their email (unverified). Turning on email verification (Week 8) would let us show "billing email" with confidence; update Terms/Privacy to name Polar as merchant of record
+- [ ] Billing trusts the owner's sign-in. Emails are verified from 2026-09-30 (older accounts were grandfathered), so "billing email" can now be shown; update Terms/Privacy to name Polar as merchant of record
 - [ ] Camera barcode scanning (`BarcodeDetector`, maybe `@zxing/browser`). Deferred on 2026-09-13; USB scanners work today.
 - [x] Clean up orphaned product photos in file storage (daily cron, 2026-09-14)
 - [ ] Senior Citizen / PWD discount: 20% off the VAT-exclusive price, VAT-exempt, applies only to the qualifying customer's items; needs ID number on the sale and its own receipt lines
@@ -278,3 +293,6 @@ Update this at the end of every session: tick what's done, note decisions and op
 - 2026-09-28: **Cards stay viewable after a shop leaves Pro;** only changing them (program, cards, stamps, rewards, resets) needs Pro. A new stamp count applies from each card's next round (cards copy `stampsRequired` when a round starts), so nobody is moved further from a reward. Archived cards keep their username, so an old history never shows up under someone new. `loyalty` is a reserved slug, `/loyalty/` is public in `proxy.ts` and disallowed in `robots.ts`.
 - 2026-09-28: **Signatures are vector strokes, not images:** no file storage, no cleanup job, crisp at any size. Bounded to 60 strokes and 6,000 numbers (about 50 KB), inside the 300×150 box, pen width 0.8–5, and at least 60 units of ink so a dot or a tick is refused. The dialogs for signing and resetting are rendered beside the card sheet rather than inside it (the 2026-09-18 lost-clicks lesson).
 - 2026-09-30: **The Pro free trial is 1 month, not 14 days.** Polar Checkout gets `trialInterval: "month"` with `TRIAL_MONTHS` (`convex/lib/plan.ts`), and the pricing page, FAQ, `llms.txt` and billing card say "1-month free trial" (`PRO_PRICE.trialMonths`). The 14-day window for loyalty stamps is a separate rule and is unchanged.
+- 2026-09-30: **Email verification is required, and `@convex-dev/resend` is added** (approved) to send it and password resets; staff invites and emailed receipts can reuse it. Accounts made before the switch were **marked verified** rather than asked to verify (user's choice). The Better Auth hooks call `resend.sendEmail` directly from the HTTP action, which only queues the email, so sign-up doesn't wait on Resend. The migration lives in the local `betterAuth` component because components can't `paginate()`; it walks users by `_creationTime`.
+- 2026-09-30: **Sign-up says "That email is already registered."** (user's call). With verification on, Better Auth answers a duplicate sign-up with a fake success and sends nothing, so a `hooks.before` on `/sign-up/email` (`convex/auth.ts`) returns 422 `USER_ALREADY_EXISTS` first, and the form links to sign-in and password reset. Trade-off accepted: the form now reveals whether an address has an account; the sign-up limit (10 an hour per visitor) keeps that slow.
+- 2026-09-30: **A paid Polar checkout lands on `/[shop]/billing/success`,** not back on settings with a toast. It is full screen, outside the `(manage)` app shell, styled like the landing hero and bento, and fires a hand-rolled canvas confetti (`components/shop/confetti.tsx`, no dependency, skipped under reduced motion) once the shop turns Pro. The page waits on the live `billing.status` query until the webhook turns the shop Pro, then shows the welcome (trial end or renewal date, unlocked features). After 30 seconds it says Pro will switch on by itself. It is owner-only, like settings. A canceled checkout still returns to `settings?billing=canceled`.

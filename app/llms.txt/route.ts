@@ -27,6 +27,8 @@ ${SITE_NAME} is a web-based point of sale (POS) system for small businesses in t
 - Receipts: print on 58 mm or 80 mm thermal printers, or share a digital receipt link.
 - Stock: every sale, delivery, spoilage and count is written to a stock ledger; low-stock alerts.
 - Dashboard: sales, profit and margin compared with the same day last week, best sellers by profit, busy hours and payment mix, updated live.
+- Loyalty stamp cards (Pro): customers open their card on their own phone; each stamp needs a paid receipt and the customer's on-screen signature.
+- Setup: café, bakery and grocery starter menus, or CSV import with errors reported by spreadsheet row.
 - Runs in the browser on any tablet, phone or laptop. Nothing to install.
 - Each shop's data is kept separate, and access is checked on every request.
 
