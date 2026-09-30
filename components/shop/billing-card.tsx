@@ -107,7 +107,7 @@ export function BillingCard({ timezone }: { timezone: string }) {
           <Button size="lg" className="h-11 px-5" disabled={busy !== null} onClick={() => go("checkout")}>
             {busy === "checkout"
               ? "Opening checkout…"
-              : details?.canTrial ? `Start ${plan.trialDays}-day free trial` : "Upgrade to Pro"}
+              : details?.canTrial ? `Start ${plan.trialMonths}-month free trial` : "Upgrade to Pro"}
           </Button>
         )}
         {details?.hasBillingAccount && (
@@ -123,7 +123,7 @@ export function BillingCard({ timezone }: { timezone: string }) {
         )}
       </div>
       <p className="text-xs text-muted-foreground">
-        {!pro && details?.canTrial && `You won't be charged until the ${plan.trialDays}-day trial ends, and you can cancel before then. `}
+        {!pro && details?.canTrial && `You won't be charged until the ${plan.trialMonths}-month trial ends, and you can cancel before then. `}
         Payments are handled by Polar and charged in US dollars. Downgrading never deletes your data.
       </p>
     </section>

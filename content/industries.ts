@@ -65,7 +65,7 @@ export const INDUSTRIES: Industry[] = [
     faqs: [
       { q: "Can Payspace handle drink sizes and add-ons?", a: "Yes. Sizes and add-ons are modifier options. Each option can change the price and the recipe, so a large oat latte uses more milk and the right kind, and its cost is worked out correctly." },
       { q: "Does it work on an iPad or Android tablet?", a: "Yes. Payspace runs in the browser on any tablet, phone or laptop, so there's nothing to install. USB barcode scanners and 58 mm or 80 mm thermal printers work through the browser." },
-      { q: "Is recipe costing on the free plan?", a: `Recipe costing and profit per item are part of Pro, at ${PRO_PRICE_TEXT}, with a 14-day free trial. The free plan covers checkout, receipts and stock for up to 50 products.` },
+      { q: "Is recipe costing on the free plan?", a: `Recipe costing and profit per item are part of Pro, at ${PRO_PRICE_TEXT}, with a 1-month free trial. The free plan covers checkout, receipts and stock for up to 50 products.` },
     ],
     guides: ["how-to-compute-food-cost-per-drink", "markup-vs-margin-pricing", "gcash-maya-payments-end-of-day"],
   },

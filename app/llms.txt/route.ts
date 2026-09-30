@@ -33,7 +33,7 @@ ${SITE_NAME} is a web-based point of sale (POS) system for small businesses in t
 ## Pricing
 
 - Free: $0, no card needed.
-- Pro: US${PRO_PRICE.usd} (about ₱${PRO_PRICE.phpApprox}) per shop per month, with a ${PRO_PRICE.trialDays}-day free trial. Billed per location, not per cashier.
+- Pro: US${PRO_PRICE.usd} (about ₱${PRO_PRICE.phpApprox}) per shop per month, with a ${PRO_PRICE.trialMonths}-month free trial. Billed per location, not per cashier.
 
 | Feature | Free | Pro |
 | --- | --- | --- |

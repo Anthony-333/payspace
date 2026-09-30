@@ -6,7 +6,7 @@ import { customerSessionsCreate } from "@polar-sh/sdk/funcs/customerSessionsCrea
 import { ConvexError, v } from "convex/values";
 import { internal } from "./_generated/api";
 import { internalMutation } from "./_generated/server";
-import { FREE_LIMITS, isPro, isProStatus, TRIAL_DAYS } from "./lib/plan";
+import { FREE_LIMITS, isPro, isProStatus, TRIAL_MONTHS } from "./lib/plan";
 import { requireRole, tenantAction, tenantQuery, type TenantActionCtx } from "./lib/tenant";
 
 // Pro subscriptions through Polar, the merchant of record. One subscription per shop, carrying
@@ -28,7 +28,7 @@ export const status = tenantQuery({
     return {
       plan: pro ? ("pro" as const) : ("free" as const),
       limits: FREE_LIMITS,
-      trialDays: TRIAL_DAYS,
+      trialMonths: TRIAL_MONTHS,
       details: ctx.member.role !== "owner" ? null : {
         status: sub?.status ?? null,
         trialEnd: sub?.status === "trialing" ? (sub.trialEnd ?? null) : null,
@@ -76,7 +76,7 @@ export const startCheckout = tenantAction({
       // Copied onto the subscription, which is how its webhooks find the shop.
       metadata: { orgId: ctx.tenantId },
       allowDiscountCodes: true,
-      ...(!ctx.tenant.billing?.trialUsed && { trialInterval: "day" as const, trialIntervalCount: TRIAL_DAYS }),
+      ...(!ctx.tenant.billing?.trialUsed && { trialInterval: "month" as const, trialIntervalCount: TRIAL_MONTHS }),
     });
     if (!checkout.ok) polarFailed("checkout", checkout.error);
     return checkout.value.url;

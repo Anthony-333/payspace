@@ -8,7 +8,7 @@ import type { TenantQueryCtx } from "./tenant";
 // costs no extra reads. Every limit is enforced here, on the server; the UI only explains it.
 
 export const FREE_LIMITS = { products: 50, historyDays: 7 } as const;
-export const TRIAL_DAYS = 14;
+export const TRIAL_MONTHS = 1;
 
 // past_due stays Pro while Polar retries the card. unpaid, canceled, incomplete and paused don't.
 const PRO_STATUSES = new Set(["active", "trialing", "past_due"]);

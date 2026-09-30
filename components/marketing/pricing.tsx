@@ -39,7 +39,7 @@ export function Pricing({ ctaHref }: { ctaHref: string }) {
             <tr>
               <th scope="row" className="border-b py-6 font-medium">Price</th>
               <PriceCell tint="green" amount="$0" note="forever" />
-              <PriceCell tint="peach" amount={`${PRO_PRICE.usd}`} note="/month per shop" sub={`about ₱${PRO_PRICE.phpApprox} · ${PRO_PRICE.trialDays}-day free trial`} />
+              <PriceCell tint="peach" amount={`${PRO_PRICE.usd}`} note="/month per shop" sub={`about ₱${PRO_PRICE.phpApprox} · ${PRO_PRICE.trialMonths}-month free trial`} />
             </tr>
             {PLAN_ROWS.map((row) => (
               <tr key={row.label}>
