@@ -5,6 +5,7 @@ import {
   ChartLine,
   Boxes,
   Check,
+  Compass,
   LayoutDashboard,
   LoaderCircle,
   LogOut,
@@ -25,6 +26,7 @@ import Link, { useLinkStatus } from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createContext, useContext, useRef, useState, type ReactNode } from "react";
 import { canManage, useShop, type Shop } from "@/components/shop/shop-provider";
+import { TourProvider, useTour } from "@/components/tour/tour-provider";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -88,6 +90,14 @@ export function useShellSearch() {
 }
 
 export function AppShell({ children }: { children: ReactNode }) {
+  return (
+    <TourProvider>
+      <Shell>{children}</Shell>
+    </TourProvider>
+  );
+}
+
+function Shell({ children }: { children: ReactNode }) {
   const shop = useShop();
   const pathname = usePathname();
   const base = `/${shop.slug}`;
@@ -129,6 +139,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                   <Link
                     href={base + item.href}
                     aria-label={item.label}
+                    data-tour={`nav-${item.href}`}
                     aria-current={isActive(item) ? "page" : undefined}
                     className={cn(
                       "flex size-12 items-center justify-center rounded-full transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
@@ -185,6 +196,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               type="button"
               onClick={() => setMenuOpen(true)}
               aria-label="Open menu"
+              data-tour="nav-menu"
               className="flex size-11 items-center justify-center rounded-full text-muted-foreground hover:bg-muted md:hidden"
             >
               <Menu className="size-5" />
@@ -255,9 +267,10 @@ function initials(name: string) {
 
 function ProfileMenu({ shop }: { shop: Shop }) {
   const shops = useQuery(api.tenants.mine, {});
+  const tour = useTour();
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger className="ml-auto flex items-center gap-3 rounded-full p-1 pr-4 text-left outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50">
+      <DropdownMenuTrigger data-tour="profile" className="ml-auto flex items-center gap-3 rounded-full p-1 pr-4 text-left outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50">
         <span className="flex size-11 items-center justify-center rounded-full bg-accent text-sm font-semibold text-accent-foreground">
           {initials(shop.memberName)}
         </span>
@@ -279,6 +292,9 @@ function ProfileMenu({ shop }: { shop: Shop }) {
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
           <Link href="/onboarding"><Plus /> Create another shop</Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem onSelect={tour.start}>
+          <Compass /> Take the tour
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

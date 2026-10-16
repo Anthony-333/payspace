@@ -112,7 +112,7 @@ export function PosScreen() {
 
   return (
     <div className="flex lg:h-[calc(100dvh-4.5rem)]">
-      <div className="min-w-0 flex-1 overflow-y-auto p-4 pb-28 sm:p-6 lg:pb-6">
+      <div data-tour="pos-menu" className="min-w-0 flex-1 overflow-y-auto p-4 pb-28 sm:p-6 lg:pb-6">
         {/* Category tiles */}
         <div className="-mx-4 flex gap-3 overflow-x-auto px-4 pb-1 sm:mx-0 sm:grid sm:grid-cols-2 sm:gap-4 sm:overflow-visible sm:px-0 lg:grid-cols-3 2xl:grid-cols-4">
           <CategoryTile
@@ -190,11 +190,11 @@ export function PosScreen() {
       </div>
 
       {/* Invoice: a column on large screens, a bottom bar and sheet below that */}
-      <div className="hidden w-80 shrink-0 py-4 pr-4 lg:flex xl:w-[23.75rem] xl:py-6 xl:pr-6">
+      <div data-tour="pos-order" className="hidden w-80 shrink-0 py-4 pr-4 lg:flex xl:w-[23.75rem] xl:py-6 xl:pr-6">
         <InvoicePanel invoice={invoice} tenant={tenant} onPlaceOrder={placeOrder} className="w-full" />
       </div>
 
-      <div className="fixed inset-x-0 bottom-0 z-30 border-t bg-card p-3 lg:hidden">
+      <div data-tour="pos-order" className="fixed inset-x-0 bottom-0 z-30 border-t bg-card p-3 lg:hidden">
         <Button size="lg" className="h-13 w-full justify-between px-5 text-base font-semibold" onClick={() => setOrderOpen(true)}>
           <span>{invoice.itemCount} {invoice.itemCount === 1 ? "item" : "items"}</span>
           <span>View order · {formatMoney(invoice.subtotal)}</span>

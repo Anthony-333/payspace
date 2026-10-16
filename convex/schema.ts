@@ -55,6 +55,7 @@ export default defineSchema({
     role,
     status: v.union(v.literal("active"), v.literal("disabled")),
     pinHash: v.optional(v.string()), // manager overrides at the counter
+    tourCompletedAt: v.optional(v.number()), // finished or skipped the welcome tour
   })
     .index("by_tenant_user", ["tenantId", "userId"])
     .index("by_user", ["userId"]),
