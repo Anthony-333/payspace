@@ -2,6 +2,7 @@
 
 import { useAction } from "convex/react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import posthog from "posthog-js";
 import { useEffect, useState } from "react";
 import { Check, CreditCard } from "lucide-react";
 import { FieldError } from "@/components/auth/auth-card";
@@ -49,6 +50,9 @@ export function BillingCard({ timezone }: { timezone: string }) {
     setBusy(kind);
     try {
       const url = await (kind === "checkout" ? startCheckout : openPortal)({ tenantId: shop.tenantId });
+      if (kind === "checkout") {
+        posthog.capture("billing_checkout_started", { is_trial: Boolean(plan?.details?.canTrial) });
+      }
       window.location.assign(url);
     } catch (err) {
       setError(errorMessage(err));

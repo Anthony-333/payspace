@@ -3,6 +3,7 @@
 import { useMutation } from "convex/react";
 import { Banknote, Check, CreditCard, Delete, Printer, Receipt, Smartphone, X } from "lucide-react";
 import Link from "next/link";
+import posthog from "posthog-js";
 import { useState } from "react";
 import { toast } from "sonner";
 import { useCartStore, type PayMethod } from "@/components/pos/cart-store";
@@ -215,6 +216,14 @@ export function PaySheet({ open, onOpenChange, lines, total, itemCount }: {
           optionKeys: line.options,
         })),
         payments,
+      });
+      posthog.capture("sale_completed", {
+        item_count: itemCount,
+        line_count: lines.length,
+        sale_total: sale.total,
+        payment_methods: [...new Set(payments.map((payment) => payment.method))],
+        payment_count: payments.length,
+        change_given: sale.changeGiven > 0,
       });
       setDone({
         number: sale.number,

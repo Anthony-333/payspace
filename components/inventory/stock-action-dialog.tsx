@@ -1,6 +1,7 @@
 "use client";
 
 import { useMutation } from "convex/react";
+import posthog from "posthog-js";
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import type { StockItem } from "@/components/inventory/stock-parts";
@@ -53,9 +54,14 @@ function ActionForm({ action, onClose }: { action: StockAction; onClose: () => v
       const args = { tenantId: shop.tenantId, stockItemId: item._id, note: note.trim() || undefined };
       if (waste) {
         await logWaste({ ...args, qty });
+        posthog.capture("inventory_waste_logged", { quantity: qty });
         toast.success(`Logged ${formatQty(qty, item.baseUnit)} of ${item.name} as waste.`);
       } else {
         const result = await adjust({ ...args, counted: qty });
+        posthog.capture("inventory_adjusted", {
+          quantity: qty,
+          adjustment_direction: result.diff > 0 ? "increase" : result.diff < 0 ? "decrease" : "unchanged",
+        });
         toast.success(result.diff === 0 ? `${item.name} was already right.` : `Updated ${item.name} to ${formatQty(qty, item.baseUnit)}.`);
       }
       onClose();

@@ -3,6 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
+import posthog from "posthog-js";
 import { useEffect } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
@@ -61,6 +62,12 @@ export function ProgramDialog({ open, program, onClose }: { open: boolean; progr
   const onSubmit = form.handleSubmit(async (values) => {
     try {
       await save({ tenantId: shop.tenantId, ...values });
+      posthog.capture("loyalty_program_saved", {
+        action: program ? "updated" : "created",
+        stamps_required: values.stampsRequired,
+        is_active: values.isActive,
+        color: values.color,
+      });
       toast.success("Loyalty card saved.");
       onClose();
     } catch (err) {

@@ -2,7 +2,8 @@
 
 import { ConvexBetterAuthProvider, type AuthClient } from "@convex-dev/better-auth/react";
 import { ConvexReactClient } from "convex/react";
-import type { ReactNode } from "react";
+import posthog from "posthog-js";
+import { useEffect, type ReactNode } from "react";
 import { authClient } from "@/lib/auth-client";
 import "@/lib/zod-config";
 
@@ -23,7 +24,33 @@ export function ConvexClientProvider({
 }) {
   return (
     <ConvexBetterAuthProvider client={convex} authClient={client} initialToken={initialToken}>
+      <PostHogIdentity />
       {children}
     </ConvexBetterAuthProvider>
   );
+}
+
+/**
+ * Keeps browser analytics attached to the signed-in Better Auth user, by id only (no email or name).
+ * Compares against PostHog's persisted identity rather than this page load's, so a session that
+ * expired while the tab was closed, or another staff member on a shared tablet, starts clean.
+ */
+function PostHogIdentity() {
+  const { data: session, isPending } = authClient.useSession();
+  const userId = session?.user.id;
+
+  useEffect(() => {
+    if (isPending || !posthog.__loaded) return;
+
+    const identified = posthog._isIdentified();
+    if (!userId) {
+      if (identified) posthog.reset();
+      return;
+    }
+    if (identified && posthog.get_distinct_id() === userId) return;
+    if (identified) posthog.reset();
+    posthog.identify(userId);
+  }, [isPending, userId]);
+
+  return null;
 }

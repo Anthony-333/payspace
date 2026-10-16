@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
 import { ImagePlus, X } from "lucide-react";
+import posthog from "posthog-js";
 import { useEffect, useRef, useState } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
@@ -174,11 +175,20 @@ function ProductForm({ product, categories, groups, tenant, onDone }: FormProps)
         // Only send the recipe for a new product, or when the saved one was loaded and changed.
         recipe: values.kind === "recipe" && (!product || editedRecipe !== null) ? recipe.lines : undefined,
       };
+      const eventProperties = {
+        product_kind: values.kind,
+        has_category: values.categoryId !== NO_CATEGORY,
+        has_barcode: Boolean(values.barcode),
+        has_image: Boolean(imageId),
+        modifier_group_count: values.modifierGroupIds.length,
+      };
       if (product) {
         await update({ ...fields, productId: product._id });
+        posthog.capture("product_updated", eventProperties);
         toast.success(`Saved ${values.name}.`);
       } else {
         await create({ ...fields, kind: values.kind });
+        posthog.capture("product_created", eventProperties);
         toast.success(`Added ${values.name}.`);
       }
       onDone();

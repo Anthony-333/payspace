@@ -2,6 +2,7 @@
 
 import { useMutation } from "convex/react";
 import { Plus, Trash2 } from "lucide-react";
+import posthog from "posthog-js";
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { formatUnitCost, type StockItem } from "@/components/inventory/stock-parts";
@@ -85,6 +86,7 @@ function ReceiveForm({ items, initialItem, onDone }: Omit<Props, "open" | "onOpe
           totalCost: p.total!,
         })),
       });
+      posthog.capture("stock_received", { line_count: filled.length });
       toast.success(`Received ${filled.length} ${filled.length === 1 ? "item" : "items"}. Product costs update in a moment.`);
       onDone();
     } catch (err) {

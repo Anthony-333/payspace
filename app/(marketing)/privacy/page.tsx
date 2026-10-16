@@ -13,7 +13,7 @@ export default function PrivacyPage() {
   return (
     <LegalPage
       title="Privacy Policy"
-      effectiveDate="September 27, 2026"
+      effectiveDate="October 17, 2026"
       intro={
         <p>
           Payspace is a point of sale for small businesses. This policy explains what personal information we collect when
@@ -70,8 +70,16 @@ export default function PrivacyPage() {
             session cookies that keep you signed in.
           </li>
           <li>
-            <strong>Usage statistics:</strong> privacy-friendly, aggregated page-view and performance measurements from
-            Vercel Analytics and Speed Insights. These do not use cookies or build a profile of you.
+            <strong>Usage statistics:</strong> aggregated page-view and performance measurements from Vercel Analytics
+            and Speed Insights, which do not use cookies.
+          </li>
+          <li>
+            <strong>Product analytics and error reports:</strong> through PostHog, the pages you open, the buttons you
+            click, which features you use (for example, that a sale was completed, with its item count, payment methods
+            and total) and errors the app runs into, together with your browser and device type. When you are signed in
+            these are linked to your account&rsquo;s internal ID, not to your name or email. We hide on-screen text from
+            these measurements, remove private links such as digital receipt and password-reset links, and do not record
+            your screen, so your customers&rsquo; names and contact details are not sent.
           </li>
         </ul>
       </LegalSection>
@@ -90,7 +98,10 @@ export default function PrivacyPage() {
             To send service messages such as account verification, password resets and staff invitations. These are
             part of the service; we do not send marketing email without your consent.
           </li>
-          <li>To understand, in aggregate, how Payspace is used so we can make it faster and better.</li>
+          <li>
+            To understand how Payspace is used, and to find and fix errors, so we can make it faster and better. This
+            is our legitimate interest in improving the service; you can object to it as described below.
+          </li>
           <li>To meet legal obligations and respond to lawful requests from authorities.</li>
         </ul>
         <p>We do not sell personal information, and we do not use it for advertising.</p>
@@ -111,6 +122,10 @@ export default function PrivacyPage() {
           </li>
           <li>
             <strong>Vercel</strong> hosts the website and provides the usage statistics described above.
+          </li>
+          <li>
+            <strong>PostHog</strong> provides the product analytics and error reports described above, on servers in
+            the United States.
           </li>
           <li>
             <strong>An email delivery provider</strong> sends account and service emails, once those emails are
@@ -175,8 +190,10 @@ export default function PrivacyPage() {
 
       <LegalSection id="cookies" title="10. Cookies">
         <p>
-          We use only the cookies needed to keep you signed in and to protect your session. We do not use advertising or
-          cross-site tracking cookies.
+          We use cookies to keep you signed in and to protect your session. PostHog also stores an identifier in a
+          first-party cookie and in your browser&rsquo;s local storage, so that visits from the same browser count
+          together in our product analytics. We do not use advertising or cross-site tracking cookies. You can clear or
+          block these in your browser settings, or ask us at <ContactLink /> to stop analytics for your account.
         </p>
       </LegalSection>
 

@@ -3,6 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "convex/react";
 import { useRouter } from "next/navigation";
+import posthog from "posthog-js";
 import { useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
@@ -63,6 +64,11 @@ export function OnboardingForm() {
       setError(errorMessage(err));
       return;
     }
+    posthog.capture("shop_created", {
+      business_type: values.businessType,
+      starter_menu_enabled: starterMenu && values.businessType !== "retail",
+      prices_include_tax: values.pricesIncludeTax,
+    });
     if (starterMenu && values.businessType !== "retail") {
       // The shop exists either way; if this fails, the home page still offers the starter menu.
       try {

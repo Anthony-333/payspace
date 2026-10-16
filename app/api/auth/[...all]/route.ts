@@ -1,5 +1,7 @@
+import { after } from "next/server";
 import { firstForwardedIp, signClientIp } from "@/convex/lib/clientIp";
 import { handler } from "@/lib/auth-server";
+import { emitPostHogLog, flushPostHogLogs } from "@/instrumentation";
 
 // Next hands route handlers a Proxy around the request so it can track dynamic access. Native
 // Request methods read private fields (`#state`, in the undici that ships with Node 24), and a
@@ -32,9 +34,23 @@ async function withClientIp(request: Request) {
 }
 
 export async function GET(request: Request) {
-  return handler.GET(await withClientIp(request));
+  const response = await handler.GET(await withClientIp(request));
+  emitPostHogLog("auth_request_completed", {
+    auth_request_method: "GET",
+    auth_request_succeeded: response.ok,
+    http_response_status: response.status,
+  });
+  after(flushPostHogLogs);
+  return response;
 }
 
 export async function POST(request: Request) {
-  return handler.POST(await withClientIp(request));
+  const response = await handler.POST(await withClientIp(request));
+  emitPostHogLog("auth_request_completed", {
+    auth_request_method: "POST",
+    auth_request_succeeded: response.ok,
+    http_response_status: response.status,
+  });
+  after(flushPostHogLogs);
+  return response;
 }

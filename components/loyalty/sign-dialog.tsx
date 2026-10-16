@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery } from "convex/react";
 import { BadgeCheck, Check, CircleAlert, PenLine } from "lucide-react";
+import posthog from "posthog-js";
 import { useState } from "react";
 import { toast } from "sonner";
 import { SignaturePad } from "@/components/loyalty/signature-pad";
@@ -78,9 +79,15 @@ function SignForm({ mode, card, saleNumber, onClose, onDone }: Props) {
     try {
       if (mode === "stamp") {
         const res = await addStamp({ tenantId: shop.tenantId, cardId: card._id, saleNumber: number!, signature, note: note || undefined });
+        posthog.capture("loyalty_stamp_awarded", {
+          stamps: res.stamps,
+          stamps_required: res.stampsRequired,
+          card_full: res.full,
+        });
         toast.success(res.full ? `Stamp ${res.stamps} of ${res.stampsRequired}. The card is full: the reward is ready.` : `Stamp ${res.stamps} of ${res.stampsRequired} given.`);
       } else {
         await redeem({ tenantId: shop.tenantId, cardId: card._id, signature, note: note || undefined });
+        posthog.capture("loyalty_reward_redeemed");
         toast.success(`Reward given to ${card.name}. A new card has started.`);
       }
       onDone?.();
