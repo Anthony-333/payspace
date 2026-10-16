@@ -7,6 +7,8 @@ const host = process.env.NEXT_PUBLIC_POSTHOG_HOST;
 if (projectToken && host) {
   posthog.init(projectToken, {
     api_host: host,
+    // The host can be our managed reverse proxy (t.payspace.shop); links into PostHog still go to the app.
+    ui_host: "https://us.posthog.com",
     defaults: "2026-01-30",
     capture_exceptions: true,
     // POS screens show loyalty customers' names and phone numbers. Keep screen recordings off and
