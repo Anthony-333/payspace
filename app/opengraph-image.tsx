@@ -9,6 +9,6 @@ export default function OpengraphImage() {
   return ogCard({
     eyebrow: "The point of sale for coffee shops, bakeries and small stores",
     title: "Know the real profit on everything you sell",
-    tags: ["Recipe costing", "GCash & Maya", "Stock ledger", "VAT receipts"],
+    tags: ["Recipe costing", "Any currency", "Stock ledger", "Tax-ready receipts"],
   });
 }

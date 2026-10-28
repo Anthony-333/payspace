@@ -68,14 +68,14 @@ function Rail({ active }: { active: number }) {
 }
 
 const TILES: { name: string; price: string; icon: LucideIcon; tint: string }[] = [
-  { name: "Spanish latte", price: "₱140", icon: Coffee, tint: "bg-tint-peach text-tint-peach-foreground" },
-  { name: "Ensaymada", price: "₱65", icon: Croissant, tint: "bg-tint-green text-tint-green-foreground" },
-  { name: "Iced matcha", price: "₱155", icon: CupSoda, tint: "bg-tint-green text-tint-green-foreground" },
-  { name: "Ube donut", price: "₱55", icon: Donut, tint: "bg-tint-violet text-tint-violet-foreground" },
-  { name: "Clubhouse", price: "₱185", icon: Sandwich, tint: "bg-tint-blue text-tint-blue-foreground" },
-  { name: "Choco cookie", price: "₱45", icon: Cookie, tint: "bg-tint-peach text-tint-peach-foreground" },
-  { name: "Fresh milk", price: "₱95", icon: Milk, tint: "bg-tint-blue text-tint-blue-foreground" },
-  { name: "Americano", price: "₱110", icon: Coffee, tint: "bg-tint-violet text-tint-violet-foreground" },
+  { name: "Spanish latte", price: "$5.25", icon: Coffee, tint: "bg-tint-peach text-tint-peach-foreground" },
+  { name: "Croissant", price: "$3.75", icon: Croissant, tint: "bg-tint-green text-tint-green-foreground" },
+  { name: "Iced matcha", price: "$5.50", icon: CupSoda, tint: "bg-tint-green text-tint-green-foreground" },
+  { name: "Glazed donut", price: "$2.50", icon: Donut, tint: "bg-tint-violet text-tint-violet-foreground" },
+  { name: "Club sandwich", price: "$8.50", icon: Sandwich, tint: "bg-tint-blue text-tint-blue-foreground" },
+  { name: "Choco cookie", price: "$2.25", icon: Cookie, tint: "bg-tint-peach text-tint-peach-foreground" },
+  { name: "Fresh milk", price: "$3.25", icon: Milk, tint: "bg-tint-blue text-tint-blue-foreground" },
+  { name: "Americano", price: "$3.50", icon: Coffee, tint: "bg-tint-violet text-tint-violet-foreground" },
 ];
 
 export function PosMockup() {
@@ -114,9 +114,9 @@ export function PosMockup() {
       <div className="flex w-[34%] shrink-0 flex-col gap-1.5 border-l bg-card p-2.5">
         <div className="font-bold">Order #0142</div>
         {[
-          ["2× Spanish latte", "₱280"],
-          ["1× Ensaymada", "₱65"],
-          ["1× Choco cookie", "₱45"],
+          ["2× Spanish latte", "$10.50"],
+          ["1× Croissant", "$3.75"],
+          ["1× Choco cookie", "$2.25"],
         ].map(([n, p]) => (
           <div key={n} className="flex justify-between gap-1 border-b border-dashed pb-1">
             <span className="truncate">{n}</span>
@@ -125,23 +125,23 @@ export function PosMockup() {
         ))}
         <div className="mt-auto space-y-0.5 text-muted-foreground">
           <div className="flex justify-between">
-            <span>VAT (incl.)</span>
-            <span>₱41.79</span>
+            <span>Tax (incl.)</span>
+            <span>$1.50</span>
           </div>
           <div className="flex justify-between font-bold text-foreground">
             <span>Total</span>
-            <span>₱390.00</span>
+            <span>$16.50</span>
           </div>
         </div>
         <div className="grid grid-cols-3 gap-0.5 rounded-[6px] bg-muted p-0.5 text-center">
-          {["Cash", "GCash", "Card"].map((m, i) => (
+          {["Cash", "E-wallet", "Card"].map((m, i) => (
             <span key={m} className={cn("rounded py-0.5", i === 1 && "bg-card text-primary")}>
               {m}
             </span>
           ))}
         </div>
         <div className="rounded-[6px] bg-primary py-1.5 text-center font-bold text-primary-foreground">
-          Charge ₱390.00
+          Charge $16.50
         </div>
       </div>
     </div>
@@ -158,8 +158,8 @@ export function DashboardMockup() {
         <div className="text-[11px] font-bold">Today</div>
         <div className="grid grid-cols-3 gap-1.5">
           {[
-            ["Sales", "₱24,380", "+12%"],
-            ["Profit", "₱15,120", "+9%"],
+            ["Sales", "$2,438", "+12%"],
+            ["Profit", "$1,512", "+9%"],
             ["Margin", "62%", "+2 pts"],
           ].map(([k, v, d]) => (
             <div key={k} className="rounded-[8px] bg-card p-2">
@@ -185,10 +185,10 @@ export function DashboardMockup() {
           <div className="col-span-2 space-y-1 rounded-[8px] bg-card p-2">
             <div className="font-semibold">Top by profit</div>
             {[
-              ["Spanish latte", "₱4,060"],
-              ["Iced matcha", "₱3,410"],
-              ["Ensaymada", "₱1,880"],
-              ["Clubhouse", "₱1,520"],
+              ["Spanish latte", "$406"],
+              ["Iced matcha", "$341"],
+              ["Croissant", "$188"],
+              ["Club sandwich", "$152"],
             ].map(([n, p]) => (
               <div key={n} className="flex justify-between gap-1">
                 <span className="truncate">{n}</span>
@@ -204,10 +204,10 @@ export function DashboardMockup() {
 
 export function RecipeMockup() {
   const lines = [
-    ["Espresso beans", "18 g", "₱14.40"],
-    ["Fresh milk", "180 ml", "₱12.60"],
-    ["Condensed milk", "30 ml", "₱6.00"],
-    ["Cup and lid", "1 pc", "₱5.50"],
+    ["Espresso beans", "18 g", "$0.72"],
+    ["Fresh milk", "180 ml", "$0.27"],
+    ["Condensed milk", "30 ml", "$0.18"],
+    ["Cup and lid", "1 pc", "$0.28"],
   ];
   return (
     <div className="flex h-full text-[9px] leading-tight">
@@ -216,7 +216,7 @@ export function RecipeMockup() {
         <div className="flex items-center justify-between">
           <div className="text-[11px] font-bold">Spanish latte · recipe</div>
           <span className="rounded-full bg-tint-green px-2 py-0.5 font-semibold text-tint-green-foreground">
-            72.5% margin
+            72.4% margin
           </span>
         </div>
         <div className="rounded-[8px] bg-card p-2">
@@ -235,9 +235,9 @@ export function RecipeMockup() {
         </div>
         <div className="grid grid-cols-3 gap-1.5">
           {[
-            ["Cost", "₱38.50"],
-            ["Price", "₱140.00"],
-            ["Profit", "₱101.50"],
+            ["Cost", "$1.45"],
+            ["Price", "$5.25"],
+            ["Profit", "$3.80"],
           ].map(([k, v], i) => (
             <div key={k} className={cn("rounded-[8px] p-2", i === 2 ? "bg-primary text-primary-foreground" : "bg-card")}>
               <div className={i === 2 ? "opacity-80" : "text-muted-foreground"}>{k}</div>
@@ -252,11 +252,11 @@ export function RecipeMockup() {
 
 export function StockMockup() {
   const rows: [string, string, string, boolean][] = [
-    ["Fresh milk", "4.2 L", "₱70.00 / L", false],
-    ["Espresso beans", "0.6 kg", "₱800.00 / kg", true],
-    ["Cup and lid 16 oz", "320 pc", "₱5.50 / pc", false],
-    ["Condensed milk", "1.1 L", "₱200.00 / L", false],
-    ["Matcha powder", "90 g", "₱3.20 / g", true],
+    ["Fresh milk", "4.2 L", "$1.50 / L", false],
+    ["Espresso beans", "0.6 kg", "$40.00 / kg", true],
+    ["Cup and lid 16 oz", "320 pc", "$0.28 / pc", false],
+    ["Condensed milk", "1.1 L", "$6.00 / L", false],
+    ["Matcha powder", "90 g", "$0.12 / g", true],
   ];
   return (
     <div className="flex h-full text-[9px] leading-tight">
@@ -311,7 +311,7 @@ export function StampCardMockup({ filled, total = 10, className }: { filled: num
       <div className="pointer-events-none absolute -top-8 -right-8 size-24 rounded-full bg-white/10" />
       <div className="relative flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <div className="truncate text-[7px] font-medium tracking-wide text-white/80 uppercase">Kapehan sa Kanto</div>
+          <div className="truncate text-[7px] font-medium tracking-wide text-white/80 uppercase">Corner Cup Coffee</div>
           <div className="truncate text-[11px] font-semibold">Coffee card</div>
         </div>
         <span className="shrink-0 rounded-full bg-white/15 px-1.5 py-0.5 font-semibold tabular-nums">
@@ -377,7 +377,7 @@ export function LoyaltyMockup() {
         <StampCardMockup filled={7} />
         <div className="flex flex-1 flex-col rounded-[8px] bg-card p-2">
           <div className="flex justify-between text-muted-foreground">
-            <span>Receipt #0142 · ₱390.00</span>
+            <span>Receipt #0142 · $16.50</span>
             <span className="text-tint-green-foreground">Paid</span>
           </div>
           <div className="relative mt-1 grid flex-1 place-items-center rounded-[6px] border border-dashed">
@@ -396,14 +396,14 @@ export function LoyaltyMockup() {
 export function ReceiptsMockup() {
   const days: [string, [string, string, string, boolean][]][] = [
     [
-      "Today · ₱6,840.00",
+      "Today · $684.00",
       [
-        ["#0142", "9:41 AM · Ana", "₱390.00", true],
-        ["#0141", "9:36 AM · Ana", "₱155.00", false],
-        ["#0140", "9:28 AM · Joey", "₱285.00", false],
+        ["#0142", "9:41 AM · Ana", "$16.50", true],
+        ["#0141", "9:36 AM · Ana", "$5.50", false],
+        ["#0140", "9:28 AM · Joey", "$10.75", false],
       ],
     ],
-    ["Yesterday · ₱21,470.00", [["#0139", "6:52 PM · Joey", "₱120.00", false]]],
+    ["Yesterday · $2,147.00", [["#0139", "6:52 PM · Joey", "$4.50", false]]],
   ];
   return (
     <div className="flex h-full text-[9px] leading-tight">
@@ -436,13 +436,13 @@ export function ReceiptsMockup() {
       </div>
       <div className="flex w-[42%] shrink-0 flex-col gap-1.5 border-l bg-card/60 p-2.5">
         <div className="min-h-0 flex-1 overflow-hidden rounded-[6px] bg-card p-2 font-mono text-[7.5px] whitespace-nowrap shadow-sm">
-          <div className="truncate text-center font-sans text-[9px] font-bold">Kapehan sa Kanto</div>
+          <div className="truncate text-center font-sans text-[9px] font-bold">Corner Cup Coffee</div>
           <div className="truncate text-center text-muted-foreground">Receipt #0142 · 9:41 AM</div>
           <div className="my-1 border-t border-dashed" />
           {[
-            ["2 × Spanish latte", "₱280.00"],
-            ["1 × Ensaymada", "₱65.00"],
-            ["1 × Choco cookie", "₱45.00"],
+            ["2 × Spanish latte", "$10.50"],
+            ["1 × Croissant", "$3.75"],
+            ["1 × Choco cookie", "$2.25"],
           ].map(([n, p]) => (
             <div key={n} className="flex justify-between gap-1">
               <span className="min-w-0 truncate">{n}</span>
@@ -451,18 +451,18 @@ export function ReceiptsMockup() {
           ))}
           <div className="my-1 border-t border-dashed" />
           <div className="flex justify-between gap-1 text-muted-foreground">
-            <span className="min-w-0 truncate">VAT 12% (incl.)</span>
-            <span>₱41.79</span>
+            <span className="min-w-0 truncate">Tax 10% (incl.)</span>
+            <span>$1.50</span>
           </div>
           <div className="flex justify-between font-bold">
             <span>Total</span>
-            <span>₱390.00</span>
+            <span>$16.50</span>
           </div>
           <div className="flex justify-between gap-1 text-muted-foreground">
-            <span className="min-w-0 truncate">GCash · 8891234</span>
-            <span>₱390.00</span>
+            <span className="min-w-0 truncate">PayPal · 8891234</span>
+            <span>$16.50</span>
           </div>
-          <div className="mt-1 truncate text-center text-muted-foreground">Salamat, see you again!</div>
+          <div className="mt-1 truncate text-center text-muted-foreground">Thank you, see you again!</div>
         </div>
         <div className="grid shrink-0 grid-cols-2 gap-1 whitespace-nowrap">
           <span className="flex items-center justify-center gap-1 rounded-[6px] bg-primary py-1 font-bold text-primary-foreground">

@@ -36,13 +36,27 @@ async function addMember(
 }
 
 describe("onboarding", () => {
-  test("creates the shop with PH defaults and makes the caller owner", async () => {
+  test("creates the shop with neutral defaults and makes the caller owner", async () => {
     const { alice, shopA } = await setup();
     const shop = await alice.query(api.tenants.get, { tenantId: shopA.tenantId });
     expect(shop).toMatchObject({
-      name: "Brew Lab", slug: "brewlab", currency: "PHP", timezone: "Asia/Manila",
-      taxRateBps: 1200, pricesIncludeTax: true, role: "owner",
+      name: "Brew Lab", slug: "brewlab", currency: "USD", timezone: "UTC",
+      taxRateBps: 0, pricesIncludeTax: true, role: "owner",
     });
+    expect(await alice.query(api.tenants.bySlug, { slug: "brewlab" })).toMatchObject({ currencySymbol: "$" });
+  });
+
+  test("onboarding keeps the owner's own currency, time zone and tax", async () => {
+    const t = convexTest(schema, modules);
+    const owner = t.withIdentity({ subject: "user_owner", name: "Owner" });
+    const { tenantId } = await owner.mutation(api.tenants.create, {
+      name: "Café Lumière", slug: "lumiere", businessType: "cafe",
+      currency: "EUR", timezone: "Europe/Paris", taxRateBps: 1000, pricesIncludeTax: true,
+    });
+    expect(await owner.query(api.tenants.get, { tenantId })).toMatchObject({
+      currency: "EUR", timezone: "Europe/Paris", taxRateBps: 1000,
+    });
+    expect(await owner.query(api.tenants.bySlug, { slug: "lumiere" })).toMatchObject({ currencySymbol: "€" });
   });
 
   test("rejects taken, reserved and malformed slugs", async () => {
@@ -300,9 +314,23 @@ describe("roles", () => {
       .rejects.toThrow(/time zone/);
     await expect(alice.mutation(api.tenants.updateSettings, { tenantId, currency: "pesos" }))
       .rejects.toThrow(/3-letter/);
+    await expect(alice.mutation(api.tenants.updateSettings, { tenantId, currencySymbol: "toolong" }))
+      .rejects.toThrow(/currency sign/);
+    await expect(alice.mutation(api.tenants.updateSettings, { tenantId, currencySymbol: "R1" }))
+      .rejects.toThrow(/currency sign/);
     await expect(alice.mutation(api.tenants.updateSettings, { tenantId, receiptFooter: "x".repeat(201) }))
       .rejects.toThrow(/footer/);
     await alice.mutation(api.tenants.updateSettings, { tenantId, taxRateBps: 0, pricesIncludeTax: false });
     expect(await alice.query(api.tenants.get, { tenantId })).toMatchObject({ taxRateBps: 0, pricesIncludeTax: false });
+  });
+
+  test("an owner can use their own currency sign, and clear it again", async () => {
+    const { alice, shopA } = await setup();
+    const { tenantId } = shopA;
+    await alice.mutation(api.tenants.updateSettings, { tenantId, currency: "INR", currencySymbol: " Rs " });
+    expect(await alice.query(api.tenants.bySlug, { slug: "brewlab" })).toMatchObject({ currency: "INR", currencySymbol: "Rs" });
+    await alice.mutation(api.tenants.updateSettings, { tenantId, currencySymbol: "" });
+    expect(await alice.query(api.tenants.get, { tenantId })).not.toHaveProperty("currencySymbol");
+    expect(await alice.query(api.tenants.bySlug, { slug: "brewlab" })).toMatchObject({ currencySymbol: "₹" });
   });
 });

@@ -29,7 +29,19 @@ const csp = [
   ...(isDev ? [] : ["upgrade-insecure-requests"]),
 ].join("; ");
 
+// Pages renamed when the site went from a Philippines launch to a worldwide one. Permanent, so
+// search engines move the old pages' standing to the new URLs.
+const RENAMED: [from: string, to: string][] = [
+  ["/pos/sari-sari-store", "/pos/convenience-store"],
+  ["/blog/gcash-maya-payments-end-of-day", "/blog/digital-payments-end-of-day"],
+  ["/blog/sari-sari-store-inventory-count", "/blog/convenience-store-inventory-count"],
+  ["/blog/vat-inclusive-pricing-philippines", "/blog/tax-inclusive-pricing"],
+];
+
 const nextConfig: NextConfig = {
+  async redirects() {
+    return RENAMED.map(([from, to]) => ({ source: `${from}/:path*`, destination: `${to}/:path*`, permanent: true }));
+  },
   async headers() {
     return [
       {

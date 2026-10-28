@@ -44,7 +44,7 @@ The primary is darker than Coca's #FF6A13 so white text on it passes WCAG AA (5.
 | Card title | 16px, semibold | Product and tile names |
 | Body | 14px, regular | Descriptions and labels |
 | Caption | 12–13px, muted | Item counts, option text, role under the name |
-| Price | 24px, semibold, tabular | Product card prices; the ₱ sign is muted and lighter |
+| Price | 24px, semibold, tabular | Product card prices; the shop's currency sign is muted and lighter |
 
 ## Layout
 
@@ -67,7 +67,7 @@ The rail runs the full height. The top bar spans both the content and the invoic
 - **Content:** 24px padding, with a 16–20px gap between cards.
 - **Invoice panel:** a white card with a 24px inset, full height, and its own scrolling list of lines.
   - The payment summary and Place order button stay pinned at the bottom.
-  - Below `lg` it collapses into a bottom bar ("3 items · ₱423.00 · View order") that opens a sheet.
+  - Below `lg` it collapses into a bottom bar ("3 items · $23.50 · View order") that opens a sheet.
 
 ## Components
 
@@ -88,9 +88,9 @@ The rail runs the full height. The top bar spans both the content and the invoic
 
 | In the image | In Payspace |
 |---|---|
-| `$50.5` | `₱50.50`, formatted with `formatMoney` from `convex/lib/money.ts` |
+| `$50.5` | `$50.50` in the shop's own sign, formatted with `useMoney()` (`components/shop/shop-provider.tsx`) |
 | "12 Menu In Stock" | "12 items". Stock counts come with inventory |
-| Credit Card / Paylater / Cash Payout | Cash / E-wallet (GCash, Maya) / Card |
+| Credit Card / Paylater / Cash Payout | Cash / E-wallet (PayPal, Apple Pay, Google Pay, Other) / Card |
 | Sub Total + Tax + Total | Subtotal, "VAT (included)" and Total when prices include VAT, which is the default; otherwise VAT is added |
 | "Dont Add Vegetables" | The chosen modifier options, like "Large · Oat milk" |
 | Lorem descriptions | The product's modifier groups ("Size, Milk, Add-ons") or its category |
@@ -104,6 +104,6 @@ The rules in `.claude/agents/ui-ux-designer.md` still apply:
 - 48px tap targets
 - the barcode field keeps focus on the POS
 - role-aware UI
-- money only as integer centavos through the helper
+- money only as integer minor units (cents) through the helper
 - AA contrast
 - a keyboard path through checkout

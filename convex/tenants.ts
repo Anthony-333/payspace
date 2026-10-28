@@ -2,13 +2,15 @@ import { ConvexError, v } from "convex/values";
 import { internal } from "./_generated/api";
 import { businessType } from "./schema";
 import { requireRole, tenantMutation, tenantQuery, userMutation, userQuery } from "./lib/tenant";
+import { currencySymbol, MAX_CURRENCY_SYMBOL } from "./lib/money";
 import { validateSlug } from "./lib/slugs";
 
-// Philippine launch defaults (CLAUDE.md "Market defaults").
+// Fallbacks for a shop created without its own locale (CLAUDE.md "Market defaults").
+// Onboarding sends the owner's currency and their browser's timezone.
 const DEFAULTS = {
-  currency: "PHP",
-  timezone: "Asia/Manila",
-  taxRateBps: 1200,
+  currency: "USD",
+  timezone: "UTC",
+  taxRateBps: 0,
   pricesIncludeTax: true,
   targetMarginBps: 6000,
   discountLimitBps: 1000,
@@ -19,15 +21,18 @@ const MAX_RECEIPT_FOOTER = 200;
 export const MAX_OWNED_SHOPS = 5;
 
 /** Settings that later code relies on (businessDate uses the timezone), so they're checked on the way in. */
-function checkLocale(args: { currency?: string; timezone?: string; receiptFooter?: string }) {
+function checkLocale(args: { currency?: string; currencySymbol?: string; timezone?: string; receiptFooter?: string }) {
   if (args.currency !== undefined && !/^[A-Z]{3}$/.test(args.currency)) {
-    throw new ConvexError("Currency must be a 3-letter code, like PHP.");
+    throw new ConvexError("Currency must be a 3-letter code, like USD.");
+  }
+  if (args.currencySymbol !== undefined && (args.currencySymbol.length > MAX_CURRENCY_SYMBOL || /\d/.test(args.currencySymbol))) {
+    throw new ConvexError(`Keep the currency sign to ${MAX_CURRENCY_SYMBOL} characters, with no numbers.`);
   }
   if (args.timezone !== undefined) {
     try {
       new Intl.DateTimeFormat("en", { timeZone: args.timezone });
     } catch {
-      throw new ConvexError("That time zone isn't recognized. Use a name like Asia/Manila.");
+      throw new ConvexError("That time zone isn't recognized. Use a name like America/New_York.");
     }
   }
   if (args.receiptFooter !== undefined && args.receiptFooter.length > MAX_RECEIPT_FOOTER) {
@@ -138,6 +143,7 @@ export const bySlug = userQuery({
       // needs the shop's own timezone and currency, not the tablet's.
       timezone: tenant.timezone,
       currency: tenant.currency,
+      currencySymbol: currencySymbol(tenant),
       role: member.role,
       memberName: member.name,
     };
@@ -159,6 +165,8 @@ export const updateSettings = tenantMutation({
     name: v.optional(v.string()),
     businessType: v.optional(businessType),
     currency: v.optional(v.string()),
+    /** "" goes back to the currency's own sign. */
+    currencySymbol: v.optional(v.string()),
     timezone: v.optional(v.string()),
     taxRateBps: v.optional(v.number()),
     pricesIncludeTax: v.optional(v.boolean()),
@@ -176,7 +184,12 @@ export const updateSettings = tenantMutation({
     if (name !== undefined && (name.length < 2 || name.length > 80)) {
       throw new ConvexError("Enter a business name between 2 and 80 characters.");
     }
-    await ctx.db.patch(ctx.tenantId, { ...args, ...(name !== undefined && { name }) });
+    const symbol = args.currencySymbol?.trim();
+    await ctx.db.patch(ctx.tenantId, {
+      ...args,
+      ...(name !== undefined && { name }),
+      ...(symbol !== undefined && { currencySymbol: symbol || undefined }),
+    });
 
     // Margin flags depend on these, so re-flag every product in the background.
     const { tenant } = ctx;

@@ -116,7 +116,7 @@ export function InvoicePanel({ invoice, tenant, onPlaceOrder, className }: {
           </div>
           {tenant && tax && tenant.taxRateBps > 0 && (
             <div className="flex justify-between text-muted-foreground">
-              <span>VAT {formatBps(tenant.taxRateBps).replace(".0%", "%")}{tenant.pricesIncludeTax ? " (included)" : ""}</span>
+              <span>Tax {formatBps(tenant.taxRateBps).replace(".0%", "%")}{tenant.pricesIncludeTax ? " (included)" : ""}</span>
               <Price amount={tax.tax} className="text-foreground" />
             </div>
           )}

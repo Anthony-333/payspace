@@ -1,6 +1,7 @@
 import { ConvexError, v } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
 import { businessMoment } from "./lib/businessDate";
+import { currencySymbol } from "./lib/money";
 import { canSeeCost, IMAGE_TYPES, MAX_IMAGE_BYTES } from "./lib/products";
 import { roundQty } from "./lib/quantity";
 import {
@@ -257,6 +258,7 @@ export const checkout = tenantMutation({
       changeGiven: settled.changeGiven,
       status: "completed",
       receiptToken,
+      currencySymbol: currencySymbol(ctx.tenant),
     });
     await claimPaymentPhotos(ctx, settled.payments, saleId);
     await deductStock(ctx, priced, saleId);
@@ -333,12 +335,14 @@ export const get = tenantQuery({
  */
 function toReceipt(sale: Doc<"sales">, tenant: Doc<"tenants">) {
   return {
-    // No tax settings here on purpose: the receipt reads the VAT it was issued with back
-    // out of its own totals (money.ts taxFromTotals), so changing the shop's rate — or
-    // switching VAT off — never rewrites a receipt that has already been handed over.
+    // No tax settings here on purpose: the receipt reads the tax it was issued with back
+    // out of its own totals (money.ts taxFromTotals), and prints the currency sign the sale
+    // was rung up in, so changing the shop's settings never rewrites a receipt already handed over.
     shop: {
       name: tenant.name,
       currency: tenant.currency,
+      currencySymbol: sale.currencySymbol ?? currencySymbol(tenant),
+      timezone: tenant.timezone,
       receiptFooter: tenant.receiptFooter,
     },
     number: sale.number,

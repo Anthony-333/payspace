@@ -2,7 +2,7 @@ import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
 const tenantId = v.id("tenants");
-const money = v.number(); // integer minor units: ₱140.00 → 14000
+const money = v.number(); // integer minor units: $140.00 → 14000
 const role = v.union(v.literal("owner"), v.literal("manager"), v.literal("cashier"));
 const payMethod = v.union(v.literal("cash"), v.literal("ewallet"), v.literal("card"));
 
@@ -21,9 +21,11 @@ export default defineSchema({
     name: v.string(),
     slug: v.string(),
     businessType,
-    currency: v.string(),            // "PHP"
-    timezone: v.string(),            // "Asia/Manila"
-    taxRateBps: v.number(),          // 1200 = 12%
+    currency: v.string(),            // ISO 4217 code, "USD"
+    /** The sign the shop prints, when it wants one other than its currency's (money.ts currencySymbol). */
+    currencySymbol: v.optional(v.string()),
+    timezone: v.string(),            // IANA name, "America/New_York"
+    taxRateBps: v.number(),          // 1000 = 10%; 0 = no tax
     pricesIncludeTax: v.boolean(),
     targetMarginBps: v.number(),     // 6000 = 60%, drives margin alerts
     discountLimitBps: v.number(),    // max cashier discount without a manager PIN
@@ -177,6 +179,8 @@ export default defineSchema({
     changeGiven: money,
     status: v.union(v.literal("completed"), v.literal("voided"), v.literal("refunded")),
     receiptToken: v.string(),        // unguessable, for the public receipt link
+    /** Snapshot of the shop's currency sign; absent on sales from before shops could change it. */
+    currencySymbol: v.optional(v.string()),
   })
     .index("by_tenant_date", ["tenantId", "businessDate"])
     .index("by_tenant_clientRef", ["tenantId", "clientRef"])

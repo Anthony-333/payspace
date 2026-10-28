@@ -1,9 +1,9 @@
 import bakeryBatchCosting from "./posts/bakery-batch-costing-per-piece";
-import gcashMaya from "./posts/gcash-maya-payments-end-of-day";
+import inventoryCount from "./posts/convenience-store-inventory-count";
+import digitalPayments from "./posts/digital-payments-end-of-day";
 import foodCostPerDrink from "./posts/how-to-compute-food-cost-per-drink";
 import markupVsMargin from "./posts/markup-vs-margin-pricing";
-import inventoryCount from "./posts/sari-sari-store-inventory-count";
-import vatInclusive from "./posts/vat-inclusive-pricing-philippines";
+import taxInclusive from "./posts/tax-inclusive-pricing";
 import type { BlogPost } from "./types";
 
 // Every published post, newest first. Adding a post here publishes it everywhere.
@@ -11,9 +11,9 @@ export const POSTS: BlogPost[] = [
   foodCostPerDrink,
   markupVsMargin,
   bakeryBatchCosting,
-  vatInclusive,
+  taxInclusive,
   inventoryCount,
-  gcashMaya,
+  digitalPayments,
 ].sort((a, b) => b.published.localeCompare(a.published));
 
 export function getPost(slug: string) {

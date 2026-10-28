@@ -1,8 +1,9 @@
 "use client";
 
 import type { FunctionReturnType } from "convex/server";
-import { createContext, useContext, type ReactNode } from "react";
+import { createContext, useCallback, useContext, type ReactNode } from "react";
 import type { api } from "@/convex/_generated/api";
+import { formatMoney } from "@/convex/lib/money";
 
 export type Shop = NonNullable<FunctionReturnType<typeof api.tenants.bySlug>>;
 
@@ -17,6 +18,12 @@ export function useShop() {
   const shop = useContext(ShopContext);
   if (!shop) throw new Error("useShop must be used inside app/[shop]");
   return shop;
+}
+
+/** `formatMoney` in the shop's own currency sign: `money(14000)` → "$140.00". */
+export function useMoney() {
+  const { currencySymbol } = useShop();
+  return useCallback((minor: number) => formatMoney(minor, currencySymbol), [currencySymbol]);
 }
 
 /** Owners and managers edit the catalog and see costs. The server enforces this too. */

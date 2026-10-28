@@ -21,8 +21,9 @@ const manilaMorning = (date: string) => new Date(`${date}T02:00:00Z`).getTime();
 async function setup() {
   const t = convexTest(schema, modules);
   const owner = t.withIdentity({ subject: "user_owner", name: "Owner" });
+  // Manila is UTC+8 all year, which keeps the hour arithmetic below easy to follow.
   const { tenantId } = await owner.mutation(api.tenants.create, {
-    name: "Brew Lab", slug: "brewlab", businessType: "cafe",
+    name: "Brew Lab", slug: "brewlab", businessType: "cafe", timezone: "Asia/Manila", taxRateBps: 1200,
   });
   await makePro(t, tenantId);
 

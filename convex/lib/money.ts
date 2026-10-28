@@ -1,17 +1,58 @@
 import { ConvexError } from "convex/values";
 
-// All money is an integer in minor units (centavos): ₱140.00 → 14000. CLAUDE.md rule 5.
+// All money is an integer in minor units (cents): $140.00 → 14000. CLAUDE.md rule 5.
 // This file is shared by Convex functions and the Next.js forms.
 
-/** ₱10,000,000.00: far above any single price, well inside safe integer range. */
+/** 10,000,000.00: far above any single price, well inside safe integer range. */
 export const MAX_MONEY = 1_000_000_000;
 
 /**
- * Parses what a person types ("140", "140.5", "₱1,400.00") into minor units.
+ * Currencies a shop can pick in Settings, with the sign it prints. Money is stored in
+ * hundredths, so only currencies with two decimals are listed; a shop can still type its own
+ * sign (`tenants.currencySymbol`) for anything else.
+ */
+export const CURRENCIES = [
+  { code: "USD", symbol: "$", name: "US dollar" },
+  { code: "EUR", symbol: "€", name: "Euro" },
+  { code: "GBP", symbol: "£", name: "British pound" },
+  { code: "CAD", symbol: "CA$", name: "Canadian dollar" },
+  { code: "AUD", symbol: "A$", name: "Australian dollar" },
+  { code: "NZD", symbol: "NZ$", name: "New Zealand dollar" },
+  { code: "SGD", symbol: "S$", name: "Singapore dollar" },
+  { code: "HKD", symbol: "HK$", name: "Hong Kong dollar" },
+  { code: "PHP", symbol: "₱", name: "Philippine peso" },
+  { code: "INR", symbol: "₹", name: "Indian rupee" },
+  { code: "MYR", symbol: "RM", name: "Malaysian ringgit" },
+  { code: "THB", symbol: "฿", name: "Thai baht" },
+  { code: "AED", symbol: "AED ", name: "UAE dirham" },
+  { code: "ZAR", symbol: "R", name: "South African rand" },
+  { code: "MXN", symbol: "MX$", name: "Mexican peso" },
+  { code: "BRL", symbol: "R$", name: "Brazilian real" },
+  { code: "CHF", symbol: "CHF ", name: "Swiss franc" },
+  { code: "SEK", symbol: "kr ", name: "Swedish krona" },
+] as const;
+
+export const MAX_CURRENCY_SYMBOL = 5;
+
+/** The sign a shop prints: its own if it set one, else its currency's, else the code itself. */
+export function currencySymbol(shop: { currency: string; currencySymbol?: string }) {
+  const custom = shop.currencySymbol?.trim();
+  if (custom) return custom;
+  return CURRENCIES.find((c) => c.code === shop.currency)?.symbol ?? `${shop.currency} `;
+}
+
+/** A currency sign or code typed before or after the amount: "$", "€", "A$", "USD ", " kr". */
+const SIGN = /^(?:\p{Sc}|[A-Za-z]{1,3}\p{Sc}?)\s*|\s*\p{Sc}$|\s+[A-Za-z]{1,3}$/gu;
+
+/**
+ * Parses what a person types ("140", "140.5", "$1,400.00", "-€20") into minor units.
  * Returns null for anything that isn't a plain amount with at most 2 decimals.
  */
 export function parseMoney(input: string, { allowNegative = false } = {}): number | null {
-  const cleaned = input.trim().replace(/^₱|^PHP\s*/i, "").replace(/,/g, "").trim();
+  let text = input.trim();
+  const negative = text.startsWith("-");
+  if (negative) text = text.slice(1).trim();
+  const cleaned = (negative ? "-" : "") + text.replace(SIGN, "").replace(/,/g, "").trim();
   const match = /^(-)?(\d*)(?:\.(\d{1,2}))?$/.exec(cleaned);
   if (!match || (match[2] === "" && match[3] === undefined)) return null;
   const [, minus, whole, fraction = ""] = match;
@@ -21,8 +62,12 @@ export function parseMoney(input: string, { allowNegative = false } = {}): numbe
   return minus ? -minor : minor;
 }
 
-/** "₱1,400.50". Uses fixed formatting so the server and every browser agree. */
-export function formatMoney(minor: number, symbol = "₱") {
+/**
+ * "$1,400.50". Uses fixed formatting so the server and every browser agree. Shop screens pass
+ * the shop's own sign through `useMoney()` (components/shop/shop-provider.tsx); the default
+ * is for the marketing site.
+ */
+export function formatMoney(minor: number, symbol = "$") {
   const sign = minor < 0 ? "-" : "";
   const abs = Math.abs(Math.round(minor));
   const whole = Math.floor(abs / 100).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
@@ -46,7 +91,7 @@ export function roundMinor(value: number) {
 export function assertMoney(label: string, value: number, { allowNegative = false } = {}) {
   const min = allowNegative ? -MAX_MONEY : 0;
   if (!Number.isSafeInteger(value) || value < min || value > MAX_MONEY) {
-    throw new ConvexError(`${label} must be an amount between ${formatMoney(min)} and ${formatMoney(MAX_MONEY)}.`);
+    throw new ConvexError(`${label} must be an amount between ${formatMoney(min, "")} and ${formatMoney(MAX_MONEY, "")}.`);
   }
   return value;
 }
@@ -64,8 +109,8 @@ export function grossMarginBps(price: number, unitCost: number, taxRateBps: numb
 }
 
 /**
- * Splits an order total into net and VAT. With tax-inclusive prices the VAT is already inside
- * the subtotal; otherwise it's added on top. Rounded once, on the order, to whole centavos.
+ * Splits an order total into net and tax. With tax-inclusive prices the tax is already inside
+ * the subtotal; otherwise it's added on top. Rounded once, on the order, to whole cents.
  */
 export function taxBreakdown(subtotal: number, taxRateBps: number, pricesIncludeTax: boolean) {
   if (pricesIncludeTax) {
@@ -77,8 +122,8 @@ export function taxBreakdown(subtotal: number, taxRateBps: number, pricesInclude
 }
 
 /**
- * Reads the VAT a sale was rung up at back out of its own totals, so a receipt keeps the
- * rate it was issued with even after the shop changes — or switches off — its VAT
+ * Reads the tax a sale was rung up at back out of its own totals, so a receipt keeps the
+ * rate it was issued with even after the shop changes — or switches off — its tax
  * (CLAUDE.md rule 7). Returns null when the sale carried no tax.
  */
 export function taxFromTotals(sale: { subtotal: number; tax: number; total: number }) {

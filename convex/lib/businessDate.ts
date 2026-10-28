@@ -1,5 +1,5 @@
 // Reports and rollups are keyed by the shop's own calendar day, not the server's
-// (CLAUDE.md rule 10). A sale rung at 00:30 in Manila belongs to that Manila date,
+// (CLAUDE.md rule 10). A sale rung at 00:30 in Sydney belongs to that Sydney date,
 // whichever server took it. This file is shared by Convex functions and the Next.js pages.
 
 const formatters = new Map<string, Intl.DateTimeFormat>();

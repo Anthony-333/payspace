@@ -13,9 +13,9 @@ import { WhatsNew } from "@/components/marketing/whats-new";
 import { appHomeHref } from "@/lib/app-home";
 
 export const metadata: Metadata = {
-  title: { absolute: "Payspace POS: free POS system for coffee shops, bakeries and small stores in the Philippines" },
+  title: { absolute: "Payspace POS: free POS system for coffee shops, bakeries and small stores worldwide" },
   description:
-    "A point of sale for coffee shops, bakeries, milk tea stands and sari-sari stores in the Philippines, with recipe costing that shows the real profit on every item. GCash, Maya, VAT, stock tracking and receipts. Free to start.",
+    "A point of sale for coffee shops, bakeries, bubble tea stands and convenience stores anywhere, with recipe costing that shows the real profit on every item. Any currency, sales tax or VAT, e-wallets, stock tracking and receipts. Free to start.",
   alternates: { canonical: "/" },
 };
 

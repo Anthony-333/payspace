@@ -48,7 +48,7 @@ export default async function IndustryPage({ params }: PageProps<"/pos/[industry
               url,
               name: industry.metaTitle,
               description: industry.metaDescription,
-              inLanguage: "en-PH",
+              inLanguage: "en",
               about: { "@id": `${SITE_URL}/#software` },
             },
             breadcrumbs([

@@ -5,7 +5,7 @@ import { ContactLink, LegalPage, LegalSection } from "@/components/marketing/leg
 export const metadata: Metadata = {
   title: "Privacy Policy",
   description:
-    "How Payspace POS collects, uses and protects personal information, and your rights under the Philippine Data Privacy Act of 2012.",
+    "How Payspace POS collects, uses and protects personal information, and the privacy rights you have wherever you use it.",
   alternates: { canonical: "/privacy" },
 };
 
@@ -13,12 +13,13 @@ export default function PrivacyPage() {
   return (
     <LegalPage
       title="Privacy Policy"
-      effectiveDate="October 17, 2026"
+      effectiveDate="October 27, 2026"
       intro={
         <p>
-          Payspace is a point of sale for small businesses. This policy explains what personal information we collect when
-          you use it, why, who we share it with, and the rights you have under the Philippine Data Privacy Act of 2012
-          (Republic Act No. 10173).
+          Payspace is a point of sale for small businesses around the world. This policy explains what personal
+          information we collect when you use it, why, who we share it with, and the rights you have. Payspace is operated
+          from the Philippines, so we follow the Philippine Data Privacy Act of 2012 (Republic Act No. 10173), and we also
+          respect the data protection laws that apply where you live.
         </p>
       }
     >
@@ -58,8 +59,8 @@ export default function PrivacyPage() {
             suppliers (which may include a contact phone number), sales, receipts and reports.
           </li>
           <li>
-            <strong>Payment records:</strong> the payment method, amount and, for e-wallets such as GCash or Maya, the
-            reference number. Payspace does not process payments and does not collect card numbers.
+            <strong>Payment records:</strong> the payment method, amount and, for e-wallets such as PayPal or Apple Pay,
+            the reference number. Payspace does not process payments and does not collect card numbers.
           </li>
           <li>
             <strong>Photos you upload:</strong> product photos, and payment photos a cashier chooses to attach to a sale.
@@ -133,9 +134,9 @@ export default function PrivacyPage() {
           </li>
         </ul>
         <p>
-          These providers may store and process information on servers outside the Philippines, including in the United
-          States. We choose providers that protect information to a standard comparable to Philippine law, and we remain
-          accountable for it. We may also disclose information when the law requires it, or to protect the rights and
+          These providers may store and process information on servers in other countries, including the United States,
+          which may be outside the country where you live. We choose providers that protect information to a standard
+          comparable to the law that applies to it, and we remain accountable for it. We may also disclose information when the law requires it, or to protect the rights and
           safety of our users or the public.
         </p>
       </LegalSection>
@@ -161,12 +162,12 @@ export default function PrivacyPage() {
           Information is encrypted in transit, passwords are hashed, and every request is checked so a shop can only
           ever reach its own records. Staff access is based on their role, and a removed staff member loses access
           immediately. No system is perfectly secure; if a breach affects your personal information, we will notify you
-          and the National Privacy Commission as the law requires.
+          and the authorities the law requires, such as the Philippine National Privacy Commission.
         </p>
       </LegalSection>
 
       <LegalSection id="your-rights" title="9. Your rights">
-        <p>Under the Data Privacy Act, you have the right to:</p>
+        <p>Wherever you live, you have the right to:</p>
         <ul>
           <li>be informed about how your personal information is processed;</li>
           <li>access your personal information and get a copy of it;</li>
@@ -175,13 +176,17 @@ export default function PrivacyPage() {
           <li>receive your information in a commonly used electronic format (data portability);</li>
           <li>be compensated for damages caused by unlawful processing; and</li>
           <li>
-            file a complaint with the{" "}
+            file a complaint with the Philippine{" "}
             <a href="https://privacy.gov.ph" target="_blank" rel="noreferrer">
               National Privacy Commission
             </a>
-            .
+            , or with the data protection authority where you live.
           </li>
         </ul>
+        <p>
+          The law where you live, such as the GDPR in the European Union and the United Kingdom or state privacy laws in
+          the United States, may give you further rights. We honour them where they apply.
+        </p>
         <p>
           To use any of these rights, email <ContactLink />. We may need to confirm your identity first, and we aim to
           reply within 15 days.

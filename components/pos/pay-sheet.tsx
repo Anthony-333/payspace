@@ -10,12 +10,12 @@ import { useCartStore, type PayMethod } from "@/components/pos/cart-store";
 import type { InvoiceLine } from "@/components/pos/invoice-panel";
 import { Price } from "@/components/pos/parts";
 import { PaymentPhotoButton, type PaymentPhoto } from "@/components/pos/payment-photo";
-import { useShop } from "@/components/shop/shop-provider";
+import { useMoney, useShop } from "@/components/shop/shop-provider";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { api } from "@/convex/_generated/api";
-import { formatMoney, parseMoney } from "@/convex/lib/money";
+import { parseMoney } from "@/convex/lib/money";
 import { errorMessage } from "@/lib/errors";
 import { resizeImage, uploadFile } from "@/lib/image";
 import { cn } from "@/lib/utils";
@@ -30,7 +30,7 @@ const TABS: { value: PayMethod; label: string; icon: typeof Banknote }[] = [
   { value: "card", label: "Card", icon: CreditCard },
 ];
 
-const PROVIDERS = ["GCash", "Maya", "Other"];
+const PROVIDERS = ["PayPal", "Apple Pay", "Google Pay", "Other"];
 const KEYS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", ".", "0", "back"];
 /** Kept in step with MAX_PAYMENT_REF in convex/lib/sale.ts, which is what actually enforces it. */
 const MAX_PAYMENT_REF = 30;
@@ -45,18 +45,23 @@ type Done = { number: number; total: number; changeGiven: number; receiptToken: 
 
 const amountOf = (typed: string) => (typed ? (parseMoney(typed) ?? 0) : 0);
 
-/** Exact, then the notes a customer is most likely to hand over for that amount. */
-function quickAmounts(due: number): [string, number][] {
+/**
+ * Exact, then what a customer is most likely to hand over: the total rounded up to the
+ * 1-2-5 note series most currencies use, skipping steps too small to bother with.
+ */
+function quickAmounts(due: number, money: (minor: number) => string): [string, number][] {
   const out: [string, number][] = [["Exact", due]];
   const seen = new Set([due]);
   const push = (value: number) => {
     if (out.length < 4 && value > due && !seen.has(value)) {
       seen.add(value);
-      out.push([formatMoney(value).replace(/\.00$/, ""), value]);
+      out.push([money(value).replace(/\.00$/, ""), value]);
     }
   };
-  for (const note of [50, 100, 200, 500, 1000]) push(Math.ceil(due / (note * 100)) * note * 100);
-  for (const note of [100_000, 200_000, 500_000]) push(note);
+  // 1, 2, 5, 10, 20, 50… in whole units, from about a tenth of the total upwards.
+  for (let step = 100, i = 0; out.length < 4 && i < 30; step *= i % 3 === 1 ? 2.5 : 2, i++) {
+    if (step * 10 >= due) push(Math.ceil(due / step) * step);
+  }
   return out;
 }
 
@@ -67,6 +72,7 @@ export function PaySheet({ open, onOpenChange, lines, total, itemCount }: {
   total: number;
   itemCount: number;
 }) {
+  const money = useMoney();
   const shop = useShop();
   const checkout = useMutation(api.sales.checkout);
   const generatePhotoUploadUrl = useMutation(api.sales.generatePhotoUploadUrl);
@@ -182,7 +188,7 @@ export function PaySheet({ open, onOpenChange, lines, total, itemCount }: {
   async function complete() {
     if (busy) return;
     if (!covered) {
-      toast.error(`${formatMoney(remaining)} still to collect.`);
+      toast.error(`${money(remaining)} still to collect.`);
       return;
     }
     if (lines.length === 0) {
@@ -261,7 +267,7 @@ export function PaySheet({ open, onOpenChange, lines, total, itemCount }: {
               <div>
                 <DialogTitle className="text-2xl font-semibold">Take payment</DialogTitle>
                 <DialogDescription>
-                  {itemCount} {itemCount === 1 ? "item" : "items"} · {formatMoney(total)} due
+                  {itemCount} {itemCount === 1 ? "item" : "items"} · {money(total)} due
                 </DialogDescription>
               </div>
               <Button variant="ghost" size="icon" className="size-10" onClick={() => close(false)} aria-label="Back to order">
@@ -407,7 +413,7 @@ export function PaySheet({ open, onOpenChange, lines, total, itemCount }: {
                           {tab === "cash" ? "Cash received" : tab === "ewallet" ? `${provider} amount` : "Card amount"}
                         </div>
                         <div className="truncate text-3xl font-semibold tabular-nums">
-                          <span className="font-normal text-muted-foreground">₱</span>
+                          <span className="font-normal text-muted-foreground">{shop.currencySymbol}</span>
                           {(tab === "cash" ? cash : typed) || "0"}
                         </div>
                       </div>
@@ -422,7 +428,7 @@ export function PaySheet({ open, onOpenChange, lines, total, itemCount }: {
 
                     {tab === "cash" ? (
                       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                        {quickAmounts(beforeCash).map(([label, value]) => (
+                        {quickAmounts(beforeCash, money).map(([label, value]) => (
                           <Button
                             key={label}
                             variant="outline"
@@ -461,8 +467,8 @@ export function PaySheet({ open, onOpenChange, lines, total, itemCount }: {
                     {tab !== "cash" && (
                       <Button variant="secondary" className="h-12" disabled={!pending} onClick={addTaken}>
                         {typedAmount > beforeCash
-                          ? `That is more than the ${formatMoney(beforeCash)} still due`
-                          : `Add ${formatMoney(pending)} and split the rest`}
+                          ? `That is more than the ${money(beforeCash)} still due`
+                          : `Add ${money(pending)} and split the rest`}
                       </Button>
                     )}
                   </>
@@ -473,8 +479,8 @@ export function PaySheet({ open, onOpenChange, lines, total, itemCount }: {
             <footer className="sticky bottom-0 flex items-center justify-between gap-3 border-t bg-card p-5">
               <span className="text-sm text-muted-foreground">
                 {!covered
-                  ? paid > 0 ? `${formatMoney(remaining)} more to collect` : "Enter the cash received, or choose another method"
-                  : change > 0 ? `Give ${formatMoney(change)} change` : "Exact amount received"}
+                  ? paid > 0 ? `${money(remaining)} more to collect` : "Enter the cash received, or choose another method"
+                  : change > 0 ? `Give ${money(change)} change` : "Exact amount received"}
               </span>
               <Button size="lg" className="h-13 px-6 text-base font-semibold" disabled={!covered || busy || uploading} onClick={complete}>
                 {busy ? "Completing…" : uploading ? "Uploading photo…" : "Complete sale"}
@@ -493,11 +499,12 @@ function methodLabel(method: PayMethod) {
 
 /** After the sale: the change to hand over, and the receipt, which stays available for good. */
 function Completed({ done, slug, onNewOrder }: { done: Done; slug: string; onNewOrder: () => void }) {
+  const money = useMoney();
   return (
     <div className="grid gap-5 p-6 text-center">
       <DialogTitle className="sr-only">Sale complete</DialogTitle>
       <DialogDescription className="sr-only">
-        Receipt {done.number} for {formatMoney(done.total)}.
+        Receipt {done.number} for {money(done.total)}.
       </DialogDescription>
       <span className="mx-auto flex size-14 items-center justify-center rounded-full bg-primary/10 text-primary">
         <Check className="size-7" />
@@ -506,9 +513,9 @@ function Completed({ done, slug, onNewOrder }: { done: Done; slug: string; onNew
         <p className="text-sm text-muted-foreground">
           {done.changeGiven > 0 ? "Change due" : "Paid in full"}
         </p>
-        <p className="text-5xl font-bold tabular-nums">{formatMoney(done.changeGiven)}</p>
+        <p className="text-5xl font-bold tabular-nums">{money(done.changeGiven)}</p>
         <p className="mt-2 text-sm text-muted-foreground">
-          Receipt #{String(done.number).padStart(4, "0")} · {formatMoney(done.total)}
+          Receipt #{String(done.number).padStart(4, "0")} · {money(done.total)}
         </p>
       </div>
       <div className="grid gap-2 sm:grid-cols-2">

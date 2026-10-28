@@ -52,7 +52,7 @@ function useToken(shop: string) {
   return useSyncExternalStore(subscribe, () => readToken(shop), () => null);
 }
 
-const date = (at: number) => new Date(at).toLocaleDateString("en-PH", { dateStyle: "medium" });
+const date = (at: number) => new Date(at).toLocaleDateString(undefined, { dateStyle: "medium" });
 
 const cardPath = (shop: string, username: string) => `/loyalty/${encodeURIComponent(shop)}/${encodeURIComponent(username)}`;
 

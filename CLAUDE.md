@@ -66,7 +66,7 @@ Library APIs change. Before using an API from the plan, check the current docs, 
 2. **Re-check every ID from the client** with `getOwned()`, so a document from another tenant is never read or changed.
 3. **Every tenant query uses an index that starts with `tenantId`.** No `.filter()` scans across tenants.
 4. **Roles are enforced on the server** with `requireRole()`. Hiding buttons in the UI is not protection.
-5. **Money is always integer minor units** (centavos). Do all money math in `convex/lib/money.ts`. Never use floats for money.
+5. **Money is always integer minor units** (cents, hundredths of the shop's currency). Do all money math in `convex/lib/money.ts`. Never use floats for money. Shop screens format through `useMoney()` (`components/shop/shop-provider.tsx`) so they print the shop's own currency sign; never hardcode one.
 6. **The server prices everything.** Checkout receives product IDs, quantities and option keys, never prices. It is idempotent through `clientRef`.
 7. **Sales store snapshots**: name, unit price and unit cost at the time of sale.
 8. **The stock ledger is the source of truth.** `onHand` is a cache. Every stock change writes a `stockMovements` row. Allow negative stock, but flag it.
@@ -106,9 +106,13 @@ Library APIs change. Before using an API from the plan, check the current docs, 
 
 ## Market defaults
 
-- The launch market is the Philippines: currency PHP, timezone Asia/Manila, 12% VAT included in prices (configurable per shop).
-- E-wallets (GCash, Maya) are recorded with a reference number; card payments are recorded, not processed, in the MVP.
-- Before launch, see the backlog in `docs/progress.md`: BIR receipt requirements and the Senior Citizen / PWD discount rule.
+- Payspace is sold worldwide. The operator is based in the Philippines, and Philippine law governs the terms of service.
+- Each shop picks its currency (`tenants.currency`, an ISO code) and may set its own sign (`tenants.currencySymbol`); `CURRENCIES` in `convex/lib/money.ts` lists the ones offered. Money stays in hundredths, so zero-decimal currencies (JPY, KRW) aren't offered yet. Sales snapshot the sign they were rung up in.
+- Onboarding sends the browser's time zone; the server fallback is UTC. Tax (sales tax, VAT or GST) starts at 0% and is set per shop, included in prices or added on top.
+- Starter menus are authored in US cents and rescaled to the shop's currency (`localizeTemplate` in `convex/lib/templateData.ts`).
+- The marketing site prices everything in US dollars; Pro is billed in USD through Polar.
+- E-wallets (PayPal, Apple Pay, Google Pay or other) are recorded with a reference number; card payments are recorded, not processed, in the MVP.
+- Receipts are records of sale, not official tax invoices in any country. Before selling into a country with fiscal-device or e-invoicing rules (for example the Philippine BIR), see the backlog in `docs/progress.md`.
 
 <!-- convex-ai-start -->
 

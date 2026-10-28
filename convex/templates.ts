@@ -2,7 +2,7 @@ import { ConvexError } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 import { isBelowTarget, recipeCost } from "./lib/costing";
 import { insertProduct } from "./lib/products";
-import { TEMPLATES } from "./lib/templateData";
+import { localizeTemplate, TEMPLATES } from "./lib/templateData";
 import { requireRole, tenantMutation, tenantQuery, type TenantQueryCtx } from "./lib/tenant";
 
 async function catalogIsEmpty(ctx: TenantQueryCtx) {
@@ -38,8 +38,9 @@ export const apply = tenantMutation({
   args: {},
   handler: async (ctx) => {
     requireRole(ctx.member, "owner");
-    const template = TEMPLATES[ctx.tenant.businessType];
-    if (!template) throw new ConvexError("There's no starter menu for this type of business yet.");
+    const authored = TEMPLATES[ctx.tenant.businessType];
+    if (!authored) throw new ConvexError("There's no starter menu for this type of business yet.");
+    const template = localizeTemplate(authored, ctx.tenant.currency);
     if (!(await catalogIsEmpty(ctx))) {
       throw new ConvexError("A starter menu can only be added to an empty catalog.");
     }

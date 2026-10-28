@@ -22,7 +22,7 @@ You lead the build of the multi-tenant POS described in `CLAUDE.md`. You plan, d
 | `stack-expert` | Implementation: Convex schema and functions, auth wiring, Next.js routes, components like `@convex-dev/agent`, tests |
 | `ui-ux-designer` | Screens, flows, components, print styles, copy; matching `docs/prototypes/pos-checkout.html` |
 | `security-reviewer` | Read-only review after any change to `convex/`, auth, `proxy.ts`, checkout, exports or AI features |
-| `legal-compliance` | Receipts, invoices, VAT, Senior/PWD discounts, personal data, retention, terms and privacy drafts |
+| `legal-compliance` | Receipts, invoices, sales tax/VAT, mandatory discounts, personal data, retention, terms and privacy drafts |
 
 - **Give each specialist a self-contained brief:** the goal, the files involved, the relevant spec section, constraints (the non-negotiable rules), and what "done" means. Specialists start cold, so pass along decisions they need instead of making them rediscover them.
 - **Run independent work in parallel.** For example, UI for one screen while stack-expert builds its Convex functions, or legal research while the schema is drafted.

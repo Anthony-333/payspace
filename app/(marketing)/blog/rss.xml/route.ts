@@ -27,8 +27,8 @@ export function GET() {
   <channel>
     <title>${esc(`${SITE_NAME} blog`)}</title>
     <link>${SITE_URL}/blog</link>
-    <description>Guides for coffee shops, bakeries and small stores in the Philippines.</description>
-    <language>en-ph</language>
+    <description>Guides for coffee shops, bakeries and small stores, wherever they sell.</description>
+    <language>en</language>
     <atom:link href="${SITE_URL}/blog/rss.xml" rel="self" type="application/rss+xml" />
 ${items}
   </channel>

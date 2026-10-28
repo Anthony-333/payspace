@@ -4,11 +4,12 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "convex/react";
 import { useRouter } from "next/navigation";
 import posthog from "posthog-js";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 import { FieldError } from "@/components/auth/auth-card";
+import { browserTimezone, CurrencySelect, TimezoneSelect } from "@/components/shop/locale-fields";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -35,6 +36,8 @@ const schema = z.object({
   name: z.string().trim().min(2, "Enter your business name.").max(80),
   slug: z.string().regex(/^[a-z0-9](?:[a-z0-9-]{1,38}[a-z0-9])$/, "Use 3 to 40 letters, numbers or dashes."),
   businessType: z.enum(["cafe", "grocery", "bakery", "retail"]),
+  currency: z.string().regex(/^[A-Z]{3}$/),
+  timezone: z.string().min(1),
   taxRate: z.number({ error: "Enter a tax rate." }).min(0).max(100),
   pricesIncludeTax: z.boolean(),
   starterMenu: z.boolean(),
@@ -50,10 +53,22 @@ export function OnboardingForm() {
   const [slugEdited, setSlugEdited] = useState(false);
   const form = useForm<Values>({
     resolver: zodResolver(schema),
-    defaultValues: { name: "", slug: "", businessType: "cafe", taxRate: 12, pricesIncludeTax: true, starterMenu: true },
+    defaultValues: {
+      name: "",
+      slug: "",
+      businessType: "cafe",
+      currency: "USD",
+      timezone: "UTC", // replaced by the device's zone after hydration, below
+      taxRate: 0,
+      pricesIncludeTax: true,
+      starterMenu: true,
+    },
   });
   const { errors, isSubmitting } = form.formState;
-  const businessType = useWatch({ control: form.control, name: "businessType" });
+  const [businessType, currency, timezone] = useWatch({ control: form.control, name: ["businessType", "currency", "timezone"] });
+
+  // The server render can't know the visitor's time zone, so it's filled in on the client.
+  useEffect(() => form.setValue("timezone", browserTimezone()), [form]);
 
   const onSubmit = form.handleSubmit(async ({ taxRate, starterMenu, ...values }) => {
     setError(null);
@@ -137,7 +152,7 @@ export function OnboardingForm() {
 
       <div className="grid grid-cols-2 items-end gap-3">
         <div className="grid gap-2">
-          <Label htmlFor="taxRate">VAT rate (%)</Label>
+          <Label htmlFor="taxRate">Tax rate (%)</Label>
           <Input
             id="taxRate"
             type="number"
@@ -148,11 +163,23 @@ export function OnboardingForm() {
         </div>
         <label className="flex h-9 items-center gap-2 text-sm">
           <input type="checkbox" className="size-4 accent-primary" {...form.register("pricesIncludeTax")} />
-          Prices include VAT
+          Prices include tax
         </label>
       </div>
       <FieldError message={errors.taxRate?.message} />
-      <p className="text-sm text-muted-foreground">Currency: Philippine peso (₱). Time zone: Asia/Manila.</p>
+      <p className="-mt-3 text-sm text-muted-foreground">Sales tax, VAT or GST. Leave it at 0 if you don&apos;t charge tax.</p>
+
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-2">
+          <Label htmlFor="currency">Currency</Label>
+          <CurrencySelect id="currency" value={currency} onChange={(code) => form.setValue("currency", code)} />
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor="timezone">Time zone</Label>
+          <TimezoneSelect id="timezone" value={timezone} onChange={(zone) => form.setValue("timezone", zone)} />
+        </div>
+      </div>
+      <p className="-mt-3 text-sm text-muted-foreground">Change these, or use your own currency sign, any time in Settings.</p>
 
       {businessType !== "retail" && (
         <label className="flex items-start gap-2 text-sm">

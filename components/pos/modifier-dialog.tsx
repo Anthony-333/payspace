@@ -7,8 +7,8 @@ import { defaultOptions, describeLine, optionRef, type Group, type SaleProduct }
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { MAX_LINE_QTY } from "@/components/pos/cart-store";
-import { formatMoney } from "@/convex/lib/money";
 import { cn } from "@/lib/utils";
+import { useMoney } from "@/components/shop/shop-provider";
 
 type Props = {
   product: SaleProduct | null;
@@ -36,6 +36,7 @@ function rule(group: Group) {
 }
 
 function ModifierForm({ product, groups, productGroups, onAdd }: Omit<Props, "product"> & { product: SaleProduct }) {
+  const money = useMoney();
   const [selected, setSelected] = useState(() => new Set(defaultOptions(productGroups)));
   const [qty, setQty] = useState(1);
 
@@ -104,7 +105,7 @@ function ModifierForm({ product, groups, productGroups, onAdd }: Omit<Props, "pr
                       <span className="font-medium">{option.name}</span>
                       {option.priceDelta !== 0 && (
                         <span className="text-xs text-muted-foreground">
-                          {option.priceDelta > 0 ? "+" : ""}{formatMoney(option.priceDelta)}
+                          {option.priceDelta > 0 ? "+" : ""}{money(option.priceDelta)}
                         </span>
                       )}
                     </span>
@@ -130,7 +131,7 @@ function ModifierForm({ product, groups, productGroups, onAdd }: Omit<Props, "pr
           disabled={missing.length > 0 || !line}
           onClick={() => onAdd(options, qty)}
         >
-          {missing.length > 0 ? `Choose ${missing[0].name.toLowerCase()}` : <>Add · {formatMoney(unitPrice * qty)}</>}
+          {missing.length > 0 ? `Choose ${missing[0].name.toLowerCase()}` : <>Add · {money(unitPrice * qty)}</>}
         </Button>
       </DialogFooter>
     </>

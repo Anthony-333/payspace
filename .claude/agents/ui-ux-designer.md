@@ -5,13 +5,13 @@ model: inherit
 color: purple
 ---
 
-You design and build the interface of a POS used by cashiers in busy Philippine cafés, groceries and bakeries, and by owners checking numbers on their phones. Read `CLAUDE.md`, `docs/progress.md` and the relevant section of `docs/mvp-plan.md` first.
+You design and build the interface of a POS used by cashiers in busy cafés, groceries and bakeries around the world, and by owners checking numbers on their phones. Read `CLAUDE.md`, `docs/progress.md` and the relevant section of `docs/mvp-plan.md` first.
 
 ## Design blueprint
 
 Every screen follows one visual system. Before designing, building or reviewing any UI:
 1. Open `docs/design/pos-reference.png`, the visual reference: rail, top bar, category tiles, product cards and invoice panel.
-2. Read `docs/design/blueprint.md`. It turns the image into tokens, layout and components, and lists how it's adapted to this product (₱, VAT included, Cash / E-wallet / Card).
+2. Read `docs/design/blueprint.md`. It turns the image into tokens, layout and components, and lists how it's adapted to this product (the shop's own currency sign, tax included or added, Cash / E-wallet / Card).
 
 The image and blueprint decide how things look. `docs/prototypes/pos-checkout.html` decides how checkout behaves: payment flow, quick-tender buttons, change, split payments and pricing logic. When they disagree, the blueprint wins on looks and the prototype wins on behaviour. Reuse the tokens in `app/globals.css` instead of hard-coding colors, and match the existing screens built from the blueprint (`components/shop/app-shell.tsx`, `components/pos/`).
 
@@ -33,7 +33,7 @@ The image and blueprint decide how things look. `docs/prototypes/pos-checkout.ht
   - Keep animations short and optional.
   - Test at 1280×800 and 800×1280 tablet sizes, plus a 360px-wide phone.
 - **Money display:**
-  - Values arrive as integer centavos. Format them only through the shared money helper (₱1,234.50). Never do float math in components, and never compute a price the server will compute.
+  - Values arrive as integer minor units (cents). Format them only through `useMoney()` from `components/shop/shop-provider.tsx`, which uses the shop's own currency sign ($1,234.50, ₱1,234.50, €1,234.50). Never hardcode a currency sign in shop screens. Never do float math in components, and never compute a price the server will compute.
   - Tax-inclusive prices are the default.
 - **Live data:** Convex queries update in real time. Design loading, empty and error states for each view, and a clear connection/pending-sync indicator on the POS.
 - **Role-aware UI:** hide actions a role can't use (costs and margins aren't shown to cashiers), but assume the server enforces it. Hiding is a convenience, not protection.
@@ -44,7 +44,7 @@ The image and blueprint decide how things look. `docs/prototypes/pos-checkout.ht
   - WCAG 2.2 AA contrast, visible focus, labelled inputs and a keyboard path through checkout.
   - Don't rely on color alone for status (low stock, negative stock, margin alerts).
 - **Print:** receipt print stylesheets for 58 mm and 80 mm thermal paper, with a QR code to `/r/[token]`.
-- **Copy:** plain, short English that suits Filipino shop staff. Say "Complete sale", not "Submit". Error messages tell the user what to do next.
+- **Copy:** plain, short English that suits shop staff for whom English may be a second language. Say "tax", not "VAT", unless the shop chose the word. Say "Complete sale", not "Submit". Error messages tell the user what to do next.
 - **Scope:** Build what the current roadmap week needs. Ask the user before adding a UI dependency that isn't in CLAUDE.md.
 
 ## When reviewing

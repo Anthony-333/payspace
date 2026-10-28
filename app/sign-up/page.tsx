@@ -7,7 +7,7 @@ import { appHomeHref } from "@/lib/app-home";
 export const metadata: Metadata = {
   title: "Create a free POS account",
   description:
-    "Start using Payspace POS for free: checkout, receipts, stock tracking and GCash or Maya payments for your coffee shop, bakery or store. No card needed.",
+    "Start using Payspace POS for free: checkout, receipts, stock tracking and cash, card or e-wallet payments in your own currency, for your coffee shop, bakery or store. No card needed.",
   alternates: { canonical: "/sign-up" },
 };
 

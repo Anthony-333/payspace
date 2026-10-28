@@ -11,7 +11,7 @@ import { FieldError } from "@/components/auth/auth-card";
 import { IngredientLines, readIngredientRows, toIngredientRows } from "@/components/inventory/ingredient-lines";
 import type { StockItem } from "@/components/inventory/stock-parts";
 import { PageHeader } from "@/components/shop/page-header";
-import { canManage, useShop } from "@/components/shop/shop-provider";
+import { canManage, useMoney, useShop } from "@/components/shop/shop-provider";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -30,7 +30,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { api } from "@/convex/_generated/api";
 import type { Doc } from "@/convex/_generated/dataModel";
-import { formatMoney, moneyToInput, parseMoney } from "@/convex/lib/money";
+import { moneyToInput, parseMoney } from "@/convex/lib/money";
 import { errorMessage } from "@/lib/errors";
 import { cn } from "@/lib/utils";
 
@@ -44,12 +44,13 @@ function selectionText(group: Pick<Group, "minSelect" | "maxSelect">) {
   return min === max ? `Pick ${min}` : `Pick ${min} to ${max}`;
 }
 
-function priceText(delta: number) {
+function priceText(delta: number, money: (minor: number) => string) {
   if (delta === 0) return "";
-  return delta > 0 ? `+${formatMoney(delta)}` : formatMoney(delta);
+  return delta > 0 ? `+${money(delta)}` : money(delta);
 }
 
 export function ModifiersPage() {
+  const money = useMoney();
   const shop = useShop();
   const tenantId = shop.tenantId;
   const manage = canManage(shop.role);
@@ -99,7 +100,7 @@ export function ModifiersPage() {
                     <li key={option.key} className="flex items-center gap-2">
                       <span>{option.name}</span>
                       {option.recipeDelta.length > 0 && <Badge variant="outline">Changes recipe</Badge>}
-                      <span className="ml-auto tabular-nums text-muted-foreground">{priceText(option.priceDelta)}</span>
+                      <span className="ml-auto tabular-nums text-muted-foreground">{priceText(option.priceDelta, money)}</span>
                     </li>
                   ))}
                 </ul>
@@ -257,7 +258,7 @@ function GroupDialog({ open, group, items, onClose }: { open: boolean; group: Gr
                 <div key={field.id} className="grid gap-1">
                   <div className="flex gap-2">
                     <Input aria-label={`Option ${index + 1} name`} placeholder="Name" className="h-11 flex-1" {...form.register(`options.${index}.name`)} />
-                    <Input aria-label={`Option ${index + 1} price change`} placeholder="+₱0.00" inputMode="decimal" className="h-11 w-28" {...form.register(`options.${index}.price`)} />
+                    <Input aria-label={`Option ${index + 1} price change`} placeholder={`+${shop.currencySymbol}0.00`} inputMode="decimal" className="h-11 w-28" {...form.register(`options.${index}.price`)} />
                     <Button
                       type="button" variant="ghost" size="icon-lg" className="size-11" aria-label={`Remove option ${index + 1}`}
                       disabled={options.fields.length === 1}

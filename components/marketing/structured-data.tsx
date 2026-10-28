@@ -17,8 +17,8 @@ const graph = [
     url: SITE_URL,
     logo: `${SITE_URL}/icons/icon-512.png`,
     email: SUPPORT_EMAIL,
-    contactPoint: { "@type": "ContactPoint", contactType: "customer support", email: SUPPORT_EMAIL, areaServed: "PH" },
-    areaServed: { "@type": "Country", name: "Philippines" },
+    contactPoint: { "@type": "ContactPoint", contactType: "customer support", email: SUPPORT_EMAIL, availableLanguage: "English" },
+    areaServed: "Worldwide",
   },
   {
     "@type": "WebSite",
@@ -26,7 +26,7 @@ const graph = [
     url: SITE_URL,
     name: SITE_NAME,
     description: SITE_DESCRIPTION,
-    inLanguage: "en-PH",
+    inLanguage: "en",
     publisher: { "@id": ORG_ID },
   },
   {
@@ -41,13 +41,12 @@ const graph = [
     operatingSystem: "Web browser (Android, iOS, Windows, macOS, ChromeOS)",
     browserRequirements: "Requires a modern browser with JavaScript enabled.",
     image: `${SITE_URL}/opengraph-image`,
-    inLanguage: "en-PH",
-    countriesSupported: "PH",
+    inLanguage: "en",
     keywords: SITE_KEYWORDS.join(", "),
     featureList,
     audience: {
       "@type": "BusinessAudience",
-      audienceType: "Coffee shops, milk tea stands, bakeries, groceries, sari-sari stores and small retail",
+      audienceType: "Coffee shops, bubble tea stands, bakeries, groceries, convenience stores and small retail",
     },
     publisher: { "@id": ORG_ID },
     offers: [

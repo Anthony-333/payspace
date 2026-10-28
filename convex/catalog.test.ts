@@ -7,10 +7,10 @@ import { makePro, modules } from "./test.setup";
 
 const page = { numItems: 500, cursor: null };
 
-async function setup(businessType: "cafe" | "grocery" | "bakery" | "retail" = "cafe") {
+async function setup(businessType: "cafe" | "grocery" | "bakery" | "retail" = "cafe", currency?: string) {
   const t = convexTest(schema, modules);
   const owner = t.withIdentity({ subject: "user_owner", name: "Owner" });
-  const { tenantId } = await owner.mutation(api.tenants.create, { name: "Test shop", slug: "testshop", businessType });
+  const { tenantId } = await owner.mutation(api.tenants.create, { name: "Test shop", slug: "testshop", businessType, currency });
   await makePro(t, tenantId);
   const as = async (userId: string, role: "manager" | "cashier") => {
     await t.run((ctx) => ctx.db.insert("members", { tenantId, userId, name: userId, role, status: "active" }));
@@ -233,9 +233,9 @@ describe("templates", () => {
     const withSize = products.filter((p) => p.modifierGroupIds.some((id) => sizeIds.has(id)));
     expect(withSize.length).toBeGreaterThanOrEqual(19); // every drink but the espresso
 
-    // Iced latte: 18 g beans × ₱1.20 + 180 ml milk × ₱0.11 + 150 g ice × ₱0.01 + cup ₱7.50 = ₱50.40
+    // Iced latte: 18 g beans × $0.025 + 180 ml milk × $0.001 + 150 g ice × $0.0001 + cup $0.20 = $0.845 → $0.85
     const icedLatte = products.find((p) => p.name === "Iced latte")!;
-    expect(icedLatte.unitCost).toBe(5040);
+    expect(icedLatte).toMatchObject({ price: 500, unitCost: 85 });
     const lines = await t.run((ctx) =>
       ctx.db.query("recipeLines")
         .withIndex("by_tenant_product", (q) => q.eq("tenantId", tenantId).eq("productId", icedLatte._id))
@@ -243,10 +243,22 @@ describe("templates", () => {
     expect(lines).toHaveLength(4);
 
     const large = groups.find((g) => g.name === "Size (milk drinks)")!.options.find((o) => o.key === "large")!;
-    expect(large).toMatchObject({ priceDelta: 2000, recipeDelta: [{ qty: 60 }] });
+    expect(large).toMatchObject({ priceDelta: 75, recipeDelta: [{ qty: 60 }] });
 
     expect(await owner.query(api.templates.available, { tenantId })).toBeNull();
     await expect(owner.mutation(api.templates.apply, { tenantId })).rejects.toThrow(/empty catalog/);
+  });
+
+  test("a starter menu is priced for the shop's currency, on round steps", async () => {
+    const { owner, tenantId } = await setup("cafe", "PHP");
+    await owner.mutation(api.templates.apply, { tenantId });
+    const { page: products } = await owner.query(api.products.list, { tenantId, paginationOpts: page });
+    // $5.00 × 28 = ₱140; ingredient costs scale with it, so the margin stays where it was.
+    expect(products.find((p) => p.name === "Iced latte")).toMatchObject({ price: 14000, unitCost: 2366 });
+    expect(products.every((p) => p.price % 500 === 0)).toBe(true);
+    const groups = await owner.query(api.modifiers.list, { tenantId });
+    const large = groups.find((g) => g.name === "Size (milk drinks)")!.options.find((o) => o.key === "large")!;
+    expect(large.priceDelta).toBe(2000);
   });
 
   test("bakery and grocery templates load; retail has none", async () => {

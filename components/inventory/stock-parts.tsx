@@ -8,18 +8,18 @@ import type { BaseUnit, StockStatus } from "@/convex/lib/quantity";
 
 export type StockItem = FunctionReturnType<typeof api.inventory.listItems>[number];
 
-/** Average costs can be fractions of a centavo (₱1.199 a gram), so show up to 4 decimals of a peso. */
-export function formatUnitCost(avgCost: number, unit: BaseUnit) {
+/** Average costs can be fractions of a cent ($1.199 a gram), so show up to 4 decimals. */
+export function formatUnitCost(avgCost: number, unit: BaseUnit, symbol: string) {
   const text = Number.isInteger(avgCost)
-    ? formatMoney(avgCost)
-    : `₱${(avgCost / 100).toFixed(4).replace(/0{1,2}$/, "")}`;
+    ? formatMoney(avgCost, symbol)
+    : `${symbol}${(avgCost / 100).toFixed(4).replace(/0{1,2}$/, "")}`;
   return `${text} / ${unit}`;
 }
 
-/** What a purchase unit costs at the current average, like "₱1,199.00 per 1 kg bag". */
-export function formatPurchaseCost(item: Pick<StockItem, "avgCost" | "purchaseUnit">) {
+/** What a purchase unit costs at the current average, like "$11.99 per 1 kg bag". */
+export function formatPurchaseCost(item: Pick<StockItem, "avgCost" | "purchaseUnit">, symbol: string) {
   if (item.avgCost === null || !item.purchaseUnit) return null;
-  return `${formatMoney(Math.round(item.avgCost * item.purchaseUnit.factor))} per ${item.purchaseUnit.name}`;
+  return `${formatMoney(Math.round(item.avgCost * item.purchaseUnit.factor), symbol)} per ${item.purchaseUnit.name}`;
 }
 
 const STATUS = {
@@ -35,5 +35,5 @@ export function StockStatusBadge({ status }: { status: StockStatus }) {
 }
 
 export function formatDateTime(ms: number) {
-  return new Intl.DateTimeFormat("en-PH", { dateStyle: "medium", timeStyle: "short" }).format(ms);
+  return new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(ms);
 }

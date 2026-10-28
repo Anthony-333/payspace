@@ -4,9 +4,9 @@ import { useQuery } from "convex/react";
 import { AlertTriangle, CheckCircle2, PackageX, TrendingDown } from "lucide-react";
 import Link from "next/link";
 import { UpgradeNote } from "@/components/shop/plan";
-import { useShop } from "@/components/shop/shop-provider";
+import { useMoney, useShop } from "@/components/shop/shop-provider";
 import { api } from "@/convex/_generated/api";
-import { formatBps, formatMoney } from "@/convex/lib/money";
+import { formatBps } from "@/convex/lib/money";
 import { formatQty } from "@/convex/lib/quantity";
 import { cn } from "@/lib/utils";
 
@@ -20,6 +20,7 @@ const STATUS: Record<string, { label: string; className: string }> = {
 };
 
 export function AlertsCard() {
+  const money = useMoney();
   const shop = useShop();
   const alerts = useQuery(api.analytics.alerts, { tenantId: shop.tenantId });
 
@@ -90,7 +91,7 @@ export function AlertsCard() {
                   <li key={product._id} className="flex items-center justify-between gap-3">
                     <span className="min-w-0 truncate">{product.name}</span>
                     <span className="shrink-0 tabular-nums text-muted-foreground">
-                      {formatMoney(product.price)}
+                      {money(product.price)}
                       {product.marginBps !== null && (
                         <span className="ml-2 text-foreground">{formatBps(product.marginBps)}</span>
                       )}

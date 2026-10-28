@@ -1,6 +1,7 @@
 "use client";
 
 import { Coins, Minus, Receipt, ShoppingBag, TrendingDown, TrendingUp, type LucideIcon } from "lucide-react";
+import { useShop } from "@/components/shop/shop-provider";
 import { formatMoney } from "@/convex/lib/money";
 import { cn } from "@/lib/utils";
 
@@ -45,6 +46,7 @@ export function KpiTiles({ current, previous, loading, comparison = "the same da
   loading?: boolean;
   comparison?: string;
 }) {
+  const { currencySymbol } = useShop();
   return (
     <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
       {TILES.map((tile) => {
@@ -62,8 +64,8 @@ export function KpiTiles({ current, previous, loading, comparison = "the same da
             <div>
             <div className={cn("text-2xl font-semibold tracking-tight tabular-nums sm:text-3xl", tile.tone !== "dark" && "text-foreground", loading && "animate-pulse opacity-60")}>
               {loading ? "—" : tile.money ? (
-                <><span className="font-normal opacity-60">₱</span>{formatMoney(value, "")}</>
-              ) : value.toLocaleString("en-PH")}
+                <><span className="font-normal opacity-60">{currencySymbol}</span>{formatMoney(value, "")}</>
+              ) : value.toLocaleString("en-US")}
             </div>
             <div className={cn("mt-1 flex items-center gap-1 text-xs", TONES[tile.tone].soft)}>
               {loading ? (

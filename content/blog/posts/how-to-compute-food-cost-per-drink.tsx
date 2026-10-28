@@ -25,28 +25,29 @@ function Body() {
       <h2 id="step-2">Step 2: Work out the cost per gram, millilitre or piece</h2>
       <p>Divide what you paid by how much you got:</p>
       <ul>
-        <li>Beans: ₱1,200 for 1,000 g = ₱1.20 per gram</li>
-        <li>Fresh milk: ₱95 for 1,000 ml = ₱0.095 per millilitre</li>
-        <li>Cups and lids: ₱650 for 100 = ₱6.50 each</li>
+        <li>Beans: $30 for 1,000 g = $0.03 per gram</li>
+        <li>Fresh milk: $2.00 for 1,000 ml = $0.002 per millilitre</li>
+        <li>Cups and lids: $25 for 100 = $0.25 each</li>
       </ul>
       <p>Use the price you actually paid, including delivery if your supplier charges for it.</p>
 
       <h2 id="step-3">Step 3: Multiply by how much one drink uses</h2>
       <p>
-        18 g of beans at ₱1.20 is ₱21.60. 200 ml of milk at ₱0.095 is ₱19.00. Add the cup and lid, and you have the cost
+        18 g of beans at $0.03 is $0.54. 200 ml of milk at $0.002 is $0.40. Add the cup and lid, and you have the cost
         of one latte.
       </p>
 
       <h2 id="example">Worked example: a 12 oz latte</h2>
       <CostTable example={latte} />
       <p>
-        The latte costs <strong>₱47.10</strong> to make and sells for ₱140. But if your prices include 12% VAT, ₱15 of
-        that belongs to the government, not to you. Work out your margin on the price <em>without</em> VAT: ₱125. That
-        leaves ₱77.90 profit, a gross margin of 62.3%, so the ingredients take 37.7% of what you keep.
+        The latte costs <strong>$1.19</strong> to make and sells for $4.50. But if your prices include a 10% sales tax,
+        VAT or GST, $0.41 of that belongs to the government, not to you. Work out your margin on the price{" "}
+        <em>without</em> tax: $4.09. That leaves $2.90 profit, a gross margin of 70.9%, so the ingredients take 29.1% of
+        what you keep.
       </p>
       <Callout title="Food cost % vs margin">
         <p>
-          <strong>Food cost %</strong> = cost ÷ price without VAT. <strong>Gross margin</strong> = 100% − food cost %.
+          <strong>Food cost %</strong> = cost ÷ price without tax. <strong>Gross margin</strong> = 100% − food cost %.
           They&rsquo;re two views of the same number. Our{" "}
           <Link href="/blog/markup-vs-margin-pricing">guide to markup and margin</Link> shows how to turn a target
           margin into a price.
@@ -62,8 +63,8 @@ function Body() {
 
       <h2 id="keep-current">Keep the numbers current</h2>
       <p>
-        Ingredient prices change. If you have 2 kg of beans that cost ₱1,100 a kilo and receive 3 kg more at ₱1,300, your
-        beans now cost an average of <strong>₱1,220 a kilo</strong> ((2 × 1,100 + 3 × 1,300) ÷ 5). That&rsquo;s called a{" "}
+        Ingredient prices change. If you have 2 kg of beans that cost $28 a kilo and receive 3 kg more at $32, your beans
+        now cost an average of <strong>$30.40 a kilo</strong> ((2 × 28 + 3 × 32) ÷ 5). That&rsquo;s called a{" "}
         <strong>weighted average cost</strong>, and it&rsquo;s the fairest price to use for the next drinks you sell.
         Redo the sum whenever a delivery comes in at a new price, or let your POS do it.
       </p>
@@ -74,8 +75,8 @@ function Body() {
           <strong>Forgetting packaging.</strong> Cups, lids, straws, sleeves and bags are part of every takeaway order.
         </li>
         <li>
-          <strong>Computing margin on the VAT-inclusive price.</strong> It counts the VAT as if you kept it, so the latte
-          above would show a 66.4% margin instead of 62.3%. See <Link href="/blog/vat-inclusive-pricing-philippines">how to take the VAT out of a price</Link>.
+          <strong>Computing margin on the tax-inclusive price.</strong> It counts the tax as if you kept it, so the latte
+          above would show a 73.6% margin instead of 70.9%. See <Link href="/blog/tax-inclusive-pricing">how to take the tax out of a price</Link>.
         </li>
         <li>
           <strong>Forgetting add-ons.</strong> An extra shot or oat milk changes the cost. Cost each option as well as the
@@ -102,10 +103,11 @@ const post: BlogPost = {
   slug: "how-to-compute-food-cost-per-drink",
   title: "How to compute food cost per drink",
   description:
-    "Compute the food cost of any coffee or milk tea drink in 3 steps, with a worked latte example, correct VAT, and the mistakes that hide lost profit.",
+    "Compute the food cost of any coffee or milk tea drink in 3 steps, with a worked latte example, sales tax or VAT done right, and the mistakes that hide lost profit.",
   category: "Costing and pricing",
-  keywords: ["food cost per drink", "coffee cost calculation", "latte cost breakdown", "beverage costing", "recipe costing Philippines"],
+  keywords: ["food cost per drink", "coffee cost calculation", "latte cost breakdown", "beverage costing", "recipe costing"],
   published: "2026-09-27",
+  updated: "2026-10-27",
   readingMinutes: 5,
   industries: ["coffee-shop", "milk-tea-shop"],
   faqs: [
@@ -114,8 +116,8 @@ const post: BlogPost = {
       a: "List every ingredient and packaging item in one cup, work out the cost per gram, millilitre or piece (price paid ÷ quantity bought), multiply by the amount one cup uses, and add everything up.",
     },
     {
-      q: "Should I compute margin with or without VAT?",
-      a: "Without. If your prices include 12% VAT, divide the price by 1.12 first. The VAT isn't your money, so including it makes every item look more profitable than it is.",
+      q: "Should I compute margin with or without tax?",
+      a: "Without. If your prices include tax, divide the price by 1 plus the rate first (by 1.10 for a 10% rate). The tax isn't your money, so including it makes every item look more profitable than it is.",
     },
   ],
   Body,

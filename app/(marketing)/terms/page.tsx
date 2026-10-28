@@ -12,7 +12,7 @@ export default function TermsPage() {
   return (
     <LegalPage
       title="Terms & Conditions"
-      effectiveDate="September 27, 2026"
+      effectiveDate="October 27, 2026"
       intro={
         <p>
           These terms are the agreement between you and Payspace for using the Payspace point of sale at payspace.shop.
@@ -64,17 +64,17 @@ export default function TermsPage() {
         </p>
         <ul>
           <li>
-            Payspace is not currently registered with the Bureau of Internal Revenue (BIR) as an accredited POS or
+            Payspace is not registered or certified with any tax authority as an accredited POS, fiscal device or
             computerized accounting system. Receipts from Payspace are records of the sale and are{" "}
-            <strong>not official receipts or sales invoices</strong> for BIR purposes. Keep issuing BIR-registered
-            invoices as the law requires.
+            <strong>not official tax receipts or invoices</strong>. Keep issuing the receipts and invoices your local
+            tax rules require.
           </li>
           <li>
-            You are responsible for setting the right tax (VAT) rate and for applying discounts the law requires, such
-            as the Senior Citizen and PWD discounts.
+            You are responsible for setting the right currency and tax rate (such as sales tax, VAT or GST), and for
+            applying any discounts the law where you operate requires.
           </li>
           <li>
-            Payspace <strong>records payments; it does not process them</strong>. Card, GCash, Maya and other payments
+            Payspace <strong>records payments; it does not process them</strong>. Card, e-wallet and other payments
             are handled by your own payment providers, and Payspace never holds your money.
           </li>
           <li>
@@ -92,7 +92,7 @@ export default function TermsPage() {
         </p>
         <p>
           You are responsible for having the right to enter any personal information you put into Payspace, such as
-          details of your customers, staff and suppliers, and for handling it as the Data Privacy Act of 2012 requires.
+          details of your customers, staff and suppliers, and for handling it as the data protection law where you operate requires.
           How we handle personal information is explained in our <Link href="/privacy">Privacy Policy</Link>.
         </p>
       </LegalSection>
@@ -136,7 +136,7 @@ export default function TermsPage() {
           not liable for indirect or consequential losses, such as lost profits, lost sales or lost data, arising from
           your use of the service. Our total liability for any claim relating to Payspace is limited to the amount you
           paid us in the 12 months before the claim. Nothing in these terms limits liability that cannot be limited under
-          Philippine law, or your rights as a consumer.
+          applicable law, or your rights as a consumer.
         </p>
       </LegalSection>
 
@@ -149,8 +149,10 @@ export default function TermsPage() {
 
       <LegalSection id="law" title="11. Governing law">
         <p>
-          These terms are governed by the laws of the Republic of the Philippines. We will try to settle any dispute with
-          you informally first; if we cannot, it will be decided by the proper courts of the Philippines.
+          These terms are governed by the laws of the Republic of the Philippines, where Payspace is operated. We will try
+          to settle any dispute with you informally first; if we cannot, it will be decided by the proper courts of the
+          Philippines. This does not take away any protection you have under mandatory consumer law in the country where
+          you live.
         </p>
       </LegalSection>
 

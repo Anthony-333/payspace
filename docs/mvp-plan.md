@@ -169,7 +169,7 @@ Make it a team rule (and a lint check if you like) that files in `convex/` never
 
 ### Conventions that prevent the classic POS bugs
 
-- **Money is an integer in minor units.** ₱140.00 is stored as `14000`. Floating-point money causes one-centavo errors that never reconcile. Keep all money maths in one `lib/money.ts` helper.
+- **Money is an integer in minor units.** $140.00 (or ₱140.00, €140.00) is stored as `14000`. Floating-point money causes one-cent errors that never reconcile. Keep all money maths in one `lib/money.ts` helper.
 - **Quantities use base units** (grams, millilitres, pieces), with an optional purchase unit for receiving (1 bag = 1,000 g).
 - **Sales store snapshots.** Each sale line keeps the product name, price and unit cost as they were at checkout, so history and profit never change when you edit the menu.
 - **Reports use a business date** computed in the shop's timezone, so a sale at 11:50 pm lands on the right day.
@@ -182,7 +182,7 @@ import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
 const tenantId = v.id("tenants");
-const money = v.number(); // integer minor units: ₱140.00 → 14000
+const money = v.number(); // integer minor units: $140.00 → 14000
 const role = v.union(v.literal("owner"), v.literal("manager"), v.literal("cashier"));
 const payMethod = v.union(v.literal("cash"), v.literal("ewallet"), v.literal("card"));
 
@@ -192,8 +192,8 @@ export default defineSchema({
     slug: v.string(),
     businessType: v.union(v.literal("cafe"), v.literal("grocery"),
       v.literal("bakery"), v.literal("retail")),
-    currency: v.string(),            // "PHP"
-    timezone: v.string(),            // "Asia/Manila"
+    currency: v.string(),            // ISO code, "USD"; the shop may set its own sign (currencySymbol)
+    timezone: v.string(),            // IANA name, from the owner's browser at onboarding
     taxRateBps: v.number(),          // 1200 = 12%
     pricesIncludeTax: v.boolean(),
     targetMarginBps: v.number(),     // 6000 = 60%, drives margin alerts
@@ -594,7 +594,7 @@ export function money(minor: number) {                          // 14000 → "14
 ```
 
 - The authorization check happens in the mutation. The internal action and its paginated queries can only be started by that mutation, so they can safely trust the `tenantId` stored on the job.
-- Money is exported as plain decimals converted from integer minor units, with no currency symbol, so spreadsheets treat it as numbers. The currency goes in the header instead (“Total (PHP)”).
+- Money is exported as plain decimals converted from integer minor units, with no currency symbol, so spreadsheets treat it as numbers. The currency goes in the header instead (“Total (USD)”).
 - Dates and times are shown in the shop's timezone as `YYYY-MM-DD` and `HH:mm`, and the business date gets its own column so late-night sales group correctly.
 - Files are UTF-8 with a byte-order mark, CRLF line endings and standard quoting, which is what Excel on Windows expects.
 - Text cells starting with `=`, `+`, `-` or `@` get a leading apostrophe, so a product named like a formula can't run in someone's spreadsheet. Numeric columns are left alone so negative numbers stay numbers.
@@ -603,7 +603,7 @@ export function money(minor: number) {                          // 14000 → "14
 - The full backup zips every dataset into one file (fflate works well inside the action) and is owner-only.
 - Every export is logged with who, what, date range and row count. Files expire after 7 days; a daily cron deletes them and marks any job stuck in “working” for over 15 minutes as failed, so one crashed export can't block the next.
 
-**Done when** a year of sales for a busy café (around 100,000 line items) exports in under two minutes, opens correctly in Excel and Google Sheets, and its totals match the dashboard to the centavo.
+**Done when** a year of sales for a busy café (around 100,000 line items) exports in under two minutes, opens correctly in Excel and Google Sheets, and its totals match the dashboard to the cent.
 
 ## Roles and permissions
 

@@ -36,7 +36,7 @@ export function WhatsNew() {
             <Chip icon={Camera}>Payment photos</Chip>
             <h3 className="mt-4 text-xl font-semibold tracking-tight">Proof of payment, saved with the sale</h3>
             <p className="mt-2 text-sm text-tint-peach-foreground">
-              Snap the customer&apos;s GCash or Maya screen, or the card slip, right at the till. It stays with the
+              Snap the customer&apos;s e-wallet screen or the card slip right at the till. It stays with the
               sale for your staff, and never shows on the customer&apos;s receipt link.
             </p>
           </div>
@@ -44,11 +44,11 @@ export function WhatsNew() {
             <div className="flex-1 space-y-1.5 rounded-xl bg-card p-3 text-xs">
               <div className="flex justify-between font-semibold">
                 <span>Receipt #0142</span>
-                <span>₱390.00</span>
+                <span>$16.50</span>
               </div>
               <div className="flex justify-between text-muted-foreground">
-                <span>GCash · ref 8891234</span>
-                <span>₱390.00</span>
+                <span>PayPal · ref 8891234</span>
+                <span>$16.50</span>
               </div>
               <div className="flex items-center gap-1 text-tint-green-foreground">
                 <Check className="size-3" strokeWidth={3} /> Photo attached
@@ -60,7 +60,7 @@ export function WhatsNew() {
                   <Check className="size-2.5" strokeWidth={3} />
                 </div>
                 <div className="font-semibold">Sent</div>
-                <div className="text-[11px] font-bold">₱390.00</div>
+                <div className="text-[11px] font-bold">$16.50</div>
                 <div className="text-white/70">Ref 8891234</div>
               </div>
             </div>
@@ -142,20 +142,24 @@ export function WhatsNew() {
           </div>
         </article>
 
-        {/* VAT settings */}
+        {/* Currency and tax settings */}
         <article className="flex flex-col justify-between gap-6 rounded-2xl bg-tint-green p-6 lg:col-span-2">
           <div>
-            <Chip icon={Percent}>VAT your way</Chip>
-            <h3 className="mt-4 text-xl font-semibold tracking-tight">VAT registered or not</h3>
+            <Chip icon={Percent}>Your currency, your tax</Chip>
+            <h3 className="mt-4 text-xl font-semibold tracking-tight">Set up for wherever you sell</h3>
             <p className="mt-2 text-sm text-tint-green-foreground">
-              12% included by default. Change the rate or switch VAT off, and past receipts keep the VAT they were
-              issued with.
+              Pick your currency or type your own sign, then set sales tax, VAT or GST at your rate, or switch it off.
+              Past receipts keep what they were issued with.
             </p>
           </div>
           <div aria-hidden className="space-y-2 rounded-xl bg-card p-3 text-xs">
+            <div className="flex items-center justify-between">
+              <span className="font-semibold">Currency</span>
+              <span className="text-muted-foreground">US dollar ($)</span>
+            </div>
             {[
-              ["Charge VAT", true],
-              ["Prices include VAT", true],
+              ["Charge tax", true],
+              ["Prices include tax", false],
             ].map(([label, on]) => (
               <div key={String(label)} className="flex items-center justify-between">
                 <span className="font-semibold">{label}</span>
@@ -165,8 +169,8 @@ export function WhatsNew() {
               </div>
             ))}
             <div className="flex justify-between border-t pt-2 text-muted-foreground">
-              <span>₱100 item at 12%</span>
-              <span>VAT ₱10.71</span>
+              <span>$100 item at 8%</span>
+              <span>Tax $8.00</span>
             </div>
           </div>
         </article>

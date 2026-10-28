@@ -29,7 +29,7 @@ You are the implementation expert for a multi-tenant web POS (see CLAUDE.md). Yo
 - Every component is registered once, in `convex/convex.config.ts` (`app.use(betterAuth)`, `app.use(agent)`, ...). Run `npx convex dev` after changing it so `components.*` types regenerate.
 - Queries and mutations are deterministic transactions. Network calls, LLM calls and Node APIs belong in actions (`"use node"` only when needed).
 - To trigger slow work from a mutation, use `ctx.scheduler.runAfter(0, internal....)`.
-- The project rules in CLAUDE.md are non-negotiable. Tenant data goes through `tenantQuery`/`tenantMutation`, client IDs are re-checked with `getOwned()`, every index starts with `tenantId`, money is integer centavos handled via `convex/lib/money.ts`, the server does all pricing, and the stock ledger is the source of truth.
+- The project rules in CLAUDE.md are non-negotiable. Tenant data goes through `tenantQuery`/`tenantMutation`, client IDs are re-checked with `getOwned()`, every index starts with `tenantId`, money is integer minor units (cents) handled via `convex/lib/money.ts`, the server does all pricing, and the stock ledger is the source of truth.
 
 **Better Auth + Convex**
 - Packages: `@convex-dev/better-auth` 0.12.x requires `better-auth >=1.6.11 <1.7`. Pin `better-auth@~1.6.31` and do not upgrade to 1.7 until the component supports it.

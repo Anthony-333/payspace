@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { ChartCard, DataTable, EmptyState, HEAT } from "@/components/analytics/chart-parts";
-import { formatMoney } from "@/convex/lib/money";
+import { useMoney } from "@/components/shop/shop-provider";
 
 // Hour by weekday: a grid whose job is magnitude, so colour is sequential - one hue, more is
 // darker in light mode and lighter in dark. Each cell is its own hit target with a tooltip
@@ -23,6 +23,7 @@ function step(value: number, most: number) {
 }
 
 export function WeekdayHeatmap({ byWeekdayHour }: { byWeekdayHour: number[][] }) {
+  const money = useMoney();
   const [hovered, setHovered] = useState<{ day: number; hour: number } | null>(null);
   const most = Math.max(...byWeekdayHour.flat(), 0);
 
@@ -36,7 +37,7 @@ export function WeekdayHeatmap({ byWeekdayHour }: { byWeekdayHour: number[][] })
     hours
       .map((revenue, hour) => ({ day, hour, revenue }))
       .filter((cell) => cell.revenue > 0)
-      .map((cell) => [`${DAYS[cell.day]} ${hourLabel(cell.hour)}`, formatMoney(cell.revenue)]));
+      .map((cell) => [`${DAYS[cell.day]} ${hourLabel(cell.hour)}`, money(cell.revenue)]));
 
   return (
     <ChartCard
@@ -74,7 +75,7 @@ export function WeekdayHeatmap({ byWeekdayHour }: { byWeekdayHour: number[][] })
                           onMouseLeave={() => setHovered(null)}
                           onFocus={() => setHovered({ day, hour })}
                           onBlur={() => setHovered(null)}
-                          aria-label={`${name} ${hourLabel(hour)}: ${formatMoney(revenue)}`}
+                          aria-label={`${name} ${hourLabel(hour)}: ${money(revenue)}`}
                           className="h-6 rounded-[3px] outline-none transition-[outline] focus-visible:ring-2 focus-visible:ring-ring"
                           style={{
                             background: HEAT[step(revenue, most)],
@@ -94,7 +95,7 @@ export function WeekdayHeatmap({ byWeekdayHour }: { byWeekdayHour: number[][] })
               {hovered ? (
                 <>
                   <span className="font-semibold tabular-nums">
-                    {formatMoney(byWeekdayHour[hovered.day]?.[hovered.hour] ?? 0)}
+                    {money(byWeekdayHour[hovered.day]?.[hovered.hour] ?? 0)}
                   </span>{" "}
                   <span className="text-muted-foreground">
                     on {DAYS[hovered.day]} at {hourLabel(hovered.hour)}

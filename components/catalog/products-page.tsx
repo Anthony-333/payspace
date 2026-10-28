@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { ProductFormSheet, type Product } from "@/components/catalog/product-form-sheet";
 import { useShellSearch } from "@/components/shop/app-shell";
 import { PageHeader } from "@/components/shop/page-header";
-import { canManage, useShop } from "@/components/shop/shop-provider";
+import { canManage, useMoney, useShop } from "@/components/shop/shop-provider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -22,7 +22,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
-import { formatBps, formatMoney, grossMarginBps } from "@/convex/lib/money";
+import { formatBps, grossMarginBps } from "@/convex/lib/money";
 import { errorMessage } from "@/lib/errors";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { cn } from "@/lib/utils";
@@ -31,6 +31,7 @@ const ALL = "all";
 const KIND_LABEL = { stocked: "Stocked", recipe: "Recipe", service: "Service" } as const;
 
 export function ProductsPage() {
+  const money = useMoney();
   const shop = useShop();
   const tenantId = shop.tenantId;
   const manage = canManage(shop.role);
@@ -167,10 +168,10 @@ export function ProductsPage() {
                   <TableCell className="hidden text-muted-foreground sm:table-cell">
                     {(product.categoryId && categoryName.get(product.categoryId)) ?? "—"}
                   </TableCell>
-                  <TableCell className="text-right tabular-nums">{formatMoney(product.price)}</TableCell>
+                  <TableCell className="text-right tabular-nums">{money(product.price)}</TableCell>
                   {manage && (
                     <TableCell className="hidden text-right text-muted-foreground tabular-nums md:table-cell">
-                      {product.unitCost ? formatMoney(product.unitCost) : "—"}
+                      {product.unitCost ? money(product.unitCost) : "—"}
                     </TableCell>
                   )}
                   {manage && (

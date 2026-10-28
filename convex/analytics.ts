@@ -49,7 +49,7 @@ function totalsOf(days: Doc<"dailyStats">[]) {
   return {
     ...totals,
     profit,
-    // Rounded down to the centavo: an average ticket is a guide, not an amount anyone pays.
+    // Rounded down to the cent: an average ticket is a guide, not an amount anyone pays.
     averageTicket: totals.orders > 0 ? Math.round(totals.revenue / totals.orders) : 0,
     marginBps: totals.revenue > 0 ? Math.round((profit * 10_000) / totals.revenue) : null,
   };

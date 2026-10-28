@@ -151,7 +151,7 @@ export async function priceLines(ctx: TenantQueryCtx, lines: SaleLineInput[]): P
   return priced;
 }
 
-/** Order totals, with the VAT split rounded once on the order (see money.ts). */
+/** Order totals, with the tax split rounded once on the order (see money.ts). */
 export function computeTotals(priced: PricedLine[], tenant: Tenant) {
   const subtotal = priced.reduce((sum, line) => sum + line.unitPrice * line.qty, 0);
   assertMoney("The order total", subtotal);

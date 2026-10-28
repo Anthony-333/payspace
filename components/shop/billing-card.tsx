@@ -89,8 +89,7 @@ export function BillingCard({ timezone }: { timezone: string }) {
       {!pro && (
         <div className="rounded-xl bg-muted p-4">
           <p className="font-medium">
-            Pro: US${PRO_PRICE.usd} a month per shop{" "}
-            <span className="font-normal text-muted-foreground">(about ₱{PRO_PRICE.phpApprox})</span>
+            Pro: US${PRO_PRICE.usd} a month per shop
           </p>
           <ul className="mt-3 grid gap-1.5 text-sm sm:grid-cols-2">
             {PRO_FEATURES.map((f) => (

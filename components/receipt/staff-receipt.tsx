@@ -5,11 +5,10 @@ import { ArrowLeft, Camera, ExternalLink, ReceiptIcon, Stamp } from "lucide-reac
 import Link from "next/link";
 import { useState } from "react";
 import { ReceiptView } from "@/components/receipt/receipt-view";
-import { useShop } from "@/components/shop/shop-provider";
+import { useMoney, useShop } from "@/components/shop/shop-provider";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { api } from "@/convex/_generated/api";
-import { formatMoney } from "@/convex/lib/money";
 
 // The shop's own copy of a receipt: the receipt the customer got, with the photos taken of each
 // payment beside it. Only the receipt prints; the photos are for the shop's records and never
@@ -18,6 +17,7 @@ import { formatMoney } from "@/convex/lib/money";
 const METHOD_NAMES: Record<string, string> = { cash: "Cash", ewallet: "E-wallet", card: "Card" };
 
 export function StaffReceipt({ saleId }: { saleId: string }) {
+  const money = useMoney();
   const shop = useShop();
   const data = useQuery(api.sales.receipt, { tenantId: shop.tenantId, saleId });
   const [open, setOpen] = useState<number | null>(null);
@@ -106,7 +106,7 @@ export function StaffReceipt({ saleId }: { saleId: string }) {
                     <span className="grid text-sm">
                       <span className="flex justify-between gap-2 font-medium">
                         {METHOD_NAMES[photo.method] ?? photo.method}
-                        <span className="tabular-nums">{formatMoney(photo.amount)}</span>
+                        <span className="tabular-nums">{money(photo.amount)}</span>
                       </span>
                       {photo.ref && <span className="truncate text-muted-foreground">{photo.ref}</span>}
                     </span>
@@ -123,7 +123,7 @@ export function StaffReceipt({ saleId }: { saleId: string }) {
           {viewing && (
             <>
               <DialogTitle className="px-2 pt-1">
-                {METHOD_NAMES[viewing.method] ?? viewing.method} · {formatMoney(viewing.amount)}
+                {METHOD_NAMES[viewing.method] ?? viewing.method} · {money(viewing.amount)}
               </DialogTitle>
               <DialogDescription className="sr-only">
                 Photo taken of this payment at the till.

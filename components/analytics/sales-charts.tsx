@@ -2,7 +2,7 @@
 
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { axisMoney, ChartCard, DataTable, EmptyState, Legend, SERIES, TipRows } from "@/components/analytics/chart-parts";
-import { formatMoney } from "@/convex/lib/money";
+import { useMoney, useShop } from "@/components/shop/shop-provider";
 
 // Every chart here has one job: magnitude. So they use one hue (the brand blue) and let
 // length carry the value. Colour only becomes categorical where the series are the subject,
@@ -13,6 +13,8 @@ const hourLabel = (hour: number) => `${((hour + 11) % 12) + 1}${hour < 12 ? "am"
 
 /** When the shop is busy. A column per hour of the shop's own day. */
 export function HourlyChart({ byHour }: { byHour: number[] }) {
+  const money = useMoney();
+  const { currencySymbol } = useShop();
   const data = HOURS.map((hour) => ({ hour, label: hourLabel(hour), revenue: byHour[hour] ?? 0 }));
   const busiest = data.reduce((best, row) => (row.revenue > best.revenue ? row : best), data[0]);
   const hasSales = busiest.revenue > 0;
@@ -24,7 +26,7 @@ export function HourlyChart({ byHour }: { byHour: number[] }) {
       table={
         <DataTable
           head={["Hour", "Sales"]}
-          rows={data.filter((row) => row.revenue > 0).map((row) => [row.label, formatMoney(row.revenue)])}
+          rows={data.filter((row) => row.revenue > 0).map((row) => [row.label, money(row.revenue)])}
         />
       }
     >
@@ -40,7 +42,7 @@ export function HourlyChart({ byHour }: { byHour: number[] }) {
               tick={{ fontSize: 12, fill: "var(--color-muted-foreground)" }}
             />
             <YAxis
-              tickFormatter={axisMoney(busiest.revenue)}
+              tickFormatter={axisMoney(busiest.revenue, currencySymbol)}
               tickLine={false}
               axisLine={false}
               width={52}
@@ -52,7 +54,7 @@ export function HourlyChart({ byHour }: { byHour: number[] }) {
                 active && payload?.length ? (
                   <TipRows
                     title={String(payload[0].payload.label)}
-                    rows={[{ label: "in sales", value: formatMoney(Number(payload[0].value)) }]}
+                    rows={[{ label: "in sales", value: money(Number(payload[0].value)) }]}
                   />
                 ) : null
               }
@@ -79,6 +81,7 @@ const METHODS = [
  * separated by a 2px gap in the surface colour rather than by a stroke.
  */
 export function PaymentMix({ mix }: { mix: { cash: number; ewallet: number; card: number } }) {
+  const money = useMoney();
   const total = mix.cash + mix.ewallet + mix.card;
   const segments = METHODS.map((method) => ({
     ...method,
@@ -93,7 +96,7 @@ export function PaymentMix({ mix }: { mix: { cash: number; ewallet: number; card
       table={
         <DataTable
           head={["Method", "Taken", "Share"]}
-          rows={segments.map((s) => [s.label, formatMoney(s.amount), `${s.share.toFixed(1)}%`])}
+          rows={segments.map((s) => [s.label, money(s.amount), `${s.share.toFixed(1)}%`])}
         />
       }
     >
@@ -106,7 +109,7 @@ export function PaymentMix({ mix }: { mix: { cash: number; ewallet: number; card
                 key={s.key}
                 className="h-full min-w-1 first:rounded-l-lg last:rounded-r-lg"
                 style={{ width: `${s.share}%`, background: s.color }}
-                title={`${s.label} ${formatMoney(s.amount)}`}
+                title={`${s.label} ${money(s.amount)}`}
               />
             ))}
           </div>
@@ -115,7 +118,7 @@ export function PaymentMix({ mix }: { mix: { cash: number; ewallet: number; card
             {segments.map((s) => (
               <div key={s.key}>
                 <dt className="text-muted-foreground">{s.label}</dt>
-                <dd className="font-semibold tabular-nums">{formatMoney(s.amount)}</dd>
+                <dd className="font-semibold tabular-nums">{money(s.amount)}</dd>
                 <dd className="text-xs text-muted-foreground tabular-nums">{s.share.toFixed(0)}%</dd>
               </div>
             ))}
@@ -147,6 +150,7 @@ export function TopItems({ title, description, items, metric }: {
   items: TopItem[];
   metric: "revenue" | "profit";
 }) {
+  const money = useMoney();
   const most = Math.max(...items.map((item) => item[metric]), 1);
 
   return (
@@ -156,7 +160,7 @@ export function TopItems({ title, description, items, metric }: {
       table={
         <DataTable
           head={["Item", "Sold", "Sales", "Profit"]}
-          rows={items.map((item) => [item.name, item.qty, formatMoney(item.revenue), formatMoney(item.profit)])}
+          rows={items.map((item) => [item.name, item.qty, money(item.revenue), money(item.profit)])}
         />
       }
     >
@@ -166,7 +170,7 @@ export function TopItems({ title, description, items, metric }: {
             <li key={item.productId} className="grid gap-1">
               <div className="flex items-baseline justify-between gap-3 text-sm">
                 <span className="min-w-0 truncate">{item.name}</span>
-                <span className="shrink-0 font-semibold tabular-nums">{formatMoney(item[metric])}</span>
+                <span className="shrink-0 font-semibold tabular-nums">{money(item[metric])}</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">

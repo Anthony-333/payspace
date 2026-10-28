@@ -4,7 +4,7 @@ import { Coffee, Croissant, CupSoda, Shirt, ShoppingBasket, Soup } from "lucide-
 const SHOPS = [
   { icon: Coffee, label: "Coffee shops", href: "/pos/coffee-shop" },
   { icon: Croissant, label: "Bakeries", href: "/pos/bakery" },
-  { icon: CupSoda, label: "Milk tea", href: "/pos/milk-tea-shop" },
+  { icon: CupSoda, label: "Bubble tea", href: "/pos/milk-tea-shop" },
   { icon: ShoppingBasket, label: "Groceries", href: "/pos/grocery" },
   { icon: Soup, label: "Food stalls", href: null },
   { icon: Shirt, label: "Small retail", href: null },
@@ -16,7 +16,7 @@ export function AudienceStrip() {
   return (
     <section aria-labelledby="audience-title" className="mx-auto w-full max-w-7xl px-4 py-16 sm:px-6">
       <h2 id="audience-title" className="text-center text-base font-medium">
-        Built for small shops across the Philippines
+        Built for small shops around the world
       </h2>
       <ul className="mt-8 grid grid-cols-3 gap-y-8 sm:grid-cols-6">
         {SHOPS.map(({ icon: Icon, label, href }) => {

@@ -6,7 +6,7 @@ import posthog from "posthog-js";
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { formatUnitCost, type StockItem } from "@/components/inventory/stock-parts";
-import { useShop } from "@/components/shop/shop-provider";
+import { useMoney, useShop } from "@/components/shop/shop-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,7 +15,7 @@ import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetT
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { blendAvgCost, roundAvgCost } from "@/convex/lib/costing";
-import { formatMoney, parseMoney } from "@/convex/lib/money";
+import { parseMoney } from "@/convex/lib/money";
 import { formatQty, parseQty } from "@/convex/lib/quantity";
 import { errorMessage } from "@/lib/errors";
 
@@ -43,6 +43,7 @@ export function ReceiveSheet({ open, onOpenChange, ...props }: Props) {
 }
 
 function ReceiveForm({ items, initialItem, onDone }: Omit<Props, "open" | "onOpenChange"> & { onDone: () => void }) {
+  const money = useMoney();
   const shop = useShop();
   const receive = useMutation(api.inventory.receive);
   const [lines, setLines] = useState<Line[]>(() => [blankLine(initialItem ?? undefined)]);
@@ -169,7 +170,7 @@ function ReceiveForm({ items, initialItem, onDone }: Omit<Props, "open" | "onOpe
                   </Select>
                 </div>
                 <div className="col-span-2 grid gap-1 sm:col-span-1">
-                  <Label htmlFor={`total-${line.key}`} className="text-xs text-muted-foreground">Total cost (₱)</Label>
+                  <Label htmlFor={`total-${line.key}`} className="text-xs text-muted-foreground">Total cost ({shop.currencySymbol.trim()})</Label>
                   <Input
                     id={`total-${line.key}`}
                     inputMode="decimal"
@@ -184,9 +185,9 @@ function ReceiveForm({ items, initialItem, onDone }: Omit<Props, "open" | "onOpe
               {item && baseQty !== null && baseQty > 0 && (
                 <p className="text-xs text-muted-foreground tabular-nums">
                   {formatQty(baseQty, item.baseUnit)}
-                  {unitCost !== null && ` at ${formatUnitCost(unitCost, item.baseUnit)}`}
+                  {unitCost !== null && ` at ${formatUnitCost(unitCost, item.baseUnit, shop.currencySymbol)}`}
                   {newAvg !== null && item.avgCost !== null && newAvg !== item.avgCost &&
-                    ` · average ${formatUnitCost(item.avgCost, item.baseUnit)} → ${formatUnitCost(newAvg, item.baseUnit)}`}
+                    ` · average ${formatUnitCost(item.avgCost, item.baseUnit, shop.currencySymbol)} → ${formatUnitCost(newAvg, item.baseUnit, shop.currencySymbol)}`}
                 </p>
               )}
             </fieldset>
@@ -214,7 +215,7 @@ function ReceiveForm({ items, initialItem, onDone }: Omit<Props, "open" | "onOpe
       <SheetFooter className="mt-auto border-t">
         <div className="flex items-center justify-between text-sm">
           <span className="text-muted-foreground">Receipt total</span>
-          <span className="text-lg font-semibold tabular-nums">{formatMoney(grandTotal)}</span>
+          <span className="text-lg font-semibold tabular-nums">{money(grandTotal)}</span>
         </div>
         <Button type="submit" size="lg" className="h-12" disabled={saving}>
           {saving ? "Saving…" : "Receive stock"}

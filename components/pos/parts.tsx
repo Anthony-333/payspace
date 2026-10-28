@@ -1,14 +1,16 @@
 "use client";
 
 import { Minus, Plus } from "lucide-react";
+import { useShop } from "@/components/shop/shop-provider";
 import { formatMoney } from "@/convex/lib/money";
 import { cn } from "@/lib/utils";
 
-/** "₱140.00" with a lighter peso sign, as in the blueprint's price style. */
+/** "$140.00" with a lighter currency sign, as in the blueprint's price style. */
 export function Price({ amount, className }: { amount: number; className?: string }) {
+  const { currencySymbol } = useShop();
   return (
     <span className={cn("font-semibold tabular-nums", className)}>
-      <span className="font-normal text-muted-foreground">₱</span>
+      <span className="font-normal text-muted-foreground">{currencySymbol}</span>
       {formatMoney(amount, "")}
     </span>
   );

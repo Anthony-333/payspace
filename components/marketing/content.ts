@@ -14,45 +14,44 @@ export type Testimonial = {
 export const TESTIMONIALS: Testimonial[] = [
   {
     quote:
-      "I used to guess my drink margins. Now I know every latte makes at least ₱90, and I repriced the two that didn't.",
-    name: "Carla Mendoza",
-    role: "Owner, Kapehan sa Kanto",
-    initials: "CM",
+      "I used to guess my drink margins. Now I know every latte makes at least $3, and I repriced the two that didn't.",
+    name: "Sofia Martins",
+    role: "Owner, Corner Cup Coffee",
+    initials: "SM",
     tint: "green",
   },
   {
     quote:
       "Stock counts used to eat my whole Sunday. Now the ledger tells me what's running low before the supplier even calls.",
-    name: "Ramon Dizon",
-    role: "Owner, Dizon Bakeshop",
-    initials: "RD",
+    name: "Daniel Okafor",
+    role: "Owner, Okafor Bakehouse",
+    initials: "DO",
     tint: "blue",
   },
   {
     quote:
-      "My cashiers learned it in ten minutes. GCash reference numbers are saved with every sale, so closing up is quick.",
+      "My cashiers learned it in ten minutes. E-wallet reference numbers are saved with every sale, so closing up is quick.",
     name: "Joy Villanueva",
-    role: "Manager, Tindahan ni Aling Nena",
+    role: "Manager, Northside Mini Mart",
     initials: "JV",
     tint: "peach",
   },
 ];
 
-// Pro is charged in US dollars through Polar (convex/billing.ts). The peso figure is a guide
-// for Filipino shop owners; update it if the exchange rate moves a lot.
+// Pro is charged in US dollars through Polar (convex/billing.ts), wherever the shop is.
 // Must match the Pro product's price in Polar (POLAR_PRO_PRODUCT_ID); Polar charges what it has.
-export const PRO_PRICE = { usd: 10, phpApprox: 580, trialMonths: 1 } as const;
-export const PRO_PRICE_TEXT = `${PRO_PRICE.usd} (about ₱${PRO_PRICE.phpApprox}) a month per shop`;
+export const PRO_PRICE = { usd: 10, trialMonths: 1 } as const;
+export const PRO_PRICE_TEXT = `$${PRO_PRICE.usd} a month per shop`;
 
 export type PlanRow = { label: string; free: string | boolean; pro: string | boolean };
 
 // Free-tier limits are a first proposal; adjust once billing is built.
 export const PLAN_ROWS: PlanRow[] = [
-  { label: "Record cash, GCash, Maya and card sales", free: true, pro: true },
+  { label: "Record cash, e-wallet and card sales", free: true, pro: true },
   { label: "Split payments and e-wallet reference numbers", free: true, pro: true },
   { label: "Payment photos saved with each sale", free: true, pro: true },
   { label: "Printed and digital receipts", free: true, pro: true },
-  { label: "VAT on or off, at your rate", free: true, pro: true },
+  { label: "Any currency, time zone and tax rate", free: true, pro: true },
   { label: "Starter menus and CSV import", free: true, pro: true },
   { label: "Products", free: "Up to 50", pro: "Unlimited" },
   { label: "Stock tracking and ledger", free: true, pro: true },
@@ -70,7 +69,7 @@ export const FAQ: { category: FaqCategory; q: string; a: string }[] = [
   {
     category: "General",
     q: "What kinds of businesses is Payspace for?",
-    a: "Small shops that sell over a counter: coffee shops, milk tea stands, bakeries, groceries, sari-sari stores and small retail. Start from a café, bakery or grocery template, or import your products from a spreadsheet.",
+    a: "Small shops that sell over a counter: coffee shops, bubble tea stands, bakeries, groceries, convenience stores and small retail. Start from a café, bakery or grocery template, or import your products from a spreadsheet.",
   },
   {
     category: "General",
@@ -80,7 +79,7 @@ export const FAQ: { category: FaqCategory; q: string; a: string }[] = [
   {
     category: "General",
     q: "What devices do I need?",
-    a: "Any tablet, phone or laptop with a modern browser. USB barcode scanners work out of the box, and receipts print on 58 mm or 80 mm thermal printers through the browser's print dialog.",
+    a: "Any tablet, phone or laptop with a modern browser, anywhere in the world. USB barcode scanners work out of the box, and receipts print on 58 mm or 80 mm thermal printers through the browser's print dialog.",
   },
   {
     category: "General",
@@ -110,12 +109,17 @@ export const FAQ: { category: FaqCategory; q: string; a: string }[] = [
   {
     category: "Payments",
     q: "Which payment methods can I record?",
-    a: "Cash, GCash, Maya and card, including split payments on one sale. E-wallet sales keep their reference number, and you can attach a photo of the payment screen. Card payments are recorded, not processed, so keep using your terminal.",
+    a: "Cash, card and e-wallets such as PayPal, Apple Pay or Google Pay, including split payments on one sale. E-wallet sales keep their reference number, and you can attach a photo of the payment screen. Card payments are recorded, not processed, so keep using your terminal.",
   },
   {
     category: "Payments",
-    q: "Does it handle VAT?",
-    a: "Yes. Prices include 12% VAT by default, and you can change the rate or turn VAT off per shop in Settings.",
+    q: "Which currencies does it work with?",
+    a: "Any. Pick your currency when you create your shop, or type your own currency sign in Settings, and every price, receipt and report uses it. Your time zone sets when each business day starts.",
+  },
+  {
+    category: "Payments",
+    q: "Does it handle sales tax, VAT or GST?",
+    a: "Yes. Set your rate, choose whether prices include it, or switch tax off, per shop in Settings. Payspace keeps records of your sales; it isn't a certified fiscal or tax device, so check what your local tax office requires on official receipts.",
   },
   {
     category: "Data",

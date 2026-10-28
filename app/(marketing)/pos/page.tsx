@@ -6,9 +6,9 @@ import { MarketingShell } from "@/components/marketing/marketing-shell";
 import { INDUSTRIES } from "@/content/industries";
 import { SITE_URL } from "@/lib/site";
 
-const TITLE = "POS System for Small Businesses in the Philippines";
+const TITLE = "POS System for Small Businesses";
 const DESCRIPTION =
-  "Payspace is a free-to-start POS system for coffee shops, milk tea shops, bakeries, sari-sari stores and groceries in the Philippines, with recipe costing, stock tracking and GCash and Maya sales records.";
+  "Payspace is a free-to-start POS system for coffee shops, bubble tea shops, bakeries, convenience stores and groceries around the world, with recipe costing, stock tracking and sales in your own currency.";
 
 export const metadata: Metadata = {
   title: TITLE,
@@ -30,7 +30,7 @@ export default function PosHubPage() {
               url: `${SITE_URL}/pos`,
               name: TITLE,
               description: DESCRIPTION,
-              inLanguage: "en-PH",
+              inLanguage: "en",
               about: { "@id": `${SITE_URL}/#software` },
               mainEntity: {
                 "@type": "ItemList",
@@ -49,7 +49,7 @@ export default function PosHubPage() {
       <div className="mx-auto w-full max-w-7xl px-4 pt-10 pb-8 sm:px-6 sm:pt-16">
         <p className="text-sm font-medium text-primary">Payspace POS</p>
         <h1 className="mt-3 max-w-3xl text-4xl font-semibold tracking-tight text-balance sm:text-5xl">
-          A POS system built for small shops in the Philippines
+          A POS system built for small shops, wherever they are
         </h1>
         <p className="mt-5 max-w-2xl text-lg leading-relaxed text-muted-foreground">{DESCRIPTION}</p>
         <ul className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

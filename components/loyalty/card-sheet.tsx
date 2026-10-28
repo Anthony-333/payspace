@@ -37,7 +37,7 @@ export function CardSheet({ cardId, program, saleNumber, onClose, onStamped }: P
   const [signing, setSigning] = useState<"stamp" | "redeem" | null>(null);
   const [resetting, setResetting] = useState(false);
   const manager = canManage(shop.role);
-  const time = (at: number) => new Date(at).toLocaleString("en-PH", { timeZone: shop.timezone, dateStyle: "medium", timeStyle: "short" });
+  const time = (at: number) => new Date(at).toLocaleString(undefined, { timeZone: shop.timezone, dateStyle: "medium", timeStyle: "short" });
 
   const archive = async (archived: boolean) => {
     if (!card) return;

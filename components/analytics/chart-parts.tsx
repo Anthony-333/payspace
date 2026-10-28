@@ -3,7 +3,6 @@
 import { Table2 } from "lucide-react";
 import { useId, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
-import { formatMoney } from "@/convex/lib/money";
 import { cn } from "@/lib/utils";
 
 // Shared chart chrome. Every chart here ships a table view, because a tooltip may enhance
@@ -15,17 +14,17 @@ export const HEAT = [
 ] as const;
 
 /**
- * Axis ticks are read at a glance rather than reconciled, so no centavos — and one unit for
- * the whole axis, decided by its largest value. Mixing ₱750 with ₱1k on one scale makes the
+ * Axis ticks are read at a glance rather than reconciled, so no cents — and one unit for
+ * the whole axis, decided by its largest value. Mixing $750 with $1k on one scale makes the
  * reader do arithmetic to compare two bars.
  */
-export function axisMoney(largest: number) {
-  const inThousands = Math.abs(largest) >= 100_000; // ₱1,000 and up
+export function axisMoney(largest: number, symbol: string) {
+  const inThousands = Math.abs(largest) >= 100_000; // 1,000 and up
   return (minor: number) => {
-    const pesos = minor / 100;
-    if (!inThousands) return `₱${Math.round(pesos).toLocaleString("en-PH")}`;
-    const k = pesos / 1000;
-    return `₱${k % 1 === 0 ? k : k.toFixed(1)}k`;
+    const whole = minor / 100;
+    if (!inThousands) return `${symbol}${Math.round(whole).toLocaleString("en-US")}`;
+    const k = whole / 1000;
+    return `${symbol}${k % 1 === 0 ? k : k.toFixed(1)}k`;
   };
 }
 
@@ -143,4 +142,3 @@ export function EmptyState({ message }: { message: string }) {
   );
 }
 
-export { formatMoney };

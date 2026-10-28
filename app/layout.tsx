@@ -35,7 +35,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     siteName: SITE_NAME,
-    locale: "en_PH",
+    locale: "en_US",
     url: "/",
     title: SITE_TITLE,
     description: SITE_DESCRIPTION,
@@ -69,7 +69,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   const token = await getToken();
   return (
     <html
-      lang="en-PH"
+      lang="en"
       className={`${jakarta.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">

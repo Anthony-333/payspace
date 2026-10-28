@@ -16,8 +16,8 @@ export type PublicReceipt = NonNullable<FunctionReturnType<typeof api.sales.byTo
 const METHOD_NAMES: Record<string, string> = { cash: "Cash", ewallet: "E-wallet", card: "Card" };
 
 /** The shop's local clock time, from the same instant the business date came from. */
-function timeOf(at: number) {
-  return new Date(at).toLocaleTimeString("en-PH", { hour: "2-digit", minute: "2-digit" });
+function timeOf(at: number, timeZone: string) {
+  return new Date(at).toLocaleTimeString(undefined, { timeZone, hour: "2-digit", minute: "2-digit" });
 }
 
 export function ReceiptView({ receipt, autoPrint = false }: { receipt: PublicReceipt; autoPrint?: boolean }) {
@@ -28,8 +28,9 @@ export function ReceiptView({ receipt, autoPrint = false }: { receipt: PublicRec
 
   const { shop } = receipt;
   // Taken from the sale's own numbers, not the shop's settings today: a receipt issued while
-  // VAT was on must keep showing it after the owner switches VAT off.
-  const vat = taxFromTotals(receipt);
+  // tax was on must keep showing it after the owner switches tax off.
+  const tax = taxFromTotals(receipt);
+  const money = (minor: number) => formatMoney(minor, shop.currencySymbol);
   return (
     <div className="mx-auto grid w-full max-w-[80mm] gap-4 print:max-w-none">
       <article className="receipt rounded-xl border bg-card p-5 font-mono text-[13px] leading-snug print:rounded-none print:border-0 print:bg-transparent print:p-0">
@@ -44,7 +45,7 @@ export function ReceiptView({ receipt, autoPrint = false }: { receipt: PublicRec
             Receipt #{String(receipt.number).padStart(4, "0")}
           </p>
           <p className="text-muted-foreground">
-            {formatBusinessDate(receipt.businessDate)} · {timeOf(receipt.at)}
+            {formatBusinessDate(receipt.businessDate)} · {timeOf(receipt.at, shop.timezone)}
           </p>
         </header>
 
@@ -59,7 +60,7 @@ export function ReceiptView({ receipt, autoPrint = false }: { receipt: PublicRec
                   <span className="block pl-4 text-muted-foreground">{line.optionNames.join(", ")}</span>
                 )}
               </span>
-              <span className="tabular-nums">{formatMoney(line.unitPrice * line.qty)}</span>
+              <span className="tabular-nums">{money(line.unitPrice * line.qty)}</span>
             </li>
           ))}
         </ul>
@@ -67,33 +68,33 @@ export function ReceiptView({ receipt, autoPrint = false }: { receipt: PublicRec
         <div className="my-3 border-t border-dashed" />
 
         <dl className="grid gap-1">
-          <Row label="Subtotal" value={receipt.subtotal} />
-          {receipt.discount > 0 && <Row label="Discount" value={-receipt.discount} />}
-          {vat && (
+          <Row label="Subtotal" value={money(receipt.subtotal)} />
+          {receipt.discount > 0 && <Row label="Discount" value={money(-receipt.discount)} />}
+          {tax && (
             <Row
-              label={`VAT ${formatBps(vat.rateBps).replace(".0%", "%")}${vat.includedInPrices ? " (incl.)" : ""}`}
-              value={receipt.tax}
+              label={`Tax ${formatBps(tax.rateBps).replace(".0%", "%")}${tax.includedInPrices ? " (incl.)" : ""}`}
+              value={money(receipt.tax)}
             />
           )}
           <div className="mt-1 border-t border-dashed pt-1">
-            <Row label="Total" value={receipt.total} strong />
+            <Row label="Total" value={money(receipt.total)} strong />
           </div>
           {receipt.payments.map((payment, index) => (
             <Row
               key={index}
               label={`${METHOD_NAMES[payment.method] ?? payment.method}${payment.ref ? ` · ${payment.ref}` : ""}`}
-              value={payment.amount}
+              value={money(payment.amount)}
               muted
             />
           ))}
-          {receipt.changeGiven > 0 && <Row label="Change" value={receipt.changeGiven} muted />}
+          {receipt.changeGiven > 0 && <Row label="Change" value={money(receipt.changeGiven)} muted />}
         </dl>
 
         {shop.receiptFooter && (
           <p className="mt-4 text-center whitespace-pre-line text-muted-foreground">{shop.receiptFooter}</p>
         )}
         <p className="mt-4 text-center text-[11px] text-muted-foreground">
-          This is not an official BIR receipt.
+          This is not an official tax invoice.
         </p>
       </article>
 
@@ -104,11 +105,11 @@ export function ReceiptView({ receipt, autoPrint = false }: { receipt: PublicRec
   );
 }
 
-function Row({ label, value, strong, muted }: { label: string; value: number; strong?: boolean; muted?: boolean }) {
+function Row({ label, value, strong, muted }: { label: string; value: string; strong?: boolean; muted?: boolean }) {
   return (
     <div className={`flex justify-between gap-3 ${strong ? "text-base font-semibold" : ""} ${muted ? "text-muted-foreground" : ""}`}>
       <dt className="min-w-0 truncate">{label}</dt>
-      <dd className="tabular-nums">{formatMoney(value)}</dd>
+      <dd className="tabular-nums">{value}</dd>
     </div>
   );
 }

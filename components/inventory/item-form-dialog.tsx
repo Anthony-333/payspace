@@ -160,7 +160,7 @@ export function ItemFormDialog({ open, item, onClose }: Props) {
             </div>
             <div className="grid content-start gap-2">
               <Label htmlFor="item-cost">
-                {perPurchase ? `Cost per ${purchaseName.trim()} (₱)` : `Cost per ${baseUnit} (₱)`}
+                {perPurchase ? `Cost per ${purchaseName.trim()}` : `Cost per ${baseUnit}`} ({shop.currencySymbol.trim()})
               </Label>
               <Input
                 id="item-cost"

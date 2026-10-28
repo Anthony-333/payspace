@@ -3,11 +3,10 @@
 import { useQuery } from "convex/react";
 import { Banknote, Camera, ChevronRight, CreditCard, Receipt, Smartphone, type LucideIcon } from "lucide-react";
 import Link from "next/link";
-import { useShop } from "@/components/shop/shop-provider";
+import { useMoney, useShop } from "@/components/shop/shop-provider";
 import { Button } from "@/components/ui/button";
 import { api } from "@/convex/_generated/api";
 import { formatBusinessDate } from "@/convex/lib/businessDate";
-import { formatMoney } from "@/convex/lib/money";
 
 // Every sale keeps its receipt, so one can be reopened or reprinted at the counter at any time.
 // Week 5 adds search, date ranges, voids and refunds on top of this list.
@@ -15,6 +14,7 @@ import { formatMoney } from "@/convex/lib/money";
 const METHOD_ICONS: Record<string, LucideIcon> = { cash: Banknote, ewallet: Smartphone, card: CreditCard };
 
 export function ReceiptsPage() {
+  const money = useMoney();
   const shop = useShop();
   const sales = useQuery(api.sales.recent, { tenantId: shop.tenantId });
 
@@ -45,7 +45,7 @@ export function ReceiptsPage() {
       {[...days].map(([date, forDay]) => (
         <section key={date} className="grid gap-2">
           <h2 className="text-sm font-semibold text-muted-foreground">
-            {formatBusinessDate(date)} · {formatMoney(forDay.reduce((sum, sale) => sum + sale.total, 0))}
+            {formatBusinessDate(date)} · {money(forDay.reduce((sum, sale) => sum + sale.total, 0))}
           </h2>
           <ul className="grid gap-2">
             {forDay.map((sale) => (
@@ -65,7 +65,7 @@ export function ReceiptsPage() {
                       )}
                     </span>
                     <span className="truncate text-sm text-muted-foreground">
-                      {new Date(sale.at).toLocaleTimeString("en-PH", { hour: "2-digit", minute: "2-digit" })}
+                      {new Date(sale.at).toLocaleTimeString(undefined, { timeZone: shop.timezone, hour: "2-digit", minute: "2-digit" })}
                       {" · "}{sale.itemCount} {sale.itemCount === 1 ? "item" : "items"}
                       {" · "}{sale.staffName}
                     </span>
@@ -81,7 +81,7 @@ export function ReceiptsPage() {
                         aria-label={`${sale.photoCount} payment ${sale.photoCount === 1 ? "photo" : "photos"}`}
                       />
                     )}
-                    <span className="font-semibold tabular-nums">{formatMoney(sale.total)}</span>
+                    <span className="font-semibold tabular-nums">{money(sale.total)}</span>
                     <ChevronRight className="size-4 text-muted-foreground" />
                   </span>
                 </Link>

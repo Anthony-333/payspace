@@ -3,12 +3,12 @@
 import { Plus, Trash2 } from "lucide-react";
 import Link from "next/link";
 import type { StockItem } from "@/components/inventory/stock-parts";
-import { useShop } from "@/components/shop/shop-provider";
+import { useMoney, useShop } from "@/components/shop/shop-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { Id } from "@/convex/_generated/dataModel";
-import { formatMoney, roundMinor } from "@/convex/lib/money";
+import { roundMinor } from "@/convex/lib/money";
 import { parseQty, qtyToInput } from "@/convex/lib/quantity";
 
 /** One editable ingredient line, kept as the text people type until the form is saved. */
@@ -44,6 +44,7 @@ type Props = {
 };
 
 export function IngredientLines({ items, rows, onChange, allowNegative = false, showCost = false, label }: Props) {
+  const money = useMoney();
   const shop = useShop();
   const byId = new Map(items.map((item) => [item._id as string, item]));
   const update = (index: number, patch: Partial<IngredientRow>) =>
@@ -108,7 +109,7 @@ export function IngredientLines({ items, rows, onChange, allowNegative = false, 
               </Button>
             </div>
             {cost !== null && (
-              <p className="pr-13 text-right text-xs text-muted-foreground tabular-nums">{formatMoney(cost)}</p>
+              <p className="pr-13 text-right text-xs text-muted-foreground tabular-nums">{money(cost)}</p>
             )}
           </div>
         );

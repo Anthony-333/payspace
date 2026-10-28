@@ -141,7 +141,7 @@ export function InventoryPage() {
                 </TableCell>
                 {manage && (
                   <TableCell className="hidden text-right text-muted-foreground tabular-nums md:table-cell">
-                    {item.avgCost ? formatUnitCost(item.avgCost, item.baseUnit) : "—"}
+                    {item.avgCost ? formatUnitCost(item.avgCost, item.baseUnit, shop.currencySymbol) : "—"}
                   </TableCell>
                 )}
                 <TableCell onClick={(e) => e.stopPropagation()}>

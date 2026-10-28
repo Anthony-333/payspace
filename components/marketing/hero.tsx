@@ -5,7 +5,7 @@ import { Chip } from "./chip";
 import { PosMockup, StockMockup, TabletFrame } from "./mockups";
 import { QuoteCarousel } from "./quote-carousel";
 
-// Monthly profit in thousands of pesos, for the decorative chart card.
+// Monthly profit in hundreds of dollars, for the decorative chart card.
 const MONTHS = [
   ["Jan", 42],
   ["Feb", 58],
@@ -78,9 +78,9 @@ export function Hero({ ctaHref, ctaLabel }: { ctaHref: string; ctaLabel: string 
           <Chip icon={ChartColumn}>Profit statistics</Chip>
           <div className="mt-5 flex h-44 gap-3">
             <div className="flex flex-col justify-between pb-6 text-xs text-muted-foreground">
-              <span>₱90k</span>
-              <span>₱45k</span>
-              <span>₱0</span>
+              <span>$9k</span>
+              <span>$4.5k</span>
+              <span>$0</span>
             </div>
             <div className="flex flex-1 items-end justify-between gap-1.5">
               {MONTHS.map(([m, v], i) => (
@@ -91,7 +91,7 @@ export function Hero({ ctaHref, ctaLabel }: { ctaHref: string; ctaLabel: string 
                   >
                     {i === HIGHLIGHT && (
                       <span className="absolute -top-6 left-1/2 -translate-x-1/2 rounded-md bg-foreground px-1.5 py-0.5 text-[10px] font-semibold whitespace-nowrap text-background">
-                        ₱{v}k
+                        ${(v / 10).toFixed(1)}k
                       </span>
                     )}
                   </div>
@@ -109,7 +109,7 @@ export function Hero({ ctaHref, ctaLabel }: { ctaHref: string; ctaLabel: string 
               Recipes costed to the gram, so every item shows what it really earns.
             </p>
           </div>
-          <p className="text-4xl font-semibold tracking-tight">₱101.50</p>
+          <p className="text-4xl font-semibold tracking-tight">$3.80</p>
         </div>
 
         <div className="relative flex flex-col justify-between gap-6 overflow-hidden rounded-2xl bg-foreground p-6 text-background">

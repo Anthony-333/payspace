@@ -10,9 +10,9 @@ const PIECES = 24;
 
 // The same recipe as a whole batch: every per-piece amount × 24, shown without a price.
 const batch: CostExample = {
-  product: `Cheese ensaymada, batch of ${PIECES}`,
+  product: `Cheese danish, batch of ${PIECES}`,
   price: 0,
-  vatRateBps: perPiece.vatRateBps,
+  taxRateBps: perPiece.taxRateBps,
   lines: perPiece.lines.map((l) => ({ ...l, use: l.use * PIECES })),
 };
 
@@ -21,7 +21,7 @@ function Body() {
     <>
       <p>
         You bake by the tray but sell by the piece. To know what each piece really costs, cost the whole batch, then
-        divide by the number of good pieces it makes. Here&rsquo;s how, with a cheese ensaymada as the example.
+        divide by the number of good pieces it makes. Here&rsquo;s how, with a cheese danish as the example.
       </p>
 
       <h2 id="step-1">Step 1: Cost the whole batch</h2>
@@ -34,17 +34,17 @@ function Body() {
 
       <h2 id="step-2">Step 2: Divide by the pieces you can actually sell</h2>
       <p>
-        This batch costs ₱393.84 and makes 24 pieces, so each ensaymada costs <strong>₱16.41</strong>. Use the number of
+        This batch costs $17.40 and makes 24 pieces, so each danish costs <strong>$0.73</strong>. Use the number of
         pieces you can <em>sell</em>, not the number the recipe promises. If two pieces usually come out misshapen or
-        burnt, divide by 22 instead: each sellable piece then costs <strong>₱17.90</strong>.
+        burnt, divide by 22 instead: each sellable piece then costs <strong>$0.79</strong>.
       </p>
 
       <h2 id="step-3">Step 3: Compare with the price</h2>
       <CostTable example={perPiece} />
       <p>
-        At ₱45 with 12% VAT included, the price you keep is ₱40.18 and the margin is 59.2%. If your target is 60%, this
-        item is just short. Raising it to ₱48 gives 61.7%; keeping ₱45 and trimming the butter from 12 g to 10 g a piece
-        gives 61.9%.
+        At $2.00 with a 10% tax included, the price you keep is $1.82 and the margin is 59.9%. If your target is 60%, this
+        item is just short. Raising it to $2.25 gives 64.4%; keeping $2.00 and trimming the butter from 30 g to 25 g a
+        piece gives 62.6%.
         Our <Link href="/blog/markup-vs-margin-pricing">pricing guide</Link> shows how to work out the price for any
         target.
       </p>
@@ -85,10 +85,11 @@ const post: BlogPost = {
   slug: "bakery-batch-costing-per-piece",
   title: "How to cost bakery recipes per piece",
   description:
-    "Learn how to cost bakery recipes per piece: price the whole batch, divide by sellable pieces, and allow for waste. Worked ensaymada example in pesos.",
+    "Learn how to cost bakery recipes per piece: price the whole batch, divide by sellable pieces, and allow for waste. Worked cheese danish example.",
   category: "Costing and pricing",
-  keywords: ["bakery costing", "cost per piece bakery", "batch recipe costing", "how to price baked goods", "bakery business Philippines"],
+  keywords: ["bakery costing", "cost per piece bakery", "batch recipe costing", "how to price baked goods", "bakery pricing"],
   published: "2026-09-27",
+  updated: "2026-10-27",
   readingMinutes: 5,
   industries: ["bakery"],
   faqs: [

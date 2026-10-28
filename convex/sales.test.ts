@@ -18,8 +18,10 @@ afterEach(() => {
 async function setup() {
   const t = convexTest(schema, modules);
   const owner = t.withIdentity({ subject: "user_owner", name: "Owner" });
+  // A peso shop with 12% VAT included: the prices below are in centavos.
   const { tenantId } = await owner.mutation(api.tenants.create, {
     name: "Brew Lab", slug: "brewlab", businessType: "cafe",
+    currency: "PHP", timezone: "Asia/Manila", taxRateBps: 1200, pricesIncludeTax: true,
   });
   await makePro(t, tenantId);
 
@@ -327,12 +329,28 @@ describe("receipts", () => {
     const receipt = await t.query(api.sales.byToken, { token: sale.receiptToken });
     expect(receipt).toMatchObject({
       number: 1, total: 16000, changeGiven: 4000, status: "completed",
-      shop: { name: "Brew Lab", currency: "PHP" },
+      shop: { name: "Brew Lab", currency: "PHP", currencySymbol: "₱", timezone: "Asia/Manila" },
     });
     expect(receipt!.lines[0]).toEqual({ name: "Latte", optionNames: ["Oat milk"], qty: 1, unitPrice: 16000 });
     expect(JSON.stringify(receipt)).not.toContain("unitCost");
     expect(JSON.stringify(receipt)).not.toContain("cogs");
     expect(await t.query(api.sales.byToken, { token: "not-a-real-token" })).toBeNull();
+  });
+
+  test("a receipt keeps the currency sign it was issued with after the shop changes currency", async () => {
+    const { t, owner, tenantId, water, cash } = await cafe();
+    const sale = await owner.mutation(api.sales.checkout, {
+      tenantId, clientRef: "ref-sign", lines: [{ productId: water, qty: 1, optionKeys: [] }], payments: cash(6000),
+    });
+
+    await owner.mutation(api.tenants.updateSettings, { tenantId, currency: "USD", currencySymbol: "US$" });
+
+    const receipt = await t.query(api.sales.byToken, { token: sale.receiptToken });
+    expect(receipt!.shop).toMatchObject({ currency: "USD", currencySymbol: "₱" });
+    const next = await owner.mutation(api.sales.checkout, {
+      tenantId, clientRef: "ref-sign-2", lines: [{ productId: water, qty: 1, optionKeys: [] }], payments: cash(6000),
+    });
+    expect((await t.query(api.sales.byToken, { token: next.receiptToken }))!.shop.currencySymbol).toBe("US$");
   });
 
   test("a cashier sees only their own sales, and never a cost", async () => {

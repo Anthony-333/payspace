@@ -6,14 +6,13 @@ import Link from "next/link";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/shop/page-header";
-import { canManage, useShop } from "@/components/shop/shop-provider";
+import { canManage, useMoney, useShop } from "@/components/shop/shop-provider";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { api } from "@/convex/_generated/api";
 import { LIMITS, mapImportHeaders, readImportRow, type ImportColumn, type ImportRow } from "@/convex/lib/catalog";
 import { parseCsvRows } from "@/convex/lib/csv";
-import { formatMoney } from "@/convex/lib/money";
 import { errorMessage } from "@/lib/errors";
 
 type Problem = { row: number; message: string };
@@ -55,6 +54,7 @@ function parseFile(fileName: string, text: string): Parsed | string {
 }
 
 export function ImportPage() {
+  const money = useMoney();
   const shop = useShop();
   const importBatch = useMutation(api.products.importBatch);
   const fileInput = useRef<HTMLInputElement>(null);
@@ -146,7 +146,7 @@ export function ImportPage() {
             <CardDescription>
               The first row must be column names. <strong>Name</strong> and <strong>Price</strong> are required;{" "}
               {(["category", "cost", "barcode", "sku", "kind"] as const).map((c) => COLUMN_LABEL[c]).join(", ")} are optional.
-              Type is “stocked” (the default) or “service”. Prices are in pesos, like 45 or 45.50.
+              Type is “stocked” (the default) or “service”. Prices are in your shop&rsquo;s currency, like 45 or 45.50.
             </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-4">
@@ -202,8 +202,8 @@ Instant noodles,Snacks,15,11,`}
                           <TableCell className="text-muted-foreground">{row.row}</TableCell>
                           <TableCell>{row.name}{row.kind === "service" && <span className="text-muted-foreground"> (service)</span>}</TableCell>
                           <TableCell>{row.category ?? "—"}</TableCell>
-                          <TableCell className="text-right tabular-nums">{formatMoney(row.price)}</TableCell>
-                          <TableCell className="text-right tabular-nums">{row.cost === undefined ? "—" : formatMoney(row.cost)}</TableCell>
+                          <TableCell className="text-right tabular-nums">{money(row.price)}</TableCell>
+                          <TableCell className="text-right tabular-nums">{row.cost === undefined ? "—" : money(row.cost)}</TableCell>
                           <TableCell className="font-mono text-xs">{row.barcode ?? "—"}</TableCell>
                         </TableRow>
                       ))}

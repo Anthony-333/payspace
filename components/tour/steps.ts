@@ -34,7 +34,7 @@ const STEPS: TourStep[] = [
     route: "/pos",
     targets: ["pos-order"],
     title: "The order",
-    body: "Check the items, then place the order to take cash, GCash, Maya or card. Split payments work too.",
+    body: "Check the items, then place the order to take cash, e-wallet or card. Split payments work too.",
   },
   {
     id: "receipts",
@@ -74,7 +74,7 @@ const STEPS: TourStep[] = [
     audience: "owner",
     targets: ["nav-/settings", "nav-menu"],
     title: "Settings",
-    body: "Set your VAT, target margin and plan here.",
+    body: "Set your currency, tax, target margin and plan here.",
   },
   {
     id: "profile",

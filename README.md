@@ -27,4 +27,4 @@ Everything needed to start building with Claude Code.
 
 ## Prompt for the checkout screen (Week 4)
 
-> Build app/[shop]/pos using docs/prototypes/pos-checkout.html as the reference for layout, flow and pricing logic. Use React components with shadcn/ui, and Zustand for the cart (persisted so it survives a refresh). Wire "Complete sale" to the sales.checkout mutation with a clientRef, and keep all money in integer centavos. Match the prototype's behaviour for modifiers, parked orders, the manager PIN on large discounts, split payments, quick cash buttons and change due.
+> Build app/[shop]/pos using docs/prototypes/pos-checkout.html as the reference for layout, flow and pricing logic. Use React components with shadcn/ui, and Zustand for the cart (persisted so it survives a refresh). Wire "Complete sale" to the sales.checkout mutation with a clientRef, and keep all money in integer minor units (cents). Match the prototype's behaviour for modifiers, parked orders, the manager PIN on large discounts, split payments, quick cash buttons and change due.

@@ -6,13 +6,13 @@ import { POSTS } from "@/content/blog";
 import { SITE_URL } from "@/lib/site";
 
 const DESCRIPTION =
-  "Practical guides for Philippine coffee shops, bakeries, milk tea shops and sari-sari stores: recipe costing, pricing, VAT, inventory and GCash payments.";
+  "Practical guides for coffee shops, bakeries, bubble tea shops and convenience stores: recipe costing, pricing, sales tax and VAT, inventory and digital payments.";
 
 export const metadata: Metadata = {
-  title: "Small shop guides: costing, pricing and VAT",
+  title: "Small shop guides: costing, pricing and tax",
   description: DESCRIPTION,
   alternates: { canonical: "/blog", types: { "application/rss+xml": `${SITE_URL}/blog/rss.xml` } },
-  openGraph: { url: "/blog", title: "Small shop guides: costing, pricing and VAT", description: DESCRIPTION },
+  openGraph: { url: "/blog", title: "Small shop guides: costing, pricing and tax", description: DESCRIPTION },
 };
 
 export default function BlogIndexPage() {
@@ -27,7 +27,7 @@ export default function BlogIndexPage() {
               url: `${SITE_URL}/blog`,
               name: "The Payspace blog",
               description: DESCRIPTION,
-              inLanguage: "en-PH",
+              inLanguage: "en",
               publisher: { "@id": ORG_ID },
               blogPost: POSTS.map((p) => ({
                 "@type": "BlogPosting",

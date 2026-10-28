@@ -61,7 +61,7 @@ export default async function BlogPostPage({ params }: PageProps<"/blog/[slug]">
               dateModified: post.updated ?? post.published,
               articleSection: post.category,
               keywords: post.keywords.join(", "),
-              inLanguage: "en-PH",
+              inLanguage: "en",
               author: { "@id": ORG_ID },
               publisher: { "@id": ORG_ID },
             },

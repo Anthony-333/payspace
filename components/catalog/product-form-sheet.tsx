@@ -11,7 +11,7 @@ import { toast } from "sonner";
 import { z } from "zod";
 import { FieldError } from "@/components/auth/auth-card";
 import { IngredientLines, readIngredientRows, toIngredientRows, type IngredientRow } from "@/components/inventory/ingredient-lines";
-import { canManage, useShop } from "@/components/shop/shop-provider";
+import { canManage, useMoney, useShop } from "@/components/shop/shop-provider";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -22,7 +22,7 @@ import { api } from "@/convex/_generated/api";
 import type { Doc, Id } from "@/convex/_generated/dataModel";
 import { checkBarcode, LIMITS } from "@/convex/lib/catalog";
 import { recipeCost, suggestedPrice } from "@/convex/lib/costing";
-import { formatBps, formatMoney, grossMarginBps, moneyToInput, parseMoney, roundMinor } from "@/convex/lib/money";
+import { formatBps, grossMarginBps, moneyToInput, parseMoney, roundMinor } from "@/convex/lib/money";
 import { ProBadge, UpgradeNote, useFreePlan } from "@/components/shop/plan";
 import { errorMessage } from "@/lib/errors";
 import { resizeImage, uploadFile } from "@/lib/image";
@@ -90,6 +90,7 @@ export function ProductFormSheet({
 }
 
 function ProductForm({ product, categories, groups, tenant, onDone }: FormProps) {
+  const money = useMoney();
   const shop = useShop();
   const showCost = canManage(shop.role);
   const create = useMutation(api.products.create);
@@ -310,13 +311,13 @@ function ProductForm({ product, categories, groups, tenant, onDone }: FormProps)
 
         <div className="grid grid-cols-2 gap-3">
           <div className="grid gap-2">
-            <Label htmlFor="price">Price (₱)</Label>
+            <Label htmlFor="price">Price ({shop.currencySymbol.trim()})</Label>
             <Input id="price" inputMode="decimal" className="h-11" placeholder="0.00" {...form.register("price")} />
             <FieldError message={errors.price?.message} />
           </div>
           {showCost && kind !== "recipe" && !costLocked && (
             <div className="grid gap-2">
-              <Label htmlFor="cost">{kind === "stocked" ? "Cost per piece (₱)" : "Cost (₱)"}</Label>
+              <Label htmlFor="cost">{kind === "stocked" ? "Cost per piece" : "Cost"} ({shop.currencySymbol.trim()})</Label>
               <Input id="cost" inputMode="decimal" className="h-11" placeholder="Optional" {...form.register("cost")} />
               <FieldError message={errors.cost?.message} />
             </div>
@@ -326,7 +327,7 @@ function ProductForm({ product, categories, groups, tenant, onDone }: FormProps)
               <span className="text-sm font-medium">{kind === "recipe" ? "Cost" : "Cost per piece"}</span>
               <span className="flex h-11 flex-col justify-center text-sm">
                 {costMinor ? (
-                  <span className="font-medium tabular-nums">{formatMoney(costMinor)}</span>
+                  <span className="font-medium tabular-nums">{money(costMinor)}</span>
                 ) : (
                   <span className="text-muted-foreground">Add ingredients below</span>
                 )}
@@ -342,7 +343,7 @@ function ProductForm({ product, categories, groups, tenant, onDone }: FormProps)
             {margin !== null && (
               <span className={cn(margin < tenant.targetMarginBps ? "text-destructive" : "text-muted-foreground")}>
                 Gross margin {formatBps(margin)}
-                {tenant.pricesIncludeTax && tenant.taxRateBps > 0 ? " after VAT" : ""}
+                {tenant.pricesIncludeTax && tenant.taxRateBps > 0 ? " after tax" : ""}
                 {margin < tenant.targetMarginBps ? `, below your ${formatBps(tenant.targetMarginBps)} target` : ""}.
               </span>
             )}
@@ -353,7 +354,7 @@ function ProductForm({ product, categories, groups, tenant, onDone }: FormProps)
                 className="h-auto p-0 text-left whitespace-normal"
                 onClick={() => form.setValue("price", moneyToInput(suggested), { shouldValidate: true, shouldDirty: true })}
               >
-                Use {formatMoney(suggested)} for a {formatBps(tenant.targetMarginBps)} margin
+                Use {money(suggested)} for a {formatBps(tenant.targetMarginBps)} margin
               </Button>
             )}
           </div>

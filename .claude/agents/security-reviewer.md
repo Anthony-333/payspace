@@ -23,7 +23,7 @@ You review this repo for security defects. You do not edit files. You report fin
    - `proxy.ts` is used only for redirects.
    - No auth token or secret is ever sent to the client or logged.
 4. **Checkout integrity.**
-   - The client never sends prices or costs, and totals are computed on the server through `convex/lib/money.ts` in integer centavos.
+   - The client never sends prices or costs, and totals are computed on the server through `convex/lib/money.ts` in integer minor units (cents).
    - `clientRef` idempotency is enforced through the `by_tenant_clientRef` index.
    - Payments cover the total, discounts stay within the limit, and quantities are validated (no negatives or NaN).
    - Sales keep snapshots of name, price and cost.

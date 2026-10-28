@@ -3,7 +3,7 @@ import { type CostExample, lineCost, summarize } from "@/lib/costing-example";
 
 const UNIT: Record<string, string> = { g: "g", ml: "ml", pc: "pc" };
 
-// A worked recipe-costing table: each line's cost, then price, VAT, profit and margin. The
+// A worked recipe-costing table: each line's cost, then price, tax, profit and margin. The
 // "Bought as" column hides on phones so the cost column stays in view.
 export function CostTable({ example }: { example: CostExample }) {
   const s = summarize(example);
@@ -39,8 +39,8 @@ export function CostTable({ example }: { example: CostExample }) {
           {example.price > 0 && (
             <>
               <Row label="Selling price" value={formatMoney(example.price)} />
-              {example.vatRateBps > 0 && (
-                <Row label={`Price without ${formatBps(example.vatRateBps).replace(".0%", "%")} VAT`} value={formatMoney(s.net)} />
+              {example.taxRateBps > 0 && (
+                <Row label={`Price without ${formatBps(example.taxRateBps).replace(".0%", "%")} tax`} value={formatMoney(s.net)} />
               )}
               <Row label="Profit per item" value={formatMoney(s.profit)} strong />
               <Row label="Gross margin" value={formatBps(s.marginBps)} strong />

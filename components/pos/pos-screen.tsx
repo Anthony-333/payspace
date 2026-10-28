@@ -12,11 +12,11 @@ import { Price, ProductThumb, Stepper } from "@/components/pos/parts";
 import { PaySheet } from "@/components/pos/pay-sheet";
 import { categoryIcon, defaultOptions, groupsFor, type Group, type SaleProduct } from "@/components/pos/pricing";
 import { useShellSearch } from "@/components/shop/app-shell";
-import { canManage, useShop } from "@/components/shop/shop-provider";
+import { canManage, useMoney, useShop } from "@/components/shop/shop-provider";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { api } from "@/convex/_generated/api";
-import { formatMoney, taxBreakdown } from "@/convex/lib/money";
+import { taxBreakdown } from "@/convex/lib/money";
 import { cn } from "@/lib/utils";
 
 const ALL = "all";
@@ -24,6 +24,7 @@ const ALL = "all";
 // Checkout screen, laid out per docs/design/blueprint.md. "Place order" is wired up with
 // sales.checkout (roadmap Week 4); until then the cart is fully usable and kept on the device.
 export function PosScreen() {
+  const money = useMoney();
   const shop = useShop();
   const tenantId = shop.tenantId;
   const products = useQuery(api.products.forSale, { tenantId });
@@ -197,7 +198,7 @@ export function PosScreen() {
       <div data-tour="pos-order" className="fixed inset-x-0 bottom-0 z-30 border-t bg-card p-3 lg:hidden">
         <Button size="lg" className="h-13 w-full justify-between px-5 text-base font-semibold" onClick={() => setOrderOpen(true)}>
           <span>{invoice.itemCount} {invoice.itemCount === 1 ? "item" : "items"}</span>
-          <span>View order · {formatMoney(invoice.subtotal)}</span>
+          <span>View order · {money(invoice.subtotal)}</span>
         </Button>
       </div>
       <Sheet open={orderOpen} onOpenChange={setOrderOpen}>

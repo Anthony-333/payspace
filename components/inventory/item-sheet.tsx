@@ -10,13 +10,13 @@ import {
   StockStatusBadge,
   type StockItem,
 } from "@/components/inventory/stock-parts";
-import { canManage, useShop } from "@/components/shop/shop-provider";
+import { canManage, useMoney, useShop } from "@/components/shop/shop-provider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
-import { formatMoney, roundMinor } from "@/convex/lib/money";
+import { roundMinor } from "@/convex/lib/money";
 import { formatQty } from "@/convex/lib/quantity";
 import { cn } from "@/lib/utils";
 
@@ -42,6 +42,7 @@ export function ItemSheet({ stockItemId, onClose, ...actions }: Props) {
 }
 
 function ItemDetails({ stockItemId, onReceive, onWaste, onAdjust, onEdit }: Actions & { stockItemId: Id<"stockItems"> }) {
+  const money = useMoney();
   const shop = useShop();
   const manage = canManage(shop.role);
   const item = useQuery(api.inventory.getItem, { tenantId: shop.tenantId, stockItemId });
@@ -55,7 +56,7 @@ function ItemDetails({ stockItemId, onReceive, onWaste, onAdjust, onEdit }: Acti
     );
   }
 
-  const purchaseCost = formatPurchaseCost(item);
+  const purchaseCost = formatPurchaseCost(item, shop.currencySymbol);
   return (
     <div className="grid gap-6 pb-6">
       <SheetHeader>
@@ -75,12 +76,12 @@ function ItemDetails({ stockItemId, onReceive, onWaste, onAdjust, onEdit }: Acti
         <Stat label="Reorder at">{formatQty(item.reorderPoint, item.baseUnit)}</Stat>
         {manage && item.avgCost !== null && (
           <Stat label="Average cost">
-            {formatUnitCost(item.avgCost, item.baseUnit)}
+            {formatUnitCost(item.avgCost, item.baseUnit, shop.currencySymbol)}
             {purchaseCost && <span className="block text-xs font-normal text-muted-foreground">{purchaseCost}</span>}
           </Stat>
         )}
         {manage && item.avgCost !== null && (
-          <Stat label="Stock value">{formatMoney(Math.max(0, roundMinor(item.onHand * item.avgCost)))}</Stat>
+          <Stat label="Stock value">{money(Math.max(0, roundMinor(item.onHand * item.avgCost)))}</Stat>
         )}
         <Stat label="Last received">{item.lastReceivedAt ? formatDateTime(item.lastReceivedAt) : "Not yet"}</Stat>
       </dl>
@@ -154,7 +155,7 @@ function Ledger({ stockItemId, baseUnit }: { stockItemId: Id<"stockItems">; base
                 <div className="font-medium">{TYPE_LABEL[m.type]}</div>
                 <div className="text-xs text-muted-foreground">
                   {formatDateTime(m._creationTime)} · {m.memberName}
-                  {m.type === "receive" && ` · ${formatUnitCost(m.unitCost, baseUnit)}`}
+                  {m.type === "receive" && ` · ${formatUnitCost(m.unitCost, baseUnit, shop.currencySymbol)}`}
                 </div>
                 {m.note && <div className="mt-1 text-xs break-words text-muted-foreground">“{m.note}”</div>}
               </div>

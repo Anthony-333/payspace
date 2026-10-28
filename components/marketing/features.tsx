@@ -19,14 +19,14 @@ const FEATURES = [
   },
   {
     title: "A checkout your cashiers learn in minutes",
-    body: "Big, touch-first tiles for tablets and phones. Record cash, GCash, Maya or card, split a bill across methods, and snap a photo of the payment as proof. VAT is worked out for you.",
+    body: "Big, touch-first tiles for tablets and phones. Record cash, card or e-wallet, split a bill across methods, and snap a photo of the payment as proof. Tax is worked out for you, in your currency.",
     screen: <PosMockup />,
     label: "Checkout screen with an order and payment methods",
   },
   {
     id: "receipts",
     title: "Every receipt, ready to view or reprint",
-    body: "Each sale keeps its receipt, grouped by business day. Reopen one at the counter and print it on a 58 mm or 80 mm roll, or give the customer a link they open on their phone, no sign-in needed. Old receipts keep the prices and VAT they were issued with.",
+    body: "Each sale keeps its receipt, grouped by business day. Reopen one at the counter and print it on a 58 mm or 80 mm roll, or give the customer a link they open on their phone, no sign-in needed. Old receipts keep the prices and tax they were issued with.",
     screen: <ReceiptsMockup />,
     label: "Receipts list beside a printed-style receipt with Print and Customer link buttons",
   },
