@@ -6,13 +6,14 @@ import posthog from "posthog-js";
 import { useState } from "react";
 import { toast } from "sonner";
 import { SignaturePad } from "@/components/loyalty/signature-pad";
-import { useMoney, useShop } from "@/components/shop/shop-provider";
+import { useShop } from "@/components/shop/shop-provider";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
+import { formatMoney } from "@/convex/lib/money";
 import type { Signature } from "@/convex/lib/signature";
 import { errorMessage } from "@/lib/errors";
 import { cn } from "@/lib/utils";
@@ -46,7 +47,6 @@ export function SignDialog(props: Props) {
 }
 
 function SignForm({ mode, card, saleNumber, onClose, onDone }: Props) {
-  const money = useMoney();
   const shop = useShop();
   const addStamp = useMutation(api.loyalty.addStamp);
   const redeem = useMutation(api.loyalty.redeem);
@@ -126,7 +126,7 @@ function SignForm({ mode, card, saleNumber, onClose, onDone }: Props) {
             {sale && !saleProblem && (
               <p className="flex items-center gap-1.5 text-sm text-tint-green-foreground">
                 <BadgeCheck className="size-4" />
-                Receipt #{sale.number}: {money(sale.total)}, {time(sale.at)}
+                Receipt #{sale.number}: {formatMoney(sale.total, sale.currencySymbol)}, {time(sale.at)}
               </p>
             )}
             {saleProblem && (
@@ -161,7 +161,7 @@ function SignForm({ mode, card, saleNumber, onClose, onDone }: Props) {
                             <span className="block truncate">{r.items || "—"}</span>
                             <span className="block text-xs text-muted-foreground">{time(r.at)}</span>
                           </span>
-                          <span className="shrink-0 font-medium tabular-nums">{money(r.total)}</span>
+                          <span className="shrink-0 font-medium tabular-nums">{formatMoney(r.total, r.currencySymbol)}</span>
                           {picked && <Check className="size-4 shrink-0 text-primary" />}
                         </button>
                       </li>

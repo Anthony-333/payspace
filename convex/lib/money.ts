@@ -41,6 +41,14 @@ export function currencySymbol(shop: { currency: string; currencySymbol?: string
   return CURRENCIES.find((c) => c.code === shop.currency)?.symbol ?? `${shop.currency} `;
 }
 
+/**
+ * The sign a sale was rung up in. Sales from before shops could change their sign carry no
+ * snapshot, and every one of them was printed in pesos, so they stay in pesos.
+ */
+export function saleSymbol(sale: { currencySymbol?: string }) {
+  return sale.currencySymbol ?? "₱";
+}
+
 /** A currency sign or code typed before or after the amount: "$", "€", "A$", "USD ", " kr". */
 const SIGN = /^(?:\p{Sc}|[A-Za-z]{1,3}\p{Sc}?)\s*|\s*\p{Sc}$|\s+[A-Za-z]{1,3}$/gu;
 

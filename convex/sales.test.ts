@@ -351,6 +351,22 @@ describe("receipts", () => {
       tenantId, clientRef: "ref-sign-2", lines: [{ productId: water, qty: 1, optionKeys: [] }], payments: cash(6000),
     });
     expect((await t.query(api.sales.byToken, { token: next.receiptToken }))!.shop.currencySymbol).toBe("US$");
+
+    // The receipts list shows each sale in its own sign too.
+    const listed = await owner.query(api.sales.recent, { tenantId });
+    expect(listed.map((s) => s.currencySymbol).sort()).toEqual(["US$", "₱"]);
+  });
+
+  test("a sale from before shops could change their sign stays in pesos", async () => {
+    const { t, owner, tenantId, water, cash } = await cafe();
+    const sale = await owner.mutation(api.sales.checkout, {
+      tenantId, clientRef: "ref-legacy", lines: [{ productId: water, qty: 1, optionKeys: [] }], payments: cash(6000),
+    });
+    await t.run((ctx) => ctx.db.patch(sale.saleId, { currencySymbol: undefined }));
+    await owner.mutation(api.tenants.updateSettings, { tenantId, currency: "EUR" });
+
+    expect((await t.query(api.sales.byToken, { token: sale.receiptToken }))!.shop.currencySymbol).toBe("₱");
+    expect((await owner.query(api.sales.recent, { tenantId }))[0].currencySymbol).toBe("₱");
   });
 
   test("a cashier sees only their own sales, and never a cost", async () => {

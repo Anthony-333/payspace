@@ -1,7 +1,7 @@
 import { ConvexError, v } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
 import { businessMoment } from "./lib/businessDate";
-import { currencySymbol } from "./lib/money";
+import { currencySymbol, saleSymbol } from "./lib/money";
 import { canSeeCost, IMAGE_TYPES, MAX_IMAGE_BYTES } from "./lib/products";
 import { roundQty } from "./lib/quantity";
 import {
@@ -280,6 +280,7 @@ function toSummary(sale: Doc<"sales">, staffName: string) {
     at: sale._creationTime,
     businessDate: sale.businessDate,
     total: sale.total,
+    currencySymbol: saleSymbol(sale),
     itemCount: sale.lines.reduce((sum, line) => sum + line.qty, 0),
     methods: [...new Set(sale.payments.map((payment) => payment.method))],
     photoCount: sale.payments.filter((payment) => payment.photoId).length,
@@ -341,7 +342,7 @@ function toReceipt(sale: Doc<"sales">, tenant: Doc<"tenants">) {
     shop: {
       name: tenant.name,
       currency: tenant.currency,
-      currencySymbol: sale.currencySymbol ?? currencySymbol(tenant),
+      currencySymbol: saleSymbol(sale),
       timezone: tenant.timezone,
       receiptFooter: tenant.receiptFooter,
     },

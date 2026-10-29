@@ -10,6 +10,7 @@ import {
   validatePassword,
   validateUsername,
 } from "./lib/loyalty";
+import { saleSymbol } from "./lib/money";
 import { hashPassword } from "./lib/password";
 import { isPro, requirePro } from "./lib/plan";
 import { validateSignature } from "./lib/signature";
@@ -261,6 +262,7 @@ export const saleForStamp = tenantQuery({
     return {
       number: sale.number,
       total: sale.total,
+      currencySymbol: saleSymbol(sale),
       at: sale._creationTime,
       status: sale.status,
       tooOld: Date.now() - sale._creationTime > STAMP_SALE_MAX_AGE_MS,
@@ -299,6 +301,7 @@ export const recentSalesForStamp = tenantQuery({
       out.push({
         number: sale.number,
         total: sale.total,
+        currencySymbol: saleSymbol(sale),
         at: sale._creationTime,
         items: names.slice(0, 2).join(", ") + (names.length > 2 ? ` +${names.length - 2} more` : ""),
       });

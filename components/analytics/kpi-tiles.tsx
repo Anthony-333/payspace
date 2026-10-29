@@ -64,7 +64,7 @@ export function KpiTiles({ current, previous, loading, comparison = "the same da
             <div>
             <div className={cn("text-2xl font-semibold tracking-tight tabular-nums sm:text-3xl", tile.tone !== "dark" && "text-foreground", loading && "animate-pulse opacity-60")}>
               {loading ? "—" : tile.money ? (
-                <><span className="font-normal opacity-60">{currencySymbol}</span>{formatMoney(value, "")}</>
+                <>{value < 0 && "-"}<span className="font-normal opacity-60">{currencySymbol}</span>{formatMoney(Math.abs(value), "")}</>
               ) : value.toLocaleString("en-US")}
             </div>
             <div className={cn("mt-1 flex items-center gap-1 text-xs", TONES[tile.tone].soft)}>

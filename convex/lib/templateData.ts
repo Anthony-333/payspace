@@ -197,7 +197,9 @@ const STEPS = [5, 10, 25, 50, 100, 500, 1000];
 export function localizeTemplate(template: Template, currency: string): Template {
   const level = PRICE_LEVEL[currency] ?? 1;
   const step = STEPS.filter((s) => s <= 25 * level).pop() ?? STEPS[0];
-  const price = (minor: number) => (minor === 0 ? 0 : Math.max(step, Math.round((minor * level) / step) * step));
+  // At least one step away from zero, on the same side: a discount option stays a discount.
+  const price = (minor: number) =>
+    minor === 0 ? 0 : Math.sign(minor) * Math.max(step, Math.round((Math.abs(minor) * level) / step) * step);
   return {
     ...template,
     stockItems: template.stockItems.map((item) => ({ ...item, avgCost: roundAvgCost(item.avgCost * level) })),

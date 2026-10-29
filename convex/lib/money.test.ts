@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { currencySymbol, formatMoney, grossMarginBps, moneyToInput, netOfTax, parseMoney, taxBreakdown, taxFromTotals } from "./money";
+import { currencySymbol, formatMoney, grossMarginBps, moneyToInput, netOfTax, parseMoney, saleSymbol, taxBreakdown, taxFromTotals } from "./money";
 
 describe("parseMoney", () => {
   test.each([
@@ -37,6 +37,11 @@ describe("formatting", () => {
     expect(currencySymbol({ currency: "USD", currencySymbol: "US$" })).toBe("US$");
     expect(currencySymbol({ currency: "EUR", currencySymbol: "  " })).toBe("€");
     expect(currencySymbol({ currency: "XYZ" })).toBe("XYZ ");
+  });
+
+  test("a sale keeps its own sign, and older sales without one stay in pesos", () => {
+    expect(saleSymbol({ currencySymbol: "€" })).toBe("€");
+    expect(saleSymbol({})).toBe("₱");
   });
 });
 

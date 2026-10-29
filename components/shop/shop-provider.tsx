@@ -1,16 +1,22 @@
 "use client";
 
+import { useQuery } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
 import { createContext, useCallback, useContext, type ReactNode } from "react";
-import type { api } from "@/convex/_generated/api";
+import { api } from "@/convex/_generated/api";
 import { formatMoney } from "@/convex/lib/money";
 
 export type Shop = NonNullable<FunctionReturnType<typeof api.tenants.bySlug>>;
 
 const ShopContext = createContext<Shop | null>(null);
 
+/**
+ * `shop` is the layout's server read. The layout doesn't re-run on client navigation, so
+ * subscribe too: a change in Settings (currency, sign, timezone, role) reaches every screen live.
+ */
 export function ShopProvider({ shop, children }: { shop: Shop; children: ReactNode }) {
-  return <ShopContext.Provider value={shop}>{children}</ShopContext.Provider>;
+  const live = useQuery(api.tenants.bySlug, { slug: shop.slug });
+  return <ShopContext.Provider value={live ?? shop}>{children}</ShopContext.Provider>;
 }
 
 /** The current shop from the URL slug. Pass `shop.tenantId` to every tenant-scoped Convex call. */

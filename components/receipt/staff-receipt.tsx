@@ -5,10 +5,11 @@ import { ArrowLeft, Camera, ExternalLink, ReceiptIcon, Stamp } from "lucide-reac
 import Link from "next/link";
 import { useState } from "react";
 import { ReceiptView } from "@/components/receipt/receipt-view";
-import { useMoney, useShop } from "@/components/shop/shop-provider";
+import { useShop } from "@/components/shop/shop-provider";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { api } from "@/convex/_generated/api";
+import { formatMoney } from "@/convex/lib/money";
 
 // The shop's own copy of a receipt: the receipt the customer got, with the photos taken of each
 // payment beside it. Only the receipt prints; the photos are for the shop's records and never
@@ -17,7 +18,6 @@ import { api } from "@/convex/_generated/api";
 const METHOD_NAMES: Record<string, string> = { cash: "Cash", ewallet: "E-wallet", card: "Card" };
 
 export function StaffReceipt({ saleId }: { saleId: string }) {
-  const money = useMoney();
   const shop = useShop();
   const data = useQuery(api.sales.receipt, { tenantId: shop.tenantId, saleId });
   const [open, setOpen] = useState<number | null>(null);
@@ -51,6 +51,8 @@ export function StaffReceipt({ saleId }: { saleId: string }) {
 
   const { receipt, photos } = data;
   const viewing = open === null ? null : photos[open];
+  // In the sign the sale was rung up in, like the receipt beside them.
+  const money = (minor: number) => formatMoney(minor, receipt.shop.currencySymbol);
   return (
     <div className="grid gap-4">
       <div className="flex flex-wrap items-center justify-between gap-2 print:hidden">

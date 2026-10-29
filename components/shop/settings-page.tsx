@@ -2,6 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery } from "convex/react";
+import { TriangleAlert } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
@@ -170,6 +171,15 @@ export function SettingsPage() {
                 Leave the sign empty to use {defaultSign.trim()}, or type your own, like Rs, kr or Br.
               </p>
               <FieldError message={errors.currencySymbol?.message} />
+              {currency !== tenant.currency && (
+                <p role="status" className="flex gap-2 rounded-lg bg-tint-peach p-3 text-sm text-tint-peach-foreground">
+                  <TriangleAlert className="mt-0.5 size-4 shrink-0" />
+                  <span>
+                    Prices aren&apos;t converted. A {formatMoney(14_000, currencySymbol({ currency: tenant.currency, currencySymbol: tenant.currencySymbol }))} item
+                    becomes {money(14_000)}, so update your prices and costs after saving. Dashboard totals from before the change show with the new sign too.
+                  </span>
+                </p>
+              )}
 
               <div className="grid gap-2">
                 <Label htmlFor="timezone">Time zone</Label>
