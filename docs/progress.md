@@ -4,6 +4,13 @@ Update this at the end of every session: tick what's done, note decisions and op
 
 ## Current status
 
+**No cookie banner: PostHog keeps nothing in the browser, asked for directly (2026-10-29).** No new dependency.
+- **Why:** PostHog's default ID cookie and localStorage are non-essential storage, which needs opt-in consent for EU and UK visitors (ePrivacy). Sign-in cookies and the loyalty card token are strictly necessary, and Vercel Analytics is cookieless, so PostHog was the only thing that needed a banner.
+- **Change:** `persistence: "memory"` in `instrumentation-client.ts`. posthog-js then uses no cookie, localStorage or sessionStorage. Each full page load gets a new anonymous id and session; `PostHogIdentity` re-identifies signed-in users by user id on every load. Cross-visit tracking of anonymous marketing visitors is gone.
+- **Privacy policy:** section 10 now says analytics store nothing in the browser and names the loyalty card's local storage; effective October 29, 2026. This change collects less, so it isn't a "significant change" under section 12.
+- **Checks:** `tsc` and lint pass (the one existing warning in generated code).
+- **Open:** in production, confirm in DevTools (Application tab) that no `ph_*` cookie or storage key appears; have `legal-compliance` review section 10 with the rest of the policy.
+
 **Welcome email, asked for directly (2026-10-29).** Branch `feat/welcome-email`. No new dependency.
 - **When:** once the address is confirmed, not at sign-up (which already sends "Confirm your email"), so nobody gets two emails at once or a welcome for an address they never confirmed. `emailVerification.afterEmailVerification` in `convex/auth.ts` queues it through the Resend component. Better Auth returns early for an already-verified address, so a second click on the link sends nothing; accounts grandfathered by the 2026-09-30 migration never get one.
 - **What:** `welcomeEmail()` in `convex/lib/authEmails.ts`, same layout as the other account emails, with an "Open Payspace" button to `${SITE_URL}/sign-in`, which forwards to the user's shop or to onboarding (so it suits invited staff too).
@@ -336,3 +343,4 @@ Update this at the end of every session: tick what's done, note decisions and op
 - 2026-10-27: **Starter menus scale by a price level, not an exchange rate** (`PRICE_LEVEL` in `convex/lib/templateData.ts`): a latte costs about the same share of local spending everywhere, and the owner edits the numbers anyway. Ingredient costs scale by the same factor, so margins match in every currency.
 - 2026-10-27: **Old Philippines URLs redirect permanently** (`/pos/sari-sari-store`, three blog posts) so links and search standing carry over.
 - 2026-10-29: **The welcome email goes out on email confirmation, not on sign-up** (`afterEmailVerification`). Sign-up already sends the confirmation link; a welcome then would double up and could reach addresses someone else typed. A failed welcome is logged and never blocks verification.
+- 2026-10-29: **No cookie banner; PostHog runs with memory-only persistence.** Banner-free screens on shop tablets are worth more than linking anonymous visits across page loads. If anonymous funnels become important, the alternative is `cookieless_mode: "on_reject"` with an EU/UK-only consent banner.

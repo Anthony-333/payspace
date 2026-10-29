@@ -11,6 +11,9 @@ if (projectToken && host) {
     ui_host: "https://us.posthog.com",
     defaults: "2026-01-30",
     capture_exceptions: true,
+    // Keep PostHog's ids in memory only: no cookie, localStorage or sessionStorage, so no consent banner is needed
+    // (EU/UK ePrivacy). Each full page load starts a new anonymous id; signed-in users are re-identified by user id.
+    persistence: "memory",
     // POS screens show loyalty customers' names and phone numbers. Keep screen recordings off and
     // keep on-screen text out of autocaptured clicks, whatever the PostHog project settings say.
     disable_session_recording: true,

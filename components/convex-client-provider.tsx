@@ -32,8 +32,8 @@ export function ConvexClientProvider({
 
 /**
  * Keeps browser analytics attached to the signed-in Better Auth user, by id only (no email or name).
- * Compares against PostHog's persisted identity rather than this page load's, so a session that
- * expired while the tab was closed, or another staff member on a shared tablet, starts clean.
+ * PostHog keeps its ids in memory only, so every page load starts anonymous and is identified
+ * again here; a sign-out or a staff switch without a reload resets it.
  */
 function PostHogIdentity() {
   const { data: session, isPending } = authClient.useSession();

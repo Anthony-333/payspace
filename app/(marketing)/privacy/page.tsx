@@ -13,7 +13,7 @@ export default function PrivacyPage() {
   return (
     <LegalPage
       title="Privacy Policy"
-      effectiveDate="October 27, 2026"
+      effectiveDate="October 29, 2026"
       intro={
         <p>
           Payspace is a point of sale for small businesses around the world. This policy explains what personal
@@ -195,10 +195,13 @@ export default function PrivacyPage() {
 
       <LegalSection id="cookies" title="10. Cookies">
         <p>
-          We use cookies to keep you signed in and to protect your session. PostHog also stores an identifier in a
-          first-party cookie and in your browser&rsquo;s local storage, so that visits from the same browser count
-          together in our product analytics. We do not use advertising or cross-site tracking cookies. You can clear or
-          block these in your browser settings, or ask us at <ContactLink /> to stop analytics for your account.
+          We use cookies only to keep you signed in and to protect your session. These are strictly necessary for the
+          service, so we do not ask for consent to them. If you open a shop&rsquo;s loyalty card, your browser&rsquo;s
+          local storage keeps the link to that card so you can come back to it. Our analytics tools do not store
+          anything in your browser: PostHog keeps its identifier in memory only for the page you have open, and
+          Vercel&rsquo;s usage statistics do not use cookies. We do not use advertising or cross-site tracking cookies.
+          You can clear or block cookies in your browser settings, though you will then need to sign in again. To stop
+          analytics for your account, ask us at <ContactLink />.
         </p>
       </LegalSection>
 
