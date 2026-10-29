@@ -1,4 +1,4 @@
-// Sign-in emails sent through Resend (convex/emails.ts). Plain, inline-styled HTML with a
+// Account emails (sign-in and welcome) sent through Resend (convex/emails.ts). Plain, inline-styled HTML with a
 // text copy, since mail clients ignore stylesheets.
 
 export type AuthEmail = { subject: string; html: string; text: string };
@@ -49,6 +49,20 @@ export function resetPassword(name: string, url: string): AuthEmail {
   return {
     subject: "Reset your Payspace password",
     html: layout({ greeting, body, action: "Reset password", url, footer }),
+    text: `${greeting}\n\n${body}\n\n${url}\n\n${footer}\n`,
+  };
+}
+
+// Sent once, when the address is confirmed. The link is /sign-in, which forwards to their shop or onboarding.
+export function welcomeEmail(name: string, url: string): AuthEmail {
+  const greeting = greet(name);
+  const body = "Welcome to Payspace. Your email is confirmed and your account is ready. Set up your shop, "
+    + "add your menu or stock, and start selling. With recipe costing, you'll see what each item really "
+    + "earns you, not just what it sold for.";
+  const footer = "You're getting this because you created a Payspace account.";
+  return {
+    subject: "Welcome to Payspace",
+    html: layout({ greeting, body, action: "Open Payspace", url, footer }),
     text: `${greeting}\n\n${body}\n\n${url}\n\n${footer}\n`,
   };
 }

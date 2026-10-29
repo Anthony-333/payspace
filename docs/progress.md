@@ -4,6 +4,12 @@ Update this at the end of every session: tick what's done, note decisions and op
 
 ## Current status
 
+**Welcome email, asked for directly (2026-10-29).** Branch `feat/welcome-email`. No new dependency.
+- **When:** once the address is confirmed, not at sign-up (which already sends "Confirm your email"), so nobody gets two emails at once or a welcome for an address they never confirmed. `emailVerification.afterEmailVerification` in `convex/auth.ts` queues it through the Resend component. Better Auth returns early for an already-verified address, so a second click on the link sends nothing; accounts grandfathered by the 2026-09-30 migration never get one.
+- **What:** `welcomeEmail()` in `convex/lib/authEmails.ts`, same layout as the other account emails, with an "Open Payspace" button to `${SITE_URL}/sign-in`, which forwards to the user's shop or to onboarding (so it suits invited staff too).
+- **Failure:** wrapped in try/catch and logged, so a missing `EMAIL_FROM` or a queue error never fails verification.
+- **Checks:** 2 new template tests (216 in all); `tsc` and lint pass (one existing warning in generated code); deployed to dev. Not seen in a real inbox yet: `RESEND_API_KEY` and `EMAIL_FROM` still need setting (see "Needs you").
+
 **Global branding instead of a Philippines-only launch, asked for directly (2026-10-27).** Branch `feat/global-branding`. Payspace is now marketed and built for small shops anywhere; the operator stays in the Philippines and Philippine law still governs the terms (user's call).
 - **Currency per shop:** `tenants.currencySymbol` (optional) joins `tenants.currency`. `CURRENCIES` and `currencySymbol()` in `convex/lib/money.ts`; Settings has a new "Currency and time zone" card (`components/shop/locale-fields.tsx`) with a currency list, an optional custom sign (up to 5 characters, no digits) and a time zone picker. Every shop screen formats through `useMoney()` (`components/shop/shop-provider.tsx`), and `<Price>`, chart axes, KPI tiles, form labels and stock costs use the shop's sign. `parseMoney` accepts any leading or trailing sign or code.
 - **Receipts snapshot the sign** (`sales.currencySymbol`, optional for old sales) and print in the shop's time zone (`timezone` added to the receipt payload).
@@ -329,3 +335,4 @@ Update this at the end of every session: tick what's done, note decisions and op
 - 2026-10-27: **The currency sign is a per-shop setting with a snapshot on each sale,** not a formatting locale. Number formatting stays fixed (`1,234.50`) so the server and every browser agree; only the sign changes. A sale keeps the sign it was rung up in, the same way it keeps its tax.
 - 2026-10-27: **Starter menus scale by a price level, not an exchange rate** (`PRICE_LEVEL` in `convex/lib/templateData.ts`): a latte costs about the same share of local spending everywhere, and the owner edits the numbers anyway. Ingredient costs scale by the same factor, so margins match in every currency.
 - 2026-10-27: **Old Philippines URLs redirect permanently** (`/pos/sari-sari-store`, three blog posts) so links and search standing carry over.
+- 2026-10-29: **The welcome email goes out on email confirmation, not on sign-up** (`afterEmailVerification`). Sign-up already sends the confirmation link; a welcome then would double up and could reach addresses someone else typed. A failed welcome is logged and never blocks verification.

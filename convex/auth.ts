@@ -8,7 +8,7 @@ import type { DataModel } from "./_generated/dataModel";
 import authConfig from "./auth.config";
 import authSchema from "./betterAuth/schema";
 import { sendEmail } from "./emails";
-import { resetPassword, verifyEmail } from "./lib/authEmails";
+import { resetPassword, verifyEmail, welcomeEmail } from "./lib/authEmails";
 import { TRUSTED_IP_HEADER } from "./lib/clientIp";
 
 const siteUrl = process.env.SITE_URL!;
@@ -39,6 +39,16 @@ export const createAuthOptions = (ctx: GenericCtx<DataModel>) =>
       expiresIn: 24 * 60 * 60,
       sendVerificationEmail: async ({ user, url }) =>
         sendEmail(requireActionCtx(ctx), user.email, verifyEmail(user.name, url)),
+      // Runs once per account: Better Auth returns early for an already-verified address, and email
+      // change isn't enabled. Accounts grandfathered by the migration never pass through here.
+      // A welcome that can't be queued must not fail the verification, so log and move on.
+      afterEmailVerification: async (user) => {
+        try {
+          await sendEmail(requireActionCtx(ctx), user.email, welcomeEmail(user.name, `${siteUrl}/sign-in`));
+        } catch (error) {
+          console.error("Welcome email not queued", error);
+        }
+      },
     },
     // Better Auth only limits when NODE_ENV is production, which Convex doesn't set, so turn it on.
     // Rows live in the component's rateLimit table, so limits hold across Convex instances.

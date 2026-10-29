@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { resetPassword, verifyEmail } from "./authEmails";
+import { resetPassword, verifyEmail, welcomeEmail } from "./authEmails";
 
 describe("auth emails", () => {
   test("verification email carries the link and greets by first name", () => {
@@ -18,5 +18,20 @@ describe("auth emails", () => {
 
   test("a blank name falls back to a plain greeting", () => {
     expect(resetPassword("   ", "https://example.com/r").text.startsWith("Hi,\n")).toBe(true);
+  });
+
+  test("welcome email greets by first name and links to sign-in", () => {
+    const email = welcomeEmail("Maria Clara", "https://www.payspace.shop/sign-in");
+    expect(email.subject).toBe("Welcome to Payspace");
+    expect(email.text).toContain("Hi Maria,");
+    expect(email.text).toContain("https://www.payspace.shop/sign-in");
+    expect(email.html).toContain('href="https://www.payspace.shop/sign-in"');
+    expect(email.html).toContain("Open Payspace");
+  });
+
+  test("welcome email escapes the name", () => {
+    const email = welcomeEmail("<b>Ana</b>", "https://example.com/sign-in");
+    expect(email.html).not.toContain("<b>Ana");
+    expect(email.html).toContain("&lt;b&gt;Ana");
   });
 });
